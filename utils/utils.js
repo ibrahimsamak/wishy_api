@@ -1,6 +1,7 @@
 var crypto = require("crypto");
 var nodemailer = require("nodemailer");
 const fs = require("fs");
+const axios = require("axios");
 var ejs = require("ejs");
 var request = require("request");
 const cloudinary = require("cloudinary");
@@ -219,22 +220,30 @@ exports.mail_general = function (req, to, sub, text, data) {
   }
 };
 
-exports.sendSMS = async function (number, from, to, code) {
-  let msg = encodeURI(code);
-  request.get(
-    {
-      url: `http://api.unifonic.com/wrapper/sendSMS.php?userid=sh.t.c@hotmail.com&password=Sh3ibr&msg=${msg}&sender=Shoalah&to=${number}&encoding=UTF8`,
-      form: null,
+exports.sendSMS = async function(number, from, to, code){
+  var url = `hhttps://cartat.net/api/whatsapp/send`
+  let _config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + "44|rX60FE8axfKv20uJjocIoPQU13FBI6YumP6o3pmh"
     },
-    (err, httpResponse, body) => {
-      if (err) {
-        console.log(httpResponse);
-      } else {
-        console.log(httpResponse);
-      }
-    }
-  );
-};
+  };
+  let body = { 
+    "number":number,
+    "body": code
+  }
+
+    axios
+    .post(url, body, _config)
+    .then((response) => {
+      console.log(response)
+    })
+    .catch((error) => {
+      console.log(error)
+     
+    });
+}
+
 
 exports.uploadImages = async function (img) {
   return new Promise(function (resolve, reject) {

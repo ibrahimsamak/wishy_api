@@ -90,7 +90,7 @@ exports.loginEmployee = async (req, reply) => {
         const rs = await employee.findByIdAndUpdate(
           _user.id,
           {
-            verify_code: 1234,
+            verify_code: "1234",
             fcmToken: req.body.fcmToken,
             address: req.body.address,
             os: req.body.os,
@@ -266,8 +266,8 @@ exports.forgetPassword = async (req, reply) => {
     });
     if (_Users) {
       var newPassword = makeid(8);
-      // var verify_code = makeid(4);
-      var verify_code = 1234;
+      var verify_code = makeid(4);
+      // var verify_code = 1234;
       let pass = encryptPassword(newPassword);
       const update = await employee.findByIdAndUpdate(
         _Users._id,
@@ -1118,4 +1118,31 @@ exports.block = async (req, reply) => {
   } catch (err) {
     throw boom.boomify(err);
   }
+};
+
+
+exports.testsend = async (req, reply) => {
+  // const language = req.headers["accept-language"];
+  var msg = "مرحبا بكم في تطبيق شعلة كود التفعيل الخاص بكم 1233";
+  // const sms_code = makeid(4);
+  // const user = await employee.findByIdAndUpdate(
+  //   req.body.id,
+  //   {
+  //     verify_code: sms_code,
+  //   },
+  //   { new: true }
+  // );
+
+  sendSMS("966545500488", "", "", msg);
+  reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        user
+      )
+    );
 };

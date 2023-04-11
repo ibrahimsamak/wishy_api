@@ -20,6 +20,7 @@ const fastify = require("fastify")({
 // Import Swagger documentation
 // const documentation = require('./documentation/carApi')
 const admin_routes = [
+  
   {
     method: "POST",
     url: "/api/sms/add",
