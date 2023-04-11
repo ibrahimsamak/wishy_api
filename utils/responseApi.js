@@ -90,7 +90,6 @@ exports.errorAPI = (
  */
 
 function getMessageOnLanguage(msgAr, msgEn, language) {
-  console.log(msgAr, msgEn, language);
   if (language == LANGUAGE_ENUM.EN) {
     return msgEn;
   } else {

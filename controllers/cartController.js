@@ -547,7 +547,6 @@ exports.addProduct = async (req, reply) => {
         const provider = await Product.findOne({
           $and: [{ _id: req.body.product_id }, { isDeleted: false }],
         });
-        console.log(provider);
         if (!provider) {
           reply
             .code(200)

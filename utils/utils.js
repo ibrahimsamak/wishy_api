@@ -96,7 +96,6 @@ exports.mail_reset_password = function (req, to, sub, text, data) {
             console.error(error);
             // return
           } else {
-            console.log(info.response);
             // return
           }
         });
@@ -153,7 +152,6 @@ exports.mail_welcome = function (req, to, sub, text, data) {
             console.error(error);
             // return
           } else {
-            console.log(info.response);
             // return
           }
         });
@@ -209,7 +207,6 @@ exports.mail_general = function (req, to, sub, text, data) {
             console.error(error);
             // return
           } else {
-            console.log(info.response);
             // return
           }
         });
@@ -229,18 +226,16 @@ exports.sendSMS = async function(number, from, to, code){
     },
   };
   let body = { 
-    "number":number,
+    "number": number,
     "body": code
   }
 
     axios
     .post(url, body, _config)
     .then((response) => {
-      console.log(response)
     })
     .catch((error) => {
       console.log(error)
-     
     });
 }
 
@@ -251,7 +246,6 @@ exports.uploadImages = async function (img) {
       if (error) {
         reject(error);
       } else {
-        console.log(result, error);
         img = result["url"];
         resolve(img);
       }
@@ -379,7 +373,6 @@ exports.getAddress = async function (lat, lng) {
         .reverse({ lat: lat, lon: lng })
         .then(async function (res) {
           if (res) {
-            console.log(res[0]);
             console.log(
               res[0]["administrativeLevels"]["level1long"],
               res[0].country
@@ -387,21 +380,18 @@ exports.getAddress = async function (lat, lng) {
             current_city = res[0]["administrativeLevels"]["level1long"];
             resolve(current_city);
           } else {
-            console.log("catch1");
             current_city = "";
             resolve(current_city);
             reject("");
           }
         })
         .catch(function (err) {
-          console.log("catch2");
           console.log(err);
           current_city = "عنوان غير معرف";
           resolve(current_city);
         });
     });
   } catch (err) {
-    console.log("catch3");
     const response = {
       status_code: 400,
       status: false,
@@ -440,14 +430,12 @@ exports.check_request_params = function (
   });
 
   if (is_missing) {
-    console.log("missing_param: " + missing_param);
     response({
       status: false,
       code: 400,
       message: missing_param + " parameter missing",
     });
   } else if (is_invalid_param) {
-    console.log("invalid_param: " + invalid_param);
     response({
       status: false,
       code: 400,

@@ -224,7 +224,6 @@ exports.getStaticPage = async (req, reply) => {
     const language = req.headers["accept-language"];
     const staticpages = await StaticPage.find().sort({ _id: -1 });
 
-    console.log(staticpages);
     var arr = [];
     staticpages.forEach((element) => {
       var newObject = element.toObject();
@@ -2312,7 +2311,6 @@ exports.getLanguages = async (req, reply) => {
 
 exports.checkCurrentPlace = async (req, reply) => {
   const language = req.headers["accept-language"];
-  console.log(req.body);
   try {
     //for test 24.693601, 46.66594
 
@@ -2556,17 +2554,13 @@ exports.getTimesByDate = async (req, reply) => {
     var items = [];
     var requestedDate = moment(req.body.date).tz("Asia/Riyadh").startOf("day");;
     var currentDate = moment().tz("Asia/Riyadh").startOf("day");
-    console.log(currentDate,requestedDate)
-    console.log(currentDate.isSame(requestedDate))
     
     if (currentDate.isSame(requestedDate)) {
       //today
       var toDay = moment().tz("Asia/Riyadh"); //moment("2021-01-30T21:52:35.993").local("sa"); //moment().local("sa");
-      console.log(toDay);
       var currentTime = moment(toDay, ["HH.mm"]).format("HH:mm");
       const currentHour = moment(currentTime, ["HH.mm"]).format("HH:mm");
       _min = moment("24:00", ["HH.mm"]).format("HH:mm");
-      console.log(currentHour);
       items = [];
       const _times = await times
         .find({

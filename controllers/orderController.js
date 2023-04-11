@@ -236,7 +236,6 @@ exports.addOrder = async (req, reply) => {
                   keys_arr.sort(function (a, b) {
                     return a.distance > b.distance;
                   });
-                  console.log(keys_arr);
                 }
               );
               var onKeyExitedRegistration = geoQuery.on(
@@ -320,7 +319,6 @@ exports.addOrder = async (req, reply) => {
                   keys_arr.sort(function (a, b) {
                     return a.distance > b.distance;
                   });
-                  console.log(keys_arr);
                 }
               );
               var onKeyExitedRegistration = geoQuery.on(
@@ -668,7 +666,6 @@ exports.addOrder = async (req, reply) => {
         });
 
         let rs = await Orders.save();
-        console.log("newPlaceid = " + newPlaceId);
         let itemsId = items.map((x) => x.cartId);
         Cart.deleteMany({ _id: { $in: itemsId } }, function (err) {});
 
@@ -886,7 +883,6 @@ exports.addRefillOrder = async (req, reply) => {
                   keys_arr.sort(function (a, b) {
                     return a.distance > b.distance;
                   });
-                  console.log(keys_arr);
                 }
               );
               var onKeyExitedRegistration = geoQuery.on(
@@ -2930,8 +2926,6 @@ exports.getNearstSupplierByPlace = async (req, reply) => {
         keys_arr.sort(function (a, b) {
           return a.distance > b.distance;
         });
-
-        console.log(keys_arr);
       }
     );
 
@@ -2968,7 +2962,6 @@ exports.getNearstSupplierByPlace = async (req, reply) => {
             place_id: place_id,
           });
           if (suppliers) {
-            console.log(suppliers);
             var supplier_id = suppliers.supplier_id;
             reply
               .code(200)
@@ -3044,7 +3037,6 @@ exports.checkDestinationInOrder = async (req, reply) => {
       lat = Number(req.body.lat);
       lng = Number(req.body.lng);
     }
-    console.log(lat, lng);
     if (lat != 0.0 && lng != 0.0) {
       // user delivery address in change
       var PoinInPolygon = await place.find({
@@ -3114,8 +3106,6 @@ exports.checkDestinationInOrder = async (req, reply) => {
               keys_arr.sort(function (a, b) {
                 return a.distance > b.distance;
               });
-              console.log("sorting");
-              console.log(keys_arr);
             }
           );
           var onKeyExitedRegistration = geoQuery.on(
@@ -4073,7 +4063,6 @@ exports.getOrdersMap = async (req, reply) => {
       .startOf("day")
       .tz("Asia/Riyadh");
 
-      console.log(req.query.status_id)
       var query = {}
       query["dt_date"]= { $gte: searchDate } 
       if(req.query.status_id == -1 || req.query.status_id == 1){

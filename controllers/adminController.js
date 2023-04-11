@@ -387,7 +387,6 @@ exports.logout = async (req, reply) => {
 //change password
 exports.changePassword = async (req, reply) => {
   try {
-    // console.log(encryptPassword("Asdqwe@123"));
     const User_id = req.body._id;
     const pass = encryptPassword(req.body.pass);
     const old_password = encryptPassword(req.body.old_password);
