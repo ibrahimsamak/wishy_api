@@ -149,6 +149,7 @@ exports.getSingleUsers = async (req, reply) => {
 exports.addUsers = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
+    console.log(req.body)
     // const _error = validateUsers(req.body, language);
 
     // console.log(validateUsers2(language, req.body));
