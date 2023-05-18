@@ -755,18 +755,19 @@ exports.driversOnFirebase = async (req, reply) => {
     ref.on('value', async (snapshot) => {
       snapshot.forEach(function(childSnapshot) {
           var childData = childSnapshot.val();
-          let obj = {
-            driver_id : childSnapshot.key,
-            lat : childData.l[0],
-            lng : childData.l[1],
-            status: childData.isAvailable,
-            name: childData.driverName,
-            phone: childData.driverPhone,
+          if(childSnapshot && childData.l &&  childData.l.length > 0){
+            let obj = {
+              driver_id : childSnapshot.key,
+              lat : childData.l[0],
+              lng : childData.l[1],
+              status: childData.isAvailable,
+              name: childData.driverName,
+              phone: childData.driverPhone,
+            }
+            drivers_ids.push(obj)
           }
-          drivers_ids.push(obj)
       });
       
-     
       const response = {
         status_code: 200,
         status: true,
