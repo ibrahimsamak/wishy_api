@@ -23,8 +23,8 @@ const admin_routes = [
   
   {
     method: "POST",
-    url: "/api/sms/add",
-    handler: userController.AddSMS,
+    url: "/api/sms/test",
+    handler: employeeController.testsend,
   },
 
   //admins

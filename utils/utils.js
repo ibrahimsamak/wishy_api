@@ -218,6 +218,32 @@ exports.mail_general = function (req, to, sub, text, data) {
 };
 
 exports.sendSMS = async function(number, from, to, code){
+  let pass = '!Shoala@2023'
+  var url = `http://www.jawalbsms.ws/api.php/sendsms?user=Shoala&pass=${pass}&to=${number}&message=${code}&sender=Shoala`
+  
+  // let _config = {
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //     Authorization: "Bearer " + "44|rX60FE8axfKv20uJjocIoPQU13FBI6YumP6o3pmh"
+  //   },
+  // };
+  // let body = { 
+  //   "number": number,
+  //   "body": code
+  // }
+
+  axios
+  .get(url)
+  .then((response) => {
+    console.log(response)
+  })
+  .catch((error) => {
+    console.log(error)
+  });
+}
+
+exports.sendWhatsApp = async function(number, from, to, code){
+  
   var url = `hhttps://cartat.net/api/whatsapp/send`
   let _config = {
     headers: {
@@ -238,7 +264,6 @@ exports.sendSMS = async function(number, from, to, code){
       console.log(error)
     });
 }
-
 
 exports.uploadImages = async function (img) {
   return new Promise(function (resolve, reject) {

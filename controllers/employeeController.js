@@ -32,6 +32,7 @@ const {
   decryptPasswordfunction,
   mail_welcome,
   handleError,
+  sendSMS,
 } = require("../utils/utils");
 const { Adv } = require("../models/adv");
 const { Notifications } = require("../models/Notifications");
@@ -1122,7 +1123,7 @@ exports.block = async (req, reply) => {
 
 
 exports.testsend = async (req, reply) => {
-  // const language = req.headers["accept-language"];
+  const language = req.headers["accept-language"];
   var msg = "مرحبا بكم في تطبيق شعلة كود التفعيل الخاص بكم 1233";
   // const sms_code = makeid(4);
   // const user = await employee.findByIdAndUpdate(
@@ -1133,7 +1134,7 @@ exports.testsend = async (req, reply) => {
   //   { new: true }
   // );
 
-  sendSMS("966545500488", "", "", msg);
+  await sendSMS("966505101243", "", "", msg);
   reply
     .code(200)
     .send(
@@ -1142,7 +1143,7 @@ exports.testsend = async (req, reply) => {
         200,
         MESSAGE_STRING_ARABIC.SUCCESS,
         MESSAGE_STRING_ENGLISH.SUCCESS,
-        user
+        {}
       )
     );
 };
