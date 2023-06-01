@@ -1134,7 +1134,7 @@ exports.testsend = async (req, reply) => {
   //   { new: true }
   // );
 
-  await sendSMS("966505101243", "", "", msg);
+  await sendSMS("966580260392", "", "", msg);
   reply
     .code(200)
     .send(

@@ -218,8 +218,9 @@ exports.mail_general = function (req, to, sub, text, data) {
 };
 
 exports.sendSMS = async function(number, from, to, code){
+  let msg = encodeURI(code)
   let pass = '!Shoala@2023'
-  var url = `http://www.jawalbsms.ws/api.php/sendsms?user=Shoala&pass=${pass}&to=${number}&message=${code}&sender=Shoala`
+  var url = `http://www.jawalbsms.ws/api.php/sendsms?user=Shoala&pass=${pass}&to=${number}&message=${msg}&sender=Shoala&unicode=u`
   
   // let _config = {
   //   headers: {
@@ -232,13 +233,14 @@ exports.sendSMS = async function(number, from, to, code){
   //   "body": code
   // }
 
+  console.log(url)
   axios
   .get(url)
   .then((response) => {
-    console.log(response)
+    //console.log(response)
   })
   .catch((error) => {
-    console.log(error)
+    //console.log(error)
   });
 }
 
