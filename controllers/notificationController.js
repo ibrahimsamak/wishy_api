@@ -21,6 +21,7 @@ const {
   CreateNotificationMultiple,
   CreateGeneralNotification,
   handleError,
+  sendWhatsApp,
 } = require("../utils/utils");
 
 // Get all notfications
@@ -145,7 +146,7 @@ exports.getAdminNotification = async (req, reply) => {
     ) {
       query = {
         dt_date: {
-          $gte: new Date(new Date(req.body.dt_from).setHours(00, 00, 00)),
+          $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)),
           $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)),
         },
       };
@@ -211,12 +212,8 @@ exports.addMassNotification = async (req, reply) => {
     var arr = [];
     if (String(req.body.type) == "1") {
       arr = [];
-      const object = await Users.find({
-        $and: [{ isBlock: false }],
-      });
-      object.forEach((x) => {
-        arr.push(x.fcmToken);
-      });
+      const object = await Users.find({$and: [{ isBlock: false }]});
+      object.forEach((x) => {arr.push(x.fcmToken)});
 
       for await (const doc of object) {
         let _Notification = new Notifications({
@@ -234,6 +231,9 @@ exports.addMassNotification = async (req, reply) => {
         _Notification.save();
       }
 
+      for await (const item of object){
+        await sendWhatsApp(item.phone_number,"","",req.body.msg)
+      }
       CreateNotificationMultiple(arr, req.body.title, req.body.msg, "");
     }
 
@@ -324,6 +324,7 @@ exports.addSingleNotification = async (req, reply) => {
       "الادارة",
       doc.full_name ? doc.full_name : doc.name
     );
+    await sendWhatsApp(doc.phone_number,"","",req.body.msg)
 
     const response = {
       items: [],

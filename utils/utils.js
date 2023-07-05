@@ -233,7 +233,7 @@ exports.sendSMS = async function(number, from, to, code){
   //   "body": code
   // }
 
-  console.log(url)
+  // console.log(url)
   axios
   .get(url)
   .then((response) => {
@@ -261,6 +261,7 @@ exports.sendWhatsApp = async function(number, from, to, code){
     axios
     .post(url, body, _config)
     .then((response) => {
+      //console.log(response)
     })
     .catch((error) => {
       console.log(error)
