@@ -597,11 +597,12 @@ exports.addOrder = async (req, reply) => {
           deliverycost = Number(deliverycost) - Number(personalDiscount * deliverycost);
 
         if (couponRate != 0.0) {
-          deliverycost = deliverycost - Number(deliverycost * couponRate);
+          deliverycost = deliverycost //- Number(deliverycost * couponRate);
           var sub_total = total - totalDiscount;
           let sub_total_delivery = Number(sub_total) + Number(deliverycost);
           gTax = Number(sub_total_delivery * Number(tax.value)) 
-          total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
+          let discounted_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
+          total = discounted_total - Number(discounted_total * couponRate);
         } else {
           var sub_total = total - totalDiscount;
           let sub_total_delivery = Number(sub_total) + Number(deliverycost);
@@ -1198,11 +1199,12 @@ exports.addRefillOrder = async (req, reply) => {
             Number(deliverycost) - Number(personalDiscount * deliverycost);
 
         if (couponRate != 0.0) {
-          deliverycost = deliverycost - Number(deliverycost * couponRate);
+          deliverycost = deliverycost //- Number(deliverycost * couponRate);
           var sub_total = total - totalDiscount;
           let sub_total_delivery = Number(sub_total) + Number(deliverycost);
           gTax = Number(sub_total_delivery * Number(tax.value))
-          total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
+          let discounted_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
+          total = discounted_total - Number(discounted_total * couponRate);
         } else {
           var sub_total = total - totalDiscount;
           let sub_total_delivery = Number(sub_total) + Number(deliverycost);
@@ -3740,7 +3742,7 @@ exports.getOrders = async (req, reply) => {
     ) {
       query = {
         createAt: {
-          $gte: new Date(new Date(req.body.dt_from).setHours(00, 00, 00)),
+          $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)),
           $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)),
         },
       };
@@ -3969,7 +3971,7 @@ exports.getOrdersRateList = async (req, reply) => {
     ) {
       query = {
         createAt: {
-          $gte: new Date(new Date(req.body.dt_from).setHours(00, 00, 00)),
+          $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)),
           $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)),
         },
       };

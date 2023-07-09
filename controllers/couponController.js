@@ -736,14 +736,17 @@ exports.checkCouponCart = async (req, reply) => {
       return;
     } else {
       if (sp) {
-        let newDeliverycost = deliverycost - Number(deliverycost * sp.discount_rate);
-        let newExpresscost = expresscost - Number(expresscost * sp.discount_rate);
+        let newDeliverycost = deliverycost //- Number(deliverycost * sp.discount_rate);
+        let newExpresscost = expresscost //- Number(expresscost * sp.discount_rate);
         var sub_total = totalPrice - totalDiscount;
         let sub_total_delivery = Number(sub_total) + Number(newDeliverycost);
         let sub_total_express_delivery = Number(sub_total) + Number(newExpresscost);
         var final_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
         var final_express_total = Number(sub_total_express_delivery * Number(tax.value)) + Number(sub_total_express_delivery);
         
+        var new_final_total = final_total - Number(final_total * sp.discount_rate);
+        var new_final_express_total = final_express_total - Number(final_express_total * sp.discount_rate);
+
         var returnObject = {
           results: [],
           tax: Number(tax.value),
@@ -751,8 +754,8 @@ exports.checkCouponCart = async (req, reply) => {
           expressCost: Number(newExpresscost),
           total_price: Number(parseFloat(totalPrice).toFixed(2)),
           total_discount: Number(parseFloat(totalDiscount).toFixed(2)),
-          final_total: Number(parseFloat(final_total).toFixed(2)),
-          final_express_total: Number(parseFloat(final_express_total).toFixed(2)),
+          final_total: Number(parseFloat(new_final_total).toFixed(2)),
+          final_express_total: Number(parseFloat(new_final_express_total).toFixed(2)),
         };
 
         reply
@@ -1035,13 +1038,17 @@ exports.checkCouponReplacment = async (req, reply) => {
       return;
     } else {
       if (sp) {
-        let newDeliverycost = deliverycost - Number(deliverycost * sp.discount_rate);
-        let newExpresscost = expresscost - Number(deliverycost * sp.discount_rate);
+        let newDeliverycost = deliverycost //- Number(deliverycost * sp.discount_rate);
+        let newExpresscost = expresscost //- Number(deliverycost * sp.discount_rate);
         var sub_total = totalPrice - totalDiscount;
         let sub_total_delivery = Number(sub_total) + Number(newDeliverycost);
         let sub_total_express_delivery = Number(sub_total) + Number(newExpresscost);
         var final_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
         var final_express_total = Number(sub_total_express_delivery * Number(tax.value)) + Number(sub_total_express_delivery);
+
+
+        var new_final_total = final_total - Number(final_total * sp.discount_rate);
+        var new_final_express_total = final_express_total - Number(final_express_total * sp.discount_rate);
 
         var returnObject = {
           results: [],
@@ -1050,8 +1057,8 @@ exports.checkCouponReplacment = async (req, reply) => {
           expressCost: Number(newExpresscost),
           total_price: Number(parseFloat(totalPrice).toFixed(2)),
           total_discount: Number(parseFloat(totalDiscount).toFixed(2)),
-          final_total: Number(parseFloat(final_total).toFixed(2)),
-          final_express_total: Number(parseFloat(final_express_total).toFixed(2)),
+          final_total: Number(parseFloat(new_final_total).toFixed(2)),
+          final_express_total: Number(parseFloat(new_final_express_total).toFixed(2)),
         };
 
         reply

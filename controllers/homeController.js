@@ -163,8 +163,12 @@ exports.UsersproviderPerYear = async (req, reply) => {
     const result = await Users.find().sort({ createAt: 1 });
     result.forEach((element) => {
       var month_number = new Date(element.createAt).getMonth();
+      var month_year = new Date(element.createAt).getFullYear();
+      let current_year = new Date().getFullYear()
       var month_name = monthNames[month_number];
-      items.push({ month: month_name, user: element._id });
+      if(month_year == current_year){
+        items.push({ month: month_name, user: element._id });
+      }
     });
 
     var _result = lodash(items)

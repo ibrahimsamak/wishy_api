@@ -722,6 +722,7 @@ exports.addProduct = async (req, reply) => {
         category_id: req.raw.body.category_id,
         isNewProduct: req.raw.body.isNewProduct,
         isReplacement: req.raw.body.isReplacement,
+        sort: req.raw.body.sort,
         isDeleted: false,
       });
       var _return = handleError(rs.validateSync());
@@ -790,6 +791,7 @@ exports.updateProduct = async (req, reply) => {
           category_id: req.raw.body.category_id,
           isNewProduct: req.raw.body.isNewProduct,
           isReplacement: req.raw.body.isReplacement,
+          sort: req.raw.body.sort,
         },
         { new: true, runValidators: true },
         function (err, model) {
@@ -823,6 +825,7 @@ exports.updateProduct = async (req, reply) => {
           category_id: req.raw.body.category_id,
           isNewProduct: req.raw.body.isNewProduct,
           isReplacement: req.raw.body.isReplacement,
+          sort: req.raw.body.sort,
         },
         { new: true }
       );
