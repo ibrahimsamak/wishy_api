@@ -1,6 +1,6 @@
 module.exports = {
   apps : [{
-    name   : "shoala",
+    name   : "khawi",
     script : "./index.js",
     exec_mode : "cluster",
     instances: 4,

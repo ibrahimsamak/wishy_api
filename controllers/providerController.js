@@ -649,7 +649,7 @@ exports.addProvider = async (req, reply) => {
         email: rs.email,
         password: decryptPasswordfunction(rs.password),
       };
-      mail_welcome(req, rs.email, "منصة شعلة", "", data);
+      mail_welcome(req, rs.email, "منصة خوي", "", data);
 
       reply
         .code(200)

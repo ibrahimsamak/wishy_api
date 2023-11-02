@@ -53,14 +53,14 @@ exports.decryptPasswordfunction = function (password) {
 
 exports.mail_reset_password = function (req, to, sub, text, data) {
   try {
-    email = "info@shoala.app";
+    email = "info@khawi.app";
     psw = "Ha@1020300";
     var transporter = nodemailer.createTransport({
-      host: "shoala.app",
+      host: "khawi.app",
       port: 465,
       secure: true,
       auth: {
-        user: "info@shoala.app",
+        user: "info@khawi.app",
         pass: "Ha@1020300",
       },
     });
@@ -83,7 +83,7 @@ exports.mail_reset_password = function (req, to, sub, text, data) {
         htmls = htmls.replace(/&#34;/g, '"');
 
         var mailOptions = {
-          from: '"شعلة" <' + email + ">",
+          from: '"خوي" <' + email + ">",
           to: to,
           subject: sub,
           text: text,
@@ -108,14 +108,14 @@ exports.mail_reset_password = function (req, to, sub, text, data) {
 
 exports.mail_welcome = function (req, to, sub, text, data) {
   try {
-    email = "info@shoala.app";
+    email = "info@khawi.app";
     psw = "Ha@1020300";
     var transporter = nodemailer.createTransport({
-      host: "shoala.app",
+      host: "khawi.app",
       port: 465,
       secure: true,
       auth: {
-        user: "info@shoala.app",
+        user: "info@khawi.app",
         pass: "Ha@1020300",
       },
     });
@@ -139,7 +139,7 @@ exports.mail_welcome = function (req, to, sub, text, data) {
         htmls = htmls.replace(/&#34;/g, '"');
 
         var mailOptions = {
-          from: '"شعلة" <' + email + ">",
+          from: '"خوي" <' + email + ">",
           to: to,
           subject: sub,
           text: text,
@@ -164,14 +164,14 @@ exports.mail_welcome = function (req, to, sub, text, data) {
 
 exports.mail_general = function (req, to, sub, text, data) {
   try {
-    email = "info@shoala.app";
+    email = "info@khawi.app";
     psw = "Ha@1020300";
     var transporter = nodemailer.createTransport({
-      host: "shoala.app",
+      host: "khawi.app",
       port: 465,
       secure: true,
       auth: {
-        user: "info@shoala.app",
+        user: "info@khawi.app",
         pass: "Ha@1020300",
       },
     });
@@ -194,7 +194,7 @@ exports.mail_general = function (req, to, sub, text, data) {
         htmls = htmls.replace(/&#34;/g, '"');
 
         var mailOptions = {
-          from: '"شعلة" <' + email + ">",
+          from: '"خوي" <' + email + ">",
           to: to,
           subject: sub,
           text: text,
@@ -219,8 +219,8 @@ exports.mail_general = function (req, to, sub, text, data) {
 
 exports.sendSMS = async function(number, from, to, code){
   let msg = encodeURI(code)
-  let pass = '!Shoala@2023'
-  var url = `http://www.jawalbsms.ws/api.php/sendsms?user=Shoala&pass=${pass}&to=${number}&message=${msg}&sender=Shoala&unicode=u`
+  let pass = '!khawi@2023'
+  var url = `http://www.jawalbsms.ws/api.php/sendsms?user=khawi&pass=${pass}&to=${number}&message=${msg}&sender=khawi&unicode=u`
   
   // let _config = {
   //   headers: {

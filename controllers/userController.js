@@ -123,8 +123,8 @@ exports.getSingleUsers = async (req, reply) => {
     const orders = await Order.find({
       $and: [{ user_id: user_id }, { StatusId: 4 }],
     }).countDocuments();
-    const favorits = await Favorite.find({ user_id: user_id }).countDocuments();
-    newUser.favorite = favorits;
+    // const favorits = await Favorite.find({ user_id: user_id }).countDocuments();
+    // newUser.favorite = favorits;
     newUser.orders = orders;
     newUser.delivery_address = address;
     reply
@@ -219,7 +219,7 @@ exports.addUsers = async (req, reply) => {
           },
           { new: true }
         );
-        let msg = "مرحبا بكم في تطبيق شعلة رمز التفعيل هو: " + verify_code;
+        let msg = "مرحبا بكم في تطبيق خوي رمز التفعيل هو: " + verify_code;
         console.log(req.body.phone_number)
         sendSMS(req.body.phone_number, "", "", msg);
 
@@ -230,10 +230,10 @@ exports.addUsers = async (req, reply) => {
         const orders = await Order.find({
           $and: [{ user_id: rs._id }, { StatusId: 4 }],
         }).countDocuments();
-        const favorits = await Favorite.find({
-          user_id: rs._id,
-        }).countDocuments();
-        newUser.favorite = favorits;
+        // const favorits = await Favorite.find({
+        //   user_id: rs._id,
+        // }).countDocuments();
+        // newUser.favorite = favorits;
         newUser.orders = orders;
         newUser.delivery_address = address;
        
@@ -274,7 +274,7 @@ exports.addUsers = async (req, reply) => {
         address: req.body.address,
       });
       let rs = await user.save();
-      let msg = "مرحبا بكم في تطبيق شعلة رمز التفعيل هو: " + verify_code;
+      let msg = "مرحبا بكم في تطبيق خوي رمز التفعيل هو: " + verify_code;
       console.log(req.body.phone_number)
       sendSMS(req.body.phone_number, "", "", msg);
       
@@ -286,10 +286,10 @@ exports.addUsers = async (req, reply) => {
       const orders = await Order.find({
         $and: [{ user_id: rs._id }, { StatusId: 4 }],
       }).countDocuments();
-      const favorits = await Favorite.find({
-        user_id: rs._id,
-      }).countDocuments();
-      newUser.favorite = favorits;
+      // const favorits = await Favorite.find({
+      //   user_id: rs._id,
+      // }).countDocuments();
+      // newUser.favorite = favorits;
       newUser.orders = orders;
       newUser.delivery_address = address;
 
@@ -374,10 +374,10 @@ exports.verify = async (req, reply) => {
       const orders = await Order.find({
         $and: [{ user_id: update._id }, { StatusId: 4 }],
       }).countDocuments();
-      const favorits = await Favorite.find({
-        user_id: update._id,
-      }).countDocuments();
-      newUser.favorite = favorits;
+      // const favorits = await Favorite.find({
+      //   user_id: update._id,
+      // }).countDocuments();
+      // newUser.favorite = favorits;
       newUser.orders = orders;
       newUser.delivery_address = address;
 
@@ -443,10 +443,10 @@ exports.forgetPassword = async (req, reply) => {
       const orders = await Order.find({
         $and: [{ user_id: update._id }, { StatusId: 4 }],
       }).countDocuments();
-      const favorits = await Favorite.find({
-        user_id: update._id,
-      }).countDocuments();
-      newUser.favorite = favorits;
+      // const favorits = await Favorite.find({
+      //   user_id: update._id,
+      // }).countDocuments();
+      // newUser.favorite = favorits;
       newUser.orders = orders;
       newUser.delivery_address = address;
 
@@ -581,6 +581,12 @@ exports.updateProfile = async (req, reply) => {
               lat: req.raw.body.lat,
               lng: req.raw.body.lng,
               address: req.raw.body.address,
+
+              hasCar:req.raw.body.hasCar,  
+              carType:req.raw.body.carType,
+              carModel:req.raw.body.carModel,
+              carColor:req.raw.body.carColor,
+              carNumber:req.raw.body.carNumber,
             },
             { new: true }
           );
@@ -602,10 +608,10 @@ exports.updateProfile = async (req, reply) => {
         const orders = await Order.find({
           $and: [{ user_id: _newUser._id }, { StatusId: 4 }],
         }).countDocuments();
-        const favorits = await Favorite.find({
-          user_id: _newUser._id,
-        }).countDocuments();
-        newUser.favorite = favorits;
+        // const favorits = await Favorite.find({
+        //   user_id: _newUser._id,
+        // }).countDocuments();
+        // newUser.favorite = favorits;
         newUser.orders = orders;
         newUser.delivery_address = address;
 
@@ -643,6 +649,11 @@ exports.updateProfile = async (req, reply) => {
               lat: req.raw.body.lat,
               lng: req.raw.body.lng,
               address: req.raw.body.address,
+              hasCar:req.raw.body.hasCar,  
+              carType:req.raw.body.carType,
+              carModel:req.raw.body.carModel,
+              carColor:req.raw.body.carColor,
+              carNumber:req.raw.body.carNumber,
             },
             { new: true }
           );
@@ -664,10 +675,10 @@ exports.updateProfile = async (req, reply) => {
         const orders = await Order.find({
           $and: [{ user_id: _newUser._id }, { StatusId: 4 }],
         }).countDocuments();
-        const favorits = await Favorite.find({
-          user_id: _newUser._id,
-        }).countDocuments();
-        newUser.favorite = favorits;
+        // const favorits = await Favorite.find({
+        //   user_id: _newUser._id,
+        // }).countDocuments();
+        // newUser.favorite = favorits;
         newUser.orders = orders;
         newUser.delivery_address = address;
 
@@ -959,10 +970,10 @@ exports.logout = async (req, reply) => {
       const orders = await Order.find({
         $and: [{ user_id: user._id }, { StatusId: 4 }],
       }).countDocuments();
-      const favorits = await Favorite.find({
-        user_id: user._id,
-      }).countDocuments();
-      newUser.favorite = favorits;
+      // const favorits = await Favorite.find({
+      //   user_id: user._id,
+      // }).countDocuments();
+      // newUser.favorite = favorits;
       newUser.orders = orders;
       newUser.delivery_address = address;
 
@@ -1223,8 +1234,8 @@ exports.Resend = async (req, reply) => {
   const orders = await Order.find({
     $and: [{ user_id: user._id }, { StatusId: 4 }],
   }).countDocuments();
-  const favorits = await Favorite.find({ user_id: user._id }).countDocuments();
-  newUser.favorite = favorits;
+  // const favorits = await Favorite.find({ user_id: user._id }).countDocuments();
+  // newUser.favorite = favorits;
   newUser.orders = orders;
   newUser.delivery_address = address;
   if (language == LANGUAGE_ENUM.EN) {
@@ -1819,6 +1830,11 @@ exports.updateUser = async (req, reply) => {
             email: String(req.raw.body.email).toLowerCase(),
             address: req.raw.body.address,
             full_name: req.raw.body.full_name,
+            hasCar:req.raw.body.hasCar,  
+            carType:req.raw.body.carType,
+            carModel:req.raw.body.carModel,
+            carColor:req.raw.body.carColor,
+            carNumber:req.raw.body.carNumber,
           },
           { new: true }
         ).select();
@@ -1852,6 +1868,11 @@ exports.updateUser = async (req, reply) => {
             email: String(req.raw.body.email).toLowerCase(),
             address: req.raw.body.address,
             full_name: req.raw.body.full_name,
+            hasCar:req.raw.body.hasCar,  
+            carType:req.raw.body.carType,
+            carModel:req.raw.body.carModel,
+            carColor:req.raw.body.carColor,
+            carNumber:req.raw.body.carNumber,
           },
           { new: true }
         ).select();

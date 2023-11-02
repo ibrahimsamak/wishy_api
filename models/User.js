@@ -73,6 +73,24 @@ const UserSchema = mongoose.Schema(
     os: {
       type: String,
     },
+    hasCar:{
+      type: Boolean,
+    },
+    carType:{
+      type: String
+    },
+    carModel:{
+      type: String
+    },
+    carColor:{
+      type: String 
+    },
+    carNumber:{
+      type: String 
+    },
+    rate:{
+      type: Number 
+    }
   },
   { versionKey: false }
 );

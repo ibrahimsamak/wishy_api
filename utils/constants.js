@@ -51,12 +51,33 @@ const ACTORS = Object.freeze({
   STORE: "STORE",
 });
 
+const ORDER_STATUS = Object.freeze({
+  new: "new",
+  started: "started",
+  finished: "finished",
+  rated: "rated",
+  canceled_by_driver: "canceled_by_driver",
+  canceled_by_user: "canceled_by_user",
+  canceled_by_admin: "canceled_by_admin",
+});
+
+const PASSENGER_STATUS = Object.freeze({
+  add_offer:"add_offer",
+  accept_offer: "accept_offer",
+  reject_offer: "reject_offer",
+  attend:"attend",
+  not_attend:"not_attend"
+});
+
 exports.MESSAGE_STRING_ENGLISH = {
   DELETED: "Deleted successfully",
   SUCCESS: "Action done successfully",
   SUCCESSNEW:"Thank you for shopping through the Shoula App. \n Your request has been received successfully",
   ERROR: "An error occure",
   WARNING: "Sorry ... your current location is not disturbed",
+  EXIT: "We already have this item",
+  ERROR_PRICE: "Sorry...the price entered is not between the minimum and maximum for this trip",
+  
   CANT_COMPLETEL_PROCESS:
     "can't complete process please make sure of status you are send it",
 
@@ -135,9 +156,14 @@ exports.MESSAGE_STRING_ENGLISH = {
 exports.MESSAGE_STRING_ARABIC = {
   DELETED: "تم الحذف بنجاح",
   SUCCESS: "تمت العملية بنجاح",
-  SUCCESSNEW: "شكرا لتسوقكم عبر تطبيق شعلة \n تم استقبال طلبكم بنجاح",
+  SUCCESSNEW: "شكرا لكم لاستخدام تطبيق خوي \n تم استقبال طلبكم بنجاح",
   ERROR: "عذرا .. حدث خطأ ما الرجاء المحاولة في وقت لاحق",
   WARNING: "عذرا .. موقعك الحالي غير مغظى",
+  EXIT: " هذا العنصر موجود لدينا مسبقا",
+
+  ERROR_PRICE: "عذرا .. السعر المدخل ليس بين الحد الادنى والاعلى لهذه الرحلة",
+
+
   CANT_COMPLETEL_PROCESS:
     "عذرا .. لا يمكن اتمام العملية الرجاء التأكد من الحالة المرسلة",
   WELCOME: "أهلا بكم في منصة انجلش ماستري رمز التفعيل هو: ",
@@ -296,3 +322,5 @@ exports.NOTIFICATION_TYPE = NOTIFICATION_TYPE;
 exports.NOTIFICATION_TITILES = NOTIFICATION_TITILES;
 exports.ACTORS = ACTORS;
 exports.CONTROLLER_ENUM = CONTROLLER_ENUM;
+exports.ORDER_STATUS = ORDER_STATUS;
+exports.PASSENGER_STATUS = PASSENGER_STATUS

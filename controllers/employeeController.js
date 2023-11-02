@@ -1077,7 +1077,7 @@ exports.addEmployee = async (req, reply) => {
         email: rs.email,
         password: decryptPasswordfunction(rs.password),
       };
-      mail_welcome(req, rs.email, "منصة شعلة", "", data);
+      mail_welcome(req, rs.email, "منصة خوي", "", data);
 
       reply
         .code(200)
@@ -1124,7 +1124,7 @@ exports.block = async (req, reply) => {
 
 exports.testsend = async (req, reply) => {
   const language = req.headers["accept-language"];
-  var msg = "مرحبا بكم في تطبيق شعلة كود التفعيل الخاص بكم 1233";
+  var msg = "مرحبا بكم في تطبيق خوي كود التفعيل الخاص بكم 1233";
   // const sms_code = makeid(4);
   // const user = await employee.findByIdAndUpdate(
   //   req.body.id,

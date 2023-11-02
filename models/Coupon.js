@@ -26,9 +26,6 @@ const Couponchema = mongoose.Schema(
     isActive: {
       type: Boolean,
     },
-    supplier_id: { type: mongoose.Schema.Types.ObjectId, ref: "supplier" },
-    place_id: { type: mongoose.Schema.Types.ObjectId, ref: "place" },
-    city_id: { type: mongoose.Schema.Types.ObjectId, ref: "city" },
   },
   { versionKey: false }
 );

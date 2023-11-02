@@ -100,51 +100,51 @@ let ADMIN_URL_STRINGS = {
 };
 
 exports.getToken = async (request, reply, done) => {
-  const language = request.headers["accept-language"];
-  var place_id = request.headers["place"];
-  if (place_id) {
-    var places = await place.findById(place_id);
-    if (!places) {
-      const response = errorAPI(
-        language,
-        400,
-        MESSAGE_STRING_ARABIC.WORNG_PLACE_ID,
-        MESSAGE_STRING_ENGLISH.WORNG_PLACE_ID
-      );
-      done(response);
-    }
-    if (places.isDeleted == true) {
-      const response = errorAPI(
-        language,
-        400,
-        MESSAGE_STRING_ARABIC.WARNING,
-        MESSAGE_STRING_ENGLISH.WARNING
-      );
-      done(response);
-    }
-  }
-  var supplier_id = request.headers["supplier"];
-  if (supplier_id) {
-    var Suppliers = await Supplier.findById(supplier_id);
-    if (!Suppliers) {
-      const response = errorAPI(
-        language,
-        400,
-        MESSAGE_STRING_ARABIC.ERROR,
-        MESSAGE_STRING_ENGLISH.ERROR
-      );
-      done(response);
-    }
-    if (Suppliers.isBlock == true || Suppliers.isDeleted == true) {
-      const response = errorAPI(
-        language,
-        400,
-        MESSAGE_STRING_ARABIC.WARNING,
-        MESSAGE_STRING_ENGLISH.WARNING
-      );
-      done(response);
-    }
-  }
+  const language = request.headers["accept-language"] ? request.headers["accept-language"] : "ar";
+  // var place_id = request.headers["place"];
+  // if (place_id) {
+  //   var places = await place.findById(place_id);
+  //   if (!places) {
+  //     const response = errorAPI(
+  //       language,
+  //       400,
+  //       MESSAGE_STRING_ARABIC.WORNG_PLACE_ID,
+  //       MESSAGE_STRING_ENGLISH.WORNG_PLACE_ID
+  //     );
+  //     done(response);
+  //   }
+  //   if (places.isDeleted == true) {
+  //     const response = errorAPI(
+  //       language,
+  //       400,
+  //       MESSAGE_STRING_ARABIC.WARNING,
+  //       MESSAGE_STRING_ENGLISH.WARNING
+  //     );
+  //     done(response);
+  //   }
+  // }
+  // var supplier_id = request.headers["supplier"];
+  // if (supplier_id) {
+  //   var Suppliers = await Supplier.findById(supplier_id);
+  //   if (!Suppliers) {
+  //     const response = errorAPI(
+  //       language,
+  //       400,
+  //       MESSAGE_STRING_ARABIC.ERROR,
+  //       MESSAGE_STRING_ENGLISH.ERROR
+  //     );
+  //     done(response);
+  //   }
+  //   if (Suppliers.isBlock == true || Suppliers.isDeleted == true) {
+  //     const response = errorAPI(
+  //       language,
+  //       400,
+  //       MESSAGE_STRING_ARABIC.WARNING,
+  //       MESSAGE_STRING_ENGLISH.WARNING
+  //     );
+  //     done(response);
+  //   }
+  // }
 
   const token = request.headers["token"];
   if (!token) {

@@ -14,7 +14,7 @@ const mongoose = require("mongoose");
 
 // Get Data Models
 const { Favorite } = require("../models/Favorite");
-const { Order, Rate, Payment } = require("../models/Order");
+const { Order, Rate, Payment, Transactions } = require("../models/Order");
 const { Admin } = require("../models/Admin");
 // const { Point } = require("../models/Point");
 // const { UserPoint } = require("../models/userPoint");
@@ -41,6 +41,8 @@ const {
   NOTIFICATION_TITILES,
   VALIDATION_MESSAGE_ARABIC,
   VALIDATION_MESSAGE_ENGLISH,
+  ORDER_STATUS,
+  PASSENGER_STATUS,
 } = require("../utils/constants");
 const {
   encryptPassword,
@@ -61,1252 +63,650 @@ const { Firebase } = require("../utils/firebase");
 const e = require("cors");
 var database = Firebase.database();
 var geoFire = new GeoFire(database.ref("userLocation"));
+var language = "ar"
 
-//status
-/*
--1 - incomplete
- 1 - pending or new
- 2 - accepting by store and moving order to driver
- 3 - deliverd
- 4 - finish
- 5 - canceled by user
- 6 - reject  by driver
- 7 - cancel  by driver
-*/
-
-// add new order of products
-// payment type: 1. cash , 2. credit card , 3.points
-// OrderType : 1.products , 2:refill
 exports.addOrder = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
-    var validationArray = [
-      { name: "couponCode" },
-      { name: "PaymentType" },
-      // { name: "dt_date" },
-      // { name: "dt_time" },
-      { name: "address" },
-      { name: "is_address_book" },
-    ];
-    if (String(req.body.is_address_book) == "true") {
-      validationArray.push({ name: "address_book" });
-    } else {
-      validationArray.push({ name: "lat" });
-      validationArray.push({ name: "lng" });
-    }
-    check_request_params(req.body, validationArray, async function (response) {
-      if (response.success) {
-        var place_id = req.headers["place"];
-        var userId = req.user._id;
-        const userObj = await Users.findById(userId);
-        const tax = await setting.findOne({ code: "TAX" });
+      var validationArray = [
+        { name: "couponCode" },
+        { name: "paymentType" },
+        { name: "dt_date" },
+        { name: "dt_time" },
+      ];
 
-        const raduis = 1000;
-        var cart_place_id = "";
-        var supplier_id = "";
-        var items = [];
-        var total = 0.0;
-        var totalDiscount = 0.0;
-        var provider_Total = 0.0;
-        var net_total = 0.0;
-        var deliverycost = 0.0;
-        var lat = 0.0;
-        var lng = 0.0;
-        var remain = 0.0;
-        var gTax = 0.0;
-        var address = "";
-        var couponRate = 0.0;
-        var sp = null;
-        var personalDiscount = 0.0;
+      validationArray.push({ name: "f_lat" });
+      validationArray.push({ name: "f_lng" });
+      validationArray.push({ name: "t_lng" });
+      validationArray.push({ name: "t_lng" });
+    
+      check_request_params(req.body, validationArray, async function (response) {
+        if (response.success) {
+          var userId = req.user._id;
+          const userObj = await Users.findById(userId);
+          const tax = await setting.findOne({ code: "TAX" });
+          const raduis = await setting.findOne({ code: "RADUIS" });
 
-        var ar_msg = MESSAGE_STRING_ARABIC.SUCCESSNEW;
-        var en_msg = MESSAGE_STRING_ENGLISH.SUCCESSNEW;
-        var statusCode = 200;
-        var employee_ids = [];
+          var ar_msg = MESSAGE_STRING_ARABIC.SUCCESSNEW;
+          var en_msg = MESSAGE_STRING_ENGLISH.SUCCESSNEW;
+          var statusCode = 200;
+          var orderNo = `${makeOrderNumber(6)}`;
 
-        var doc = req.body;
-        var arr = [];
-        var newPlaceId = "";
-        arr = await Cart.find({
-          $and: [{ user_id: userId }],
-        });
+          let Orders = new Order({
+            title: req.body.title,
+            f_lat: req.body.f_lat,
+            f_lng: req.body.f_lng,
+            t_lat: req.body.t_lat,
+            t_lng: req.body.t_lat,
+            max_price: req.body.max_price,
+            min_price: req.body.min_price,
+            price: 0,
+            f_address: req.body.f_address,
+            t_address: req.body.t_address,
+            order_no: orderNo,
+            tax: Number( tax.value ),
+            totalDiscount: 0,
+            netTotal: 0,
+            status: ORDER_STATUS.new,
+            createAt: getCurrentDateTime(),
+            dt_date: req.body.dt_date,
+            dt_time: req.body.dt_time,
+            is_repeated: req.body.is_repeated,
+            days: req.body.days,
+            couponCode: "",
+            paymentType: req.body.paymentType,
+            orderType: req.body.orderType,
+            max_passenger: req.body.max_passenger,
+            passengers: [],
+            offers: [],
+            user: userId,
+            notes: req.body.notes,
+            canceled_note:""
+          });
 
-        if (arr.length == 0) {
-          // items on cart
-          reply
-            .code(200)
-            .send(
-              errorAPI(
-                language,
-                400,
-                MESSAGE_STRING_ARABIC.EMPTY_CART,
-                MESSAGE_STRING_ENGLISH.EMPTY_CART
-              )
-            );
+          let rs = await Orders.save();
+          let msg = "لديك طلب جديد";
+          var notifications_arr = []
+          ////search for firebase for near by users and send notification for them
+          // current_employee.forEach(element => {
+          //   let _Notification2 = new Notifications({
+          //     fromId: userId,
+          //     user_id: element._id,
+          //     title: NOTIFICATION_TITILES.ORDERS,
+          //     msg: msg,
+          //     dt_date: getCurrentDateTime(),
+          //     type: NOTIFICATION_TYPE.ORDERS,
+          //     body_parms: rs._id,
+          //     isRead: false,
+          //     fromName: userObj.full_name,
+          //     toName: element.full_name,
+          //   });
+          //   notifications_arr.push(_Notification2)
+          // });
+          // CreateNotificationMultiple(current_employee.map(x=>x.fcmToken),NOTIFICATION_TITILES.ORDERS,msg,rs._id)
+          // await Notifications.insertMany(notifications_arr, (err, _docs) => {
+          //   if (err) {
+          //     return console.error(err);
+          //   } else {
+          //     console.log("Multiple documents inserted to Collection");
+          //   }
+          // });
+
+          reply.code(200).send(success(language, statusCode, ar_msg, en_msg, {}));
           return;
-        }
-
-        for await (const data of arr) {
-          supplier_id = data.supplier_id;
-          //cart_place_id = data.place_id;
-        }
-
-        if (
-          String(req.body.is_address_book) == "true" &&
-          req.body.address_book &&
-          req.body.address_book != ""
-        ) {
-          var newAddress = await User_Address.findById(req.body.address_book);
-          if (newAddress) {
-            lat = Number(newAddress.lat);
-            lng = Number(newAddress.lng);
-            if (newAddress.discount != 0)
-              personalDiscount = Number(newAddress.discount);
-          } else {
-            reply
-              .code(200)
-              .send(
-                errorAPI(
-                  language,
-                  400,
-                  MESSAGE_STRING_ARABIC.ERROR,
-                  MESSAGE_STRING_ENGLISH.ERROR
-                )
-              );
-            return;
-          }
         } else {
-          lat = Number(req.body.lat);
-          lng = Number(req.body.lng);
+          reply.send(response);
         }
-
-        if (lat != 0.0 && lng != 0.0) {
-          // user delivery address in change
-          var PoinInPolygon = await place.find({
-            $and: [
-              {
-                loc: {
-                  $geoIntersects: {
-                    $geometry: {
-                      type: "Point",
-                      coordinates: [lng, lat],
-                    },
-                  },
-                },
-              },
-              { isDeleted: false },
-            ],
-          });
-          if (PoinInPolygon.length > 0) {
-            var employeesInPlace = await employee.find({
-              $and: [{ place_id: place_id }, { isAvailable: true },{ isDeleted: false }]
-            });
-            if (place_id == PoinInPolygon[0]._id) {
-              newPlaceId = place_id;
-              // same location don't doing anything .. and get nearest driver in same place and supplier
-              var keys_arr = [];
-
-              let geoQuery = geoFire.query({
-                center: [Number(lat), Number(lng)],
-                radius: raduis,
-              });
-              var onKeyEnteredRegistration = geoQuery.on(
-                "key_entered",
-                function (key, location, distance) {
-                  console.log(
-                    key +
-                      " Key " +
-                      location +
-                      " (" +
-                      distance +
-                      " km from center)"
-                  );
-                  var employees = employeesInPlace.map((x) => String(x._id));
-                  if (employees.includes(key)) {
-                    let obj = {
-                      key: key,
-                      location: location,
-                      distance: distance,
-                    };
-
-                    if (distance <= raduis) {
-                      keys_arr.push(obj);
-                    }
-                  }
-                  keys_arr.sort(function (a, b) {
-                    return a.distance > b.distance;
-                  });
-                }
-              );
-              var onKeyExitedRegistration = geoQuery.on(
-                "ready",
-                async function (key, location, distance) {
-                  console.log(
-                    key +
-                      " Key " +
-                      location +
-                      " (" +
-                      distance +
-                      " km from center)"
-                  );
-                  onKeyEnteredRegistration.cancel();
-                  var ids = keys_arr.map((x) => x.key);
-                  if (keys_arr.length > 0) {
-                    await employee.find(
-                      { $and: [{ _id: ids[0] },{ isDeleted: false }] },
-                      async function (err, _users) {
-                        supplier_id = _users[0].supplier_id;
-                      }
-                    );
-                  } else {
-                    var suppliers = await Place_Delivery.findOne({
-                      place_id: newPlaceId,
-                    });
-                    // var supplier_id = "";
-                    if (suppliers) {
-                      supplier_id = suppliers.supplier_id;
-                    } else {
-                      reply
-                        .code(200)
-                        .send(
-                          errorAPI(
-                            language,
-                            400,
-                            MESSAGE_STRING_ARABIC.NOT_COVERED,
-                            MESSAGE_STRING_ENGLISH.NOT_COVERED
-                          )
-                        );
-                      return;
-                    }
-                  }
-                }
-              );
-            } else {
-              // change prices to new distination send it with new alert and new prices
-              newPlaceId = PoinInPolygon[0]._id;
-              employeesInPlace = await employee.find({
-                $and: [{ place_id: newPlaceId }, { isAvailable: true },{ isDeleted: false }],
-              });
-              //get nearset supplier id in new place id
-              var keys_arr = [];
-              let geoQuery = geoFire.query({
-                center: [Number(lat), Number(lng)],
-                radius: raduis,
-              });
-              var onKeyEnteredRegistration = geoQuery.on(
-                "key_entered",
-                function (key, location, distance) {
-                  console.log(
-                    key +
-                      " Key " +
-                      location +
-                      " (" +
-                      distance +
-                      " km from center)"
-                  );
-                  var employees = employeesInPlace.map((x) => String(x._id));
-                  if (employees.includes(key)) {
-                    let obj = {
-                      key: key,
-                      location: location,
-                      distance: distance,
-                    };
-
-                    if (distance <= raduis) {
-                      keys_arr.push(obj);
-                    }
-                  }
-                  keys_arr.sort(function (a, b) {
-                    return a.distance > b.distance;
-                  });
-                }
-              );
-              var onKeyExitedRegistration = geoQuery.on(
-                "ready",
-                async function (key, location, distance) {
-                  console.log(
-                    key +
-                      " Key " +
-                      location +
-                      " (" +
-                      distance +
-                      " km from center)"
-                  );
-                  onKeyEnteredRegistration.cancel();
-                  var ids = keys_arr.map((x) => x.key);
-                  if (keys_arr.length > 0) {
-                    await employee.find(
-                      { $and: [{ _id: ids[0] },{ isDeleted: false }] },
-                      async function (err, _users) {
-                        supplier_id = _users[0].supplier_id;
-                      }
-                    );
-                  } else {
-                    var suppliers = await Place_Delivery.findOne({
-                      place_id: newPlaceId,
-                    });
-                    // var supplier_id = "";
-                    if (suppliers) {
-                      supplier_id = suppliers.supplier_id;
-                    } else {
-                      reply
-                        .code(200)
-                        .send(
-                          errorAPI(
-                            language,
-                            400,
-                            MESSAGE_STRING_ARABIC.NOT_COVERED,
-                            MESSAGE_STRING_ENGLISH.NOT_COVERED
-                          )
-                        );
-                      return;
-                    }
-                  }
-                }
-              );
-
-              for await (const data of arr) {
-                var Product_Price_Object = await Product_Price.findOne({
-                  $and: [
-                    { place_id: newPlaceId },
-                    // { supplier_id: supplier_id },
-                    { product_id: data.product_id },
-                    { isDeleted: false },
-                  ],
-                });
-
-                if (!Product_Price_Object) {
-                  reply
-                    .code(200)
-                    .send(
-                      errorAPI(
-                        language,
-                        400,
-                        MESSAGE_STRING_ARABIC.ERROR,
-                        MESSAGE_STRING_ENGLISH.ERROR
-                      )
-                    );
-                  return;
-                }
-
-                if (
-                  Product_Price_Object.discountPrice &&
-                  Product_Price_Object.discountPrice != 0
-                ) {
-                  var totalPrice =
-                    Number(Product_Price_Object.price_for_new) * data.qty;
-                  var _totalDiscount = Number(
-                    Product_Price_Object.discountPrice * data.qty
-                  );
-
-                  await Cart.findByIdAndUpdate(
-                    data._id,
-                    {
-                      Total: totalPrice,
-                      TotalDiscount: _totalDiscount,
-                    },
-                    { new: true }
-                  );
-                } else {
-                  var totalPrice =
-                    Number(Product_Price_Object.price_for_new) * data.qty;
-                  await Cart.findByIdAndUpdate(
-                    data._id,
-                    {
-                      Total: totalPrice,
-                      TotalDiscount: 0,
-                    },
-                    { new: true }
-                  );
-                }
-              }
-            }
-          } else {
-            reply
-              .code(200)
-              .send(
-                errorAPI(
-                  language,
-                  400,
-                  MESSAGE_STRING_ARABIC.NOT_COVERED,
-                  MESSAGE_STRING_ENGLISH.NOT_COVERED
-                )
-              );
-            return;
-          }
-        } else {
-          reply
-            .code(200)
-            .send(
-              errorAPI(
-                language,
-                400,
-                MESSAGE_STRING_ARABIC.ERROR,
-                MESSAGE_STRING_ENGLISH.ERROR
-              )
-            );
-          return;
-        }
-
-        arr = await Cart.find({
-          $and: [{ user_id: userId }],
-        });
-
-        if (arr.length == 0) {
-          // items on cart
-          reply
-            .code(200)
-            .send(
-              errorAPI(
-                language,
-                400,
-                MESSAGE_STRING_ARABIC.EMPTY_CART,
-                MESSAGE_STRING_ENGLISH.EMPTY_CART
-              )
-            );
-          return;
-        }
-
-        var provider = await Supplier.findOne({
-          $and: [
-            { _id: supplier_id },
-            { isDeleted: false },
-            { isBlock: false },
-          ],
-        });
-        if (!provider) {
-          reply
-            .code(200)
-            .send(
-              errorAPI(
-                language,
-                400,
-                MESSAGE_STRING_ARABIC.ERROR,
-                MESSAGE_STRING_ENGLISH.ERROR
-              )
-            );
-          return;
-        }
-
-        if (req.body.couponCode && req.body.couponCode != "") {
-          // check coupon
-          // var today = moment(getCurrentDateTime());
-          var today = moment().tz("Asia/Riyadh");
-          sp = await coupon.findOne({
-            $and: [
-              { dt_from: { $lt: today } },
-              { dt_to: { $gt: today } },
-              { coupon: req.body.couponCode },
-              { place_id: newPlaceId },
-            ],
-          });
-          if (!sp) {
-            reply
-              .code(200)
-              .send(
-                errorAPI(
-                  language,
-                  400,
-                  MESSAGE_STRING_ARABIC.COUPON_ERROR,
-                  MESSAGE_STRING_ENGLISH.COUPON_ERROR,
-                  {}
-                )
-              );
-            return;
-          } else {
-            const prevOrd = await Order.findOne({
-              $and: [{ user_id: userId }, { couponCode: req.body.couponCode }],
-            });
-            if (prevOrd) {
-              reply
-                .code(200)
-                .send(
-                  errorAPI(
-                    language,
-                    400,
-                    MESSAGE_STRING_ARABIC.COUPON_ERROR,
-                    MESSAGE_STRING_ENGLISH.COUPON_ERROR,
-                    {}
-                  )
-                );
-              return;
-            } else {
-              couponRate = sp.discount_rate;
-            }
-          }
-        }
-
-        var admin_percentage = provider.orderPercentage;
-
-        for await (const data of arr) {
-          var Product_Price_Object = await Product_Price.findOne({
-            $and: [
-              { place_id: newPlaceId },
-              // { supplier_id: supplier_id },
-              { product_id: data.product_id },
-              { isDeleted: false },
-            ],
-          });
-
-          if (Product_Price_Object) {
-            // reply
-            //   .code(200)
-            //   .send(
-            //     errorAPI(
-            //       language,
-            //       400,
-            //       MESSAGE_STRING_ARABIC.ERROR,
-            //       MESSAGE_STRING_ENGLISH.ERROR
-            //     )
-            //   );
-            // return;
-
-            let object = {
-              cartId: data._id,
-              product_id: data.product_id,
-              qty: data.qty,
-              Total: data.Total,
-              TotalDiscount: data.TotalDiscount,
-              createAt: data.createAt,
-            };
-
-            if (
-              Product_Price_Object.discountPrice &&
-              Product_Price_Object.discountPrice != 0
-            ) {
-              total += Number(Product_Price_Object.price_for_new) * data.qty;
-              totalDiscount += Number(
-                Product_Price_Object.discountPrice * data.qty
-              );
-            } else {
-              total += Number(Product_Price_Object.price_for_new) * data.qty;
-            }
-
-            if(String(req.body.isExpress) == "true"){
-              deliverycost += Number(Product_Price_Object.expressCost) * Number(data.qty);
-            }else{
-              deliverycost += Number(Product_Price_Object.deliveryCost) * Number(data.qty);
-            }
-            
-            net_total = total;
-            items.push(object);
-          }
-        }
-
-        if (personalDiscount != 0)
-          deliverycost = Number(deliverycost) - Number(personalDiscount * deliverycost);
-
-        if (couponRate != 0.0) {
-          deliverycost = deliverycost //- Number(deliverycost * couponRate);
-          var sub_total = total - totalDiscount;
-          let sub_total_delivery = Number(sub_total) + Number(deliverycost);
-          gTax = Number(sub_total_delivery * Number(tax.value)) 
-          let discounted_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
-          total = discounted_total - Number(discounted_total * couponRate);
-        } else {
-          var sub_total = total - totalDiscount;
-          let sub_total_delivery = Number(sub_total) + Number(deliverycost);
-          gTax = Number(sub_total_delivery * Number(tax.value)) 
-          total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
-        }
-
-        let adminValue = parseFloat(admin_percentage).toFixed(2) * parseFloat(total).toFixed(2);
-        provider_Total = parseFloat(total).toFixed(2) - parseFloat(adminValue);
-        var orderNo = `${makeOrderNumber(6)}`;
-        if (keys_arr.length > 0) {
-          employee_ids = keys_arr.map(x=>x.key);
-        } else {
-          var emp = await employee.find({
-            $and:[{ isDeleted: false },{supplier_id: supplier_id}]
-          });
-          if (emp.length > 0) employee_ids = emp.map(x=>x._id)
-        }
-
-        if (items && items.length == 0) {
-          reply
-            .code(200)
-            .send(
-              success(
-                language,
-                320,
-                MESSAGE_STRING_ARABIC.CHANGE_PLACE_OR_SUPPLIER_CHECK_ORDER,
-                MESSAGE_STRING_ENGLISH.CHANGE_PLACE_OR_SUPPLIER_CHECK_ORDER
-              )
-            );
-          return;
-        }
-
-        let Orders = new Order({
-          Order_no: orderNo,
-          Tax: Number(gTax),
-          DeliveryCost: Number(deliverycost),
-          NetTotal: net_total,
-          Total: total,
-          TotalDiscount: totalDiscount,
-          Remain: parseFloat(remain).toFixed(2),
-          Admin_Total: adminValue,
-          provider_Total: provider_Total,
-          StatusId: 1,
-          dt_date: req.body.dt_date,
-          dt_time: req.body.dt_time,
-          lat: lat,
-          lng: lng,
-          PaymentType: req.body.PaymentType,
-          couponCode: req.body.couponCode,
-          user_id: userId,
-          createAt: getCurrentDateTime(),
-          items: items,
-          address: req.body.address,
-          user_id: userId,
-          OrderType: 1,
-          place_id: newPlaceId,
-          supplier_id: supplier_id,
-          is_address_book: req.body.is_address_book,
-          address_book: req.body.address_book,
-          isExpress:req.body.isExpress
-        });
-
-        let rs = await Orders.save();
-        let itemsId = items.map((x) => x.cartId);
-        Cart.deleteMany({ _id: { $in: itemsId } }, function (err) {});
-
-        let msg = "لديك طلب جديد";
-        if (employee_ids.length > 0) {
-          var current_employee = await employee.find({_id:{$in:employee_ids}});
-        }
-
-        var notifications_arr = []
-        current_employee.forEach(element => {
-          let _Notification2 = new Notifications({
-            fromId: userId,
-            user_id: element._id,
-            title: NOTIFICATION_TITILES.ORDERS,
-            msg: msg,
-            dt_date: getCurrentDateTime(),
-            type: NOTIFICATION_TYPE.ORDERS,
-            body_parms: rs._id,
-            isRead: false,
-            fromName: userObj.full_name,
-            toName: element.full_name,
-          });
-          notifications_arr.push(_Notification2)
-        });
-        CreateNotificationMultiple(current_employee.map(x=>x.fcmToken),NOTIFICATION_TITILES.ORDERS,msg,rs._id)
-        await Notifications.insertMany(notifications_arr, (err, _docs) => {
-          if (err) {
-            return console.error(err);
-          } else {
-            console.log("Multiple documents inserted to Collection");
-          }
-        });
-   
-        if (place_id != newPlaceId) {
-          ar_msg = MESSAGE_STRING_ARABIC.CHANGE_PLACE_OR_SUPPLIER;
-          en_msg = MESSAGE_STRING_ENGLISH.CHANGE_PLACE_OR_SUPPLIER;
-          statusCode = 300;
-        }
-
-        reply.code(200).send(success(language, statusCode, ar_msg, en_msg, sp));
-        return;
-      } else {
-        reply.send(response);
-      }
-    });
+      });
   } catch (err) {
-    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
-    return;
+      reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+      return;
   }
 };
 
-exports.addRefillOrder = async (req, reply) => {
+exports.addOffer = async (req, reply) => {
+  try {
+    let userId = req.user._id
+    const checkOrder = await Order.findById(req.params.id);
+    if(!checkOrder) {
+        reply
+        .code(200)
+        .send(
+          errorAPI(
+            language,
+            400,
+            MESSAGE_STRING_ARABIC.ERROR,
+            MESSAGE_STRING_ENGLISH.ERROR
+          )
+        );
+      return;
+    }
+
+    let userIds = checkOrder.offers.map(x=>String(x.user))
+    if(userIds.includes(String(userId))){
+      reply
+      .code(200)
+      .send(
+        errorAPI(
+          language,
+          400,
+          MESSAGE_STRING_ARABIC.EXIT,
+          MESSAGE_STRING_ENGLISH.EXIT
+        )
+      );
+    return;
+    }else{ 
+      if( Number(req.body.price) >= Number(checkOrder.min_price) && Number(req.body.price)<= Number(checkOrder.max_price)){
+       let offer = {
+        user:      userId,
+        f_address: req.body.f_address,
+        t_address: req.body.t_address,
+        f_lat:     req.body.f_lat,
+        f_lng:     req.body.f_lng,
+        t_lat:     req.body.t_lat,
+        t_lng:     req.body.t_lng,
+        price:     Number(req.body.price),
+        notes:     req.body.notes,
+        status:    PASSENGER_STATUS.add_offer,
+        dt_date:   req.body.dt_date,
+        dt_time:   req.body.dt_time,
+      }
+      const sp = await Order.findByIdAndUpdate(
+          req.params.id,
+          {
+            $push: { offers: offer } ,
+          },
+          { new: true }
+       )
+
+        var msg = `تم اضافة طلب جديد اليك`;
+        var msg2 = `تم قبول طلبك بنجاح`;
+    
+        // CreateGeneralNotification(
+        //   employee.fcmToken,
+        //   NOTIFICATION_TITILES.ORDERS,
+        //   msg,
+        //   NOTIFICATION_TYPE.ORDERS,
+        //   sp._id,
+        //   sp.supplier_id._id,
+        //   employee._id,
+        //   sp.supplier_id.name,
+        //   employee.full_name
+        // );
+    
+        // CreateGeneralNotification(
+        //   sp.user_id.fcmToken,
+        //   NOTIFICATION_TITILES.ORDERS,
+        //   msg2,
+        //   NOTIFICATION_TYPE.ORDERS,
+        //   sp._id,
+        //   sp.supplier_id._id,
+        //   sp.user_id._id,
+        //   sp.supplier_id.name,
+        //   sp.user_id.full_name
+        // );
+        reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.SUCCESS,
+            MESSAGE_STRING_ENGLISH.SUCCESS,
+            {}
+          )
+        );
+      }else{
+        reply
+        .code(200)
+        .send(
+          errorAPI(
+            language,
+            400,
+            MESSAGE_STRING_ARABIC.ERROR_PRICE,
+            MESSAGE_STRING_ENGLISH.ERROR_PRICE
+          )
+        );
+      return;
+      }
+
+    }
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.updateOffer = async (req, reply) => {
+  try {
+    let userId = req.user._id
+    const sp = await Order.findOneAndUpdate({
+             $and:[
+              {_id: req.params.id}, 
+              { offers: { $elemMatch: { _id: req.body.offer} }}
+            ]
+         },
+        {
+          $set: {
+            "offers.$.status": req.body.status
+          }
+        },
+        { new: true }
+      )
+
+      var msg = `تم اضافة طلب جديد اليك`;
+      var msg2 = `تم قبول طلبك بنجاح`;
+  
+      // CreateGeneralNotification(
+      //   employee.fcmToken,
+      //   NOTIFICATION_TITILES.ORDERS,
+      //   msg,
+      //   NOTIFICATION_TYPE.ORDERS,
+      //   sp._id,
+      //   sp.supplier_id._id,
+      //   employee._id,
+      //   sp.supplier_id.name,
+      //   employee.full_name
+      // );
+  
+      // CreateGeneralNotification(
+      //   sp.user_id.fcmToken,
+      //   NOTIFICATION_TITILES.ORDERS,
+      //   msg2,
+      //   NOTIFICATION_TYPE.ORDERS,
+      //   sp._id,
+      //   sp.supplier_id._id,
+      //   sp.user_id._id,
+      //   sp.supplier_id.name,
+      //   sp.user_id.full_name
+      // );
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          {}
+        )
+      );
+    
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.updateOrder = async (req, reply) => {
+  try {
+    let userId = req.user._id
+
+    const sp = await Order.findByIdAndUpdate(
+        req.params.id,
+        {
+          status: req.body.status,
+          canceled_note: req.body.canceled_note
+        },
+        { new: true }
+      )
+
+      var msg = `تم اضافة طلب جديد اليك`;
+      var msg2 = `تم قبول طلبك بنجاح`;
+  
+      // CreateGeneralNotification(
+      //   employee.fcmToken,
+      //   NOTIFICATION_TITILES.ORDERS,
+      //   msg,
+      //   NOTIFICATION_TYPE.ORDERS,
+      //   sp._id,
+      //   sp.supplier_id._id,
+      //   employee._id,
+      //   sp.supplier_id.name,
+      //   employee.full_name
+      // );
+  
+      // CreateGeneralNotification(
+      //   sp.user_id.fcmToken,
+      //   NOTIFICATION_TITILES.ORDERS,
+      //   msg2,
+      //   NOTIFICATION_TYPE.ORDERS,
+      //   sp._id,
+      //   sp.supplier_id._id,
+      //   sp.user_id._id,
+      //   sp.supplier_id.name,
+      //   sp.user_id.full_name
+      // );
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          {}
+        )
+      );
+    
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getUserOrderMap = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
-    var validationArray = [
-      { name: "couponCode" },
-      { name: "PaymentType" },
-      // { name: "dt_date" },
-      // { name: "dt_time" },
-      { name: "address" },
-      // { name: "is_address_book", type: "boolean" },
-    ];
-    if (String(req.body.is_address_book) == "true") {
-      validationArray.push({ name: "address_book" });
-    } else {
-      validationArray.push({ name: "lat" });
-      validationArray.push({ name: "lng" });
-    }
-    check_request_params(req.body, validationArray, async function (response) {
-      if (response.success) {
-        var userId = req.user._id;
-        var place_id = req.headers["place"];
-        var supplier_id = req.headers["supplier"];
-        const userObj = await Users.findById(userId);
-        const tax = await setting.findOne({ code: "TAX" });
+    let userId = req.user._id;
+    const raduis = await setting.findOne({ code: "RADUIS" });
 
-        const raduis = 1000;
-        var items = [];
-        var total = 0.0;
-        var totalDiscount = 0.0;
-        var provider_Total = 0.0;
-        var net_total = 0.0;
-        var deliverycost = 0.0;
-        var lat = 0.0;
-        var lng = 0.0;
-        var remain = 0.0;
-        var address = "";
-        var couponRate = 0.0;
-        var sp = null;
-        var newPlaceId = "";
-        var statusCode = 200;
-        var employee_ids = [];
-        var gTax = 0.0;
-
-        var ar_msg = MESSAGE_STRING_ARABIC.SUCCESSNEW;
-        var en_msg = MESSAGE_STRING_ENGLISH.SUCCESSNEW;
-        var personalDiscount = 0.0;
-        var arr = req.body.items;
-        var _provider = await Supplier.findOne({
-          $and: [
-            { _id: supplier_id },
-            { isDeleted: false },
-            { isBlock: false },
-          ],
-        });
-        if (!_provider) {
-          reply
-            .code(200)
-            .send(
-              errorAPI(
-                language,
-                400,
-                MESSAGE_STRING_ARABIC.ERROR,
-                MESSAGE_STRING_ENGLISH.ERROR
-              )
-            );
-          return;
-        }
-
-        if (arr.length == 0) {
-          reply
-            .code(200)
-            .send(
-              errorAPI(
-                language,
-                400,
-                MESSAGE_STRING_ARABIC.ERROR,
-                MESSAGE_STRING_ENGLISH.ERROR
-              )
-            );
-          return;
-        }
-
-        if (
-          String(req.body.is_address_book) == "true" &&
-          req.body.address_book &&
-          req.body.address_book != ""
-        ) {
-          var newAddress = await User_Address.findById(req.body.address_book);
-          if (newAddress) {
-            lat = Number(newAddress.lat);
-            lng = Number(newAddress.lng);
-            if (newAddress.discount != 0)
-              personalDiscount = Number(newAddress.discount);
-          } else {
-            reply
-              .code(200)
-              .send(
-                errorAPI(
-                  language,
-                  400,
-                  MESSAGE_STRING_ARABIC.ERROR,
-                  MESSAGE_STRING_ENGLISH.ERROR
-                )
-              );
-            return;
-          }
-        } else {
-          lat = Number(req.body.lat);
-          lng = Number(req.body.lng);
-        }
-
-        if (lat != 0.0 && lng != 0.0) {
-          // user delivery address in change
-          var PoinInPolygon = await place.find({
-            $and: [
-              {
-                loc: {
-                  $geoIntersects: {
-                    $geometry: {
-                      type: "Point",
-                      coordinates: [lng, lat],
-                    },
-                  },
-                },
-              },
-              { isDeleted: false },
-            ],
-          });
-          if (PoinInPolygon.length > 0) {
-            var employeesInPlace = await employee.find({
-              $and: [{ place_id: place_id }, { isAvailable: true },{ isDeleted: false }],
-            });
-            if (place_id == PoinInPolygon[0]._id) {
-              newPlaceId = place_id;
-              // same location don't doing anything .. and get nearest driver in same place and supplier
-              var keys_arr = [];
-              let geoQuery = geoFire.query({
-                center: [Number(lat), Number(lng)],
-                radius: raduis,
-              });
-              var onKeyEnteredRegistration = geoQuery.on(
-                "key_entered",
-                function (key, location, distance) {
-                  console.log(
-                    key +
-                      " Key " +
-                      location +
-                      " (" +
-                      distance +
-                      " km from center)"
-                  );
-                  var employees = employeesInPlace.map((x) => String(x._id));
-                  if (employees.includes(key)) {
-                    let obj = {
-                      key: key,
-                      location: location,
-                      distance: distance,
-                    };
-
-                    if (distance <= raduis) {
-                      keys_arr.push(obj);
-                    }
-                  }
-                  keys_arr.sort(function (a, b) {
-                    return a.distance > b.distance;
-                  });
-                }
-              );
-              var onKeyExitedRegistration = geoQuery.on(
-                "ready",
-                async function (key, location, distance) {
-                  console.log(
-                    key +
-                      " Key " +
-                      location +
-                      " (" +
-                      distance +
-                      " km from center)"
-                  );
-                  onKeyEnteredRegistration.cancel();
-                  var ids = keys_arr.map((x) => x.key);
-                  employee_ids  = keys_arr
-
-                  if (keys_arr.length > 0) {
-                    await employee.find(
-                      { $and: [{ _id: ids[0] },{ isDeleted: false }] },
-                      async function (err, _users) {
-                        supplier_id = _users[0].supplier_id;
-                      }
-                    );
-                  } else {
-                    var suppliers = await Place_Delivery.findOne({
-                      place_id: newPlaceId,
-                    });
-                    // var supplier_id = "";
-                    if (suppliers) {
-                      supplier_id = suppliers.supplier_id;
-                    } else {
-                      reply
-                        .code(200)
-                        .send(
-                          errorAPI(
-                            language,
-                            400,
-                            MESSAGE_STRING_ARABIC.NOT_COVERED,
-                            MESSAGE_STRING_ENGLISH.NOT_COVERED
-                          )
-                        );
-                      return;
-                    }
-                  }
-                }
-              );
-            } else {
-              // change prices to new distination send it with new alert and new prices
-              newPlaceId = PoinInPolygon[0]._id;
-              employeesInPlace = await employee.find({
-                $and: [{ place_id: newPlaceId }, { isAvailable: true },{ isDeleted: false }],
-              });
-              //get nearset supplier id in new place id
-
-              var keys_arr = [];
-              let geoQuery = geoFire.query({
-                center: [Number(lat), Number(lng)],
-                radius: raduis,
-              });
-              var onKeyEnteredRegistration = geoQuery.on(
-                "key_entered",
-                function (key, location, distance) {
-                  console.log(
-                    key +
-                      " Key " +
-                      location +
-                      " (" +
-                      distance +
-                      " km from center)"
-                  );
-                  var employees = employeesInPlace.map((x) => String(x._id));
-                  if (employees.includes(key)) {
-                    let obj = {
-                      key: key,
-                      location: location,
-                      distance: distance,
-                    };
-
-                    if (distance <= raduis) {
-                      keys_arr.push(obj);
-                    }
-                  }
-                  keys_arr.sort(function (a, b) {
-                    return a.distance > b.distance;
-                  });
-                }
-              );
-              var onKeyExitedRegistration = geoQuery.on(
-                "ready",
-                async function (key, location, distance) {
-                  console.log(
-                    key +
-                      " Key " +
-                      location +
-                      " (" +
-                      distance +
-                      " km from center)"
-                  );
-                  onKeyEnteredRegistration.cancel();
-                  var ids = keys_arr.map((x) => x.key);
-                  employee_ids = keys_arr
-                  if (keys_arr.length > 0) {
-                    await employee.find(
-                      { $and: [{ _id: ids[0] },{ isDeleted: false }] },
-                      async function (err, _users) {
-                        supplier_id = _users[0].supplier_id;
-                      }
-                    );
-                  } else {
-                    var suppliers = await Place_Delivery.findOne({
-                      place_id: newPlaceId,
-                    });
-                    // var supplier_id = "";
-                    if (suppliers) {
-                      supplier_id = suppliers.supplier_id;
-                    } else {
-                      reply
-                        .code(200)
-                        .send(
-                          errorAPI(
-                            language,
-                            400,
-                            MESSAGE_STRING_ARABIC.NOT_COVERED,
-                            MESSAGE_STRING_ENGLISH.NOT_COVERED
-                          )
-                        );
-                      return;
-                    }
-                  }
-                }
-              );
-
-              for await (const data of arr) {
-                var Product_Price_Object = await Product_Price.findOne({
-                  $and: [
-                    { place_id: newPlaceId },
-                    // { supplier_id: supplier_id },
-                    { product_id: data.product_id },
-                    { isDeleted: false },
-                  ],
-                });
-
-                if (Product_Price_Object) {
-                  // reply
-                  //   .code(200)
-                  //   .send(
-                  //     errorAPI(
-                  //       language,
-                  //       400,
-                  //       MESSAGE_STRING_ARABIC.ERROR,
-                  //       MESSAGE_STRING_ENGLISH.ERROR
-                  //     )
-                  //   );
-                  // return;
-
-                  if (
-                    Product_Price_Object.discountPriceReplacement &&
-                    Product_Price_Object.discountPriceReplacement != 0
-                  ) {
-                    var totalPrice =
-                      Number(Product_Price_Object.price_for_replacment) *
-                      data.qty;
-                    var _totalDiscount = Number(
-                      Product_Price_Object.discountPriceReplacement * data.qty
-                    );
-
-                    await Cart.findByIdAndUpdate(
-                      data._id,
-                      {
-                        Total: totalPrice,
-                        TotalDiscount: _totalDiscount,
-                      },
-                      { new: true }
-                    );
-                  } else {
-                    var totalPrice =
-                      Number(Product_Price_Object.price_for_replacment) *
-                      data.qty;
-                    await Cart.findByIdAndUpdate(
-                      data._id,
-                      {
-                        Total: totalPrice,
-                        TotalDiscount: 0,
-                      },
-                      { new: true }
-                    );
-                  }
-                }
-              }
-            }
-          } else {
-            reply
-              .code(200)
-              .send(
-                errorAPI(
-                  language,
-                  400,
-                  MESSAGE_STRING_ARABIC.NOT_COVERED,
-                  MESSAGE_STRING_ENGLISH.NOT_COVERED
-                )
-              );
-            return;
-          }
-        } else {
-          reply
-            .code(200)
-            .send(
-              errorAPI(
-                language,
-                400,
-                MESSAGE_STRING_ARABIC.ERROR,
-                MESSAGE_STRING_ENGLISH.ERROR
-              )
-            );
-          return;
-        }
-
-        for await (const data of arr) {
-          // const provider = await Product.findById(data.product_id);
-          var Product_Price_Object = await Product_Price.findOne({
-            $and: [
-              { place_id: newPlaceId },
-              // { supplier_id: supplier_id },
-              { product_id: data.product_id },
-              { isDeleted: false },
-            ],
-          });
-          if (Product_Price_Object) {
-            // reply
-            //   .code(200)
-            //   .send(
-            //     errorAPI(
-            //       language,
-            //       400,
-            //       MESSAGE_STRING_ARABIC.ERROR,
-            //       MESSAGE_STRING_ENGLISH.ERROR
-            //     )
-            //   );
-            // return;
-
-            if (
-              Product_Price_Object.discountPriceReplacment &&
-              Product_Price_Object.discountPriceReplacment != 0
-            ) {
-              total =
-                Number(Product_Price_Object.price_for_replacment) * data.qty;
-              var discount =
-                Number(Product_Price_Object.price_for_replacment) * data.qty;
-              totalDiscount =
-                discount -
-                Number(Product_Price_Object.discountPriceReplacment * data.qty);
-            } else {
-              total =
-                Number(Product_Price_Object.price_for_replacment) * data.qty;
-            }
-
-            if(String(req.body.isExpress) == "true"){
-              deliverycost += Number(Product_Price_Object.expressCost) * Number(data.qty);
-            }else{
-              deliverycost += Number(Product_Price_Object.deliveryCost) * Number(data.qty);
-            }
-
-            let object = {
-              product_id: data.product_id,
-              qty: data.qty,
-              Total: total,
-              TotalDiscount: totalDiscount,
-              createAt: getCurrentDateTime(),
-            };
-
-            net_total = total;
-            items.push(object);
-          }
-        }
-
-        if (req.body.couponCode && req.body.couponCode != "") {
-          // check coupon
-          // var today = moment(getCurrentDateTime());
-          var today = moment().tz("Asia/Riyadh");
-          sp = await coupon.findOne({
-            $and: [
-              { dt_from: { $lt: today } },
-              { dt_to: { $gt: today } },
-              { place_id: newPlaceId },
-              { coupon: req.body.couponCode },
-            ],
-          });
-          if (!sp) {
-            const response = {
-              items: {},
-              status: false,
-              status_code: 400,
-              messageEn: "Sorry .. Coupon is not valid",
-              messageAr: "عذرا .. الكوبون غير متاح",
-            };
-            reply.code(200).send(response);
-          } else {
-            couponRate = sp.discount_rate;
-          }
-        }
-
-        totalDiscount = 0.0;
-        total = 0.0;
-        items.forEach((element) => {
-          total += element.Total;
-          totalDiscount += element.TotalDiscount;
-          net_total = total;
-        });
-
-        if (personalDiscount != 0)
-          deliverycost =
-            Number(deliverycost) - Number(personalDiscount * deliverycost);
-
-        if (couponRate != 0.0) {
-          deliverycost = deliverycost //- Number(deliverycost * couponRate);
-          var sub_total = total - totalDiscount;
-          let sub_total_delivery = Number(sub_total) + Number(deliverycost);
-          gTax = Number(sub_total_delivery * Number(tax.value))
-          let discounted_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
-          total = discounted_total - Number(discounted_total * couponRate);
-        } else {
-          var sub_total = total - totalDiscount;
-          let sub_total_delivery = Number(sub_total) + Number(deliverycost);
-          gTax = Number(sub_total_delivery * Number(tax.value))
-          total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
-        }
-
-        var admin_percentage = Number(_provider.orderPercentage);
-        let adminValue =
-          parseFloat(admin_percentage).toFixed(2) *
-          parseFloat(total).toFixed(2);
-        provider_Total = parseFloat(total).toFixed(2) - parseFloat(adminValue);
-        var orderNo = `${makeOrderNumber(6)}`;
-        var employee_id = "";
-        if (keys_arr.length > 0) {
-          employee_ids = keys_arr.map(x=>x.key);
-        } else {
-          var emp = await employee.find({
-            $and:[{ isDeleted: false },{supplier_id: supplier_id}]
-          });
-          if (emp.length > 0) employee_ids = emp.map(x=>x._id);
-        }
-
-        let Orders = new Order({
-          Order_no: orderNo,
-          Tax: Number(gTax),
-          DeliveryCost: Number(deliverycost),
-          Total: total,
-          TotalDiscount: totalDiscount,
-          Remain: parseFloat(remain).toFixed(2),
-          Admin_Total: adminValue,
-          provider_Total: provider_Total,
-          NetTotal: net_total,
-          StatusId: 1,
-          dt_date: req.body.dt_date,
-          dt_time: req.body.dt_time,
-          lat: lat,
-          lng: lng,
-          PaymentType: req.body.PaymentType,
-          couponCode: req.body.couponCode,
-          user_id: userId,
-          createAt: getCurrentDateTime(),
-          items: items,
-          address: req.body.address,
-          OrderType: 2,
-          place_id: newPlaceId,
-          supplier_id: supplier_id,
-          is_address_book: req.body.is_address_book,
-          address_book: req.body.address_book,
-          isExpress:req.body.isExpress
-
-        });
-
-        let rs = await Orders.save();
-
-        let msg = "لديك طلب جديد";
-        if (employee_ids.length > 0) {
-          var current_employee = await employee.find({_id:{$in:employee_ids}});
-        }
-
-        var notifications_arr = []
-        current_employee.forEach(element => {
-          let _Notification2 = new Notifications({
-            fromId: userId,
-            user_id: element._id,
-            title: NOTIFICATION_TITILES.ORDERS,
-            msg: msg,
-            dt_date: getCurrentDateTime(),
-            type: NOTIFICATION_TYPE.ORDERS,
-            body_parms: rs._id,
-            isRead: false,
-            fromName: userObj.full_name,
-            toName: element.full_name,
-          });
-          notifications_arr.push(_Notification2)
-        });
-        CreateNotificationMultiple(current_employee.map(x=>x.fcmToken),NOTIFICATION_TITILES.ORDERS,msg,rs._id)
-        await Notifications.insertMany(notifications_arr, (err, _docs) => {
-          if (err) {
-            return console.error(err);
-          } else {
-            console.log("Multiple documents inserted to Collection");
-          }
-        });
+    //search in raduis 
+    var  query = { $and: [
+      { status: ORDER_STATUS.new },
+      { "f_address": { "$regex": req.query.address, "$options": "i" } },
+    ]};
    
+    const items = await Order.find(query)
+      .sort({ _id: -1 })
+      .populate("user", "-token")
+      .populate({ path: "offers.user", populate: { path: "user" } })
 
-        if (place_id != newPlaceId) {
-          ar_msg = MESSAGE_STRING_ARABIC.CHANGE_PLACE_OR_SUPPLIER;
-          en_msg = MESSAGE_STRING_ENGLISH.CHANGE_PLACE_OR_SUPPLIER;
-          statusCode = 300;
-        }
-
-        reply.code(200).send(success(language, statusCode, ar_msg, en_msg, sp));
-      } else {
-        reply.send(response);
-      }
-    });
+      reply.code(200).send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        items,
+        // {
+        //   size: item.length,
+        //   totalElements: total,
+        //   totalPages: Math.floor(total / limit),
+        //   pageNumber: page,
+        // }
+      )
+    );
+    return;
   } catch (err) {
     reply.code(200).send(errorAPI(language, 400, err.message, err.message));
     return;
   }
 };
+
+exports.getUserOrder = async (req, reply) => {
+  try {
+    const userId = req.user._id;
+
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+    
+    var query = {
+      $and: [
+        { 
+          $or:[ { "offers.user": userId }, { user: userId } ] 
+        }
+      ]
+    };
+
+    if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.new) {
+      query.$and.push({ status: {$in:[ORDER_STATUS.new, ORDER_STATUS.started ]}})
+    }
+    if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.finished) {
+      query.$and.push({ status: ORDER_STATUS.finished })
+    }
+    if (req.query.status && req.query.status != "" && req.query.status.includes("canceled")) {
+      query.$and.push({ $in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user] })
+    }
+    
+    const total = await Order.find(query).countDocuments();
+    const item = await Order.find(query)
+      .sort({ _id: -1 })
+      .populate("user", "-token")
+      .populate({ path: "offers.user", populate: { path: "user" } })
+      .skip(page * limit)
+      .limit(limit);
+
+    const response = {
+      items: item,
+      status_code: 200,
+      message: "تمت العملية بنجاح",
+      messageAr: "تمت العملية بنجاح",
+      messageEn: "Done Successfully",
+      pagenation: {
+        size: item.length,
+        totalElements: total,
+        totalPages: Math.floor(total / limit),
+        pageNumber: page,
+      },
+    };
+    reply.send(response);
+  } catch {
+    throw boom.boomify();
+  }
+};
+
+exports.getOrderDetails = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var rate = await Rate.findOne({
+      $and: [{ order_id: req.params.id }, { type: 1 }],
+    });
+
+    if (rate) {
+      isRate = true;
+    }
+
+    var item = await Order.findById(req.params.id)
+    .populate("user", "-token")
+    .populate({ path: "offers.user", populate: { path: "user" } })
+      .lean();
+    if (!item) {
+      reply
+        .code(200)
+        .send(
+          errorAPI(
+            language,
+            400,
+            MESSAGE_STRING_ARABIC.ERROR,
+            MESSAGE_STRING_ENGLISH.ERROR
+          )
+        );
+      return;
+    }
+
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          item
+        )
+      );
+    return;
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+exports.addRateFromUserToEmployee = async (req, reply) => {
+  try {
+    let userId = req.user._id
+    const ord = await Order.findById(req.params.id)
+    var driver_id = ""
+      if (!ord) {
+      reply
+        .code(200)
+        .send(
+          errorAPI(
+            language,
+            400,
+            MESSAGE_STRING_ARABIC.ERROR,
+            MESSAGE_STRING_ENGLISH.ERROR
+          )
+        );
+      return;
+    }
+    if (ord.status == ORDER_STATUS.finished) {
+      if(ord.orderType == 1){
+        driver_id = ord.user
+      }else{
+        let offers = ord.offers.find(x=>String(x.status) === String(PASSENGER_STATUS.accept_offer))
+        if(offers) {
+          driver_id = offers.user
+        }
+      }
+      var checkBefore = await Rate.findOne({ $and: [{ order_id: ord._id }, { driver_id: driver_id }, { type: 1 }] });
+
+      // if (checkBefore) {
+      //   reply
+      //     .code(200)
+      //     .send(
+      //       errorAPI(
+      //         language,
+      //         400,
+      //         MESSAGE_STRING_ARABIC.RATE_BEFORE,
+      //         MESSAGE_STRING_ENGLISH.RATE_BEFORE
+      //       )
+      //     );
+      //   return;
+      // }
+
+      if (!req.body.rate_from_user) {
+        reply
+          .code(200)
+          .send(
+            errorAPI(
+              language,
+              400,
+              VALIDATION_MESSAGE_ARABIC.ALL_REQUIRED,
+              VALIDATION_MESSAGE_ENGLISH.ALL_REQUIRED
+            )
+          );
+        return;
+      }
+
+      let Rates = new Rate({
+        order_id: ord._id,
+        user_id: userId,
+        driver_id: driver_id,
+        rate_from_user: req.body.rate_from_user,
+        note_from_user: req.body.note_from_user,
+        createAt: getCurrentDateTime(),
+        type: 1,
+      });
+
+      let rs = await Rates.save();
+      var totalRates = await Rate.find({$and: [{ driver_id: driver_id }, { type: 1 }] }).countDocuments();
+      var summation = await Rate.find({ $and: [{ driver_id: driver_id }, { type: 1 }] });
+      let sum = lodash.sumBy(summation, function (o) { return o.rate_from_user; });
+
+      await Users.findByIdAndUpdate(driver_id, { rate: Number(sum / totalRates).toFixed(1), });
+      await Order.findByIdAndUpdate(ord._id, { status: ORDER_STATUS.rated });
+
+      // var msg = `تمت اضافة تعليق جديد على طلب رقم: ${ord.Order_no}`;
+      // let _Notification2 = new Notifications({
+      //   fromId: ord.user_id._id,
+      //   user_id: USER_TYPE.PANEL,
+      //   title: NOTIFICATION_TITILES.ORDERS,
+      //   msg: msg,
+      //   dt_date: getCurrentDateTime(),
+      //   type: NOTIFICATION_TYPE.ORDERS,
+      //   body_parms: ord._id,
+      //   isRead: false,
+      //   fromName: ord.user_id.full_name,
+      //   toName: USER_TYPE.PANEL,
+      // });
+
+      // _Notification2.save();
+
+      reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.SUCCESS,
+            MESSAGE_STRING_ENGLISH.SUCCESS
+          )
+        );
+    } else {
+      reply
+        .code(200)
+        .send(
+          errorAPI(
+            language,
+            400,
+            MESSAGE_STRING_ARABIC.ERROR_RATE,
+            MESSAGE_STRING_ENGLISH.ERROR_RATE
+          )
+        );
+      return;
+    }
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+exports.getTransaction = async (req, reply) => {
+  try {
+    const userId = req.user._id;
+
+    var last_total = 0;
+    var last_date = 0;
+
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+    
+    const total = await Transactions.find({ user: userId }).countDocuments();
+    const item = await Transactions.find({ user: userId })
+      .sort({ _id: -1 })
+      .populate("user", "-token")
+      .skip(page * limit)
+      .limit(limit);
+
+
+    // let trans = new Transactions({
+    //     order_no: "2030394",
+    //     user: "5f590217ff72110024dd1686",
+    //     total: 300,
+    //     createAt: getCurrentDateTime(),
+    //     paymentType: "Online",
+    //     details: "شحن المحفظة",
+    //   });
+    //   await trans.save();
+
+    const items = await Transactions.find({ user: userId }).sort({createAt:-1}).limit(1)
+    if(item.length > 0 ){
+      last_date = items[0].createAt
+    }
+    items.forEach(element => {
+      last_total += Number(element.total)
+    });
+
+    const response = {
+      items: item,
+      total: last_total,
+      last_date: last_date,
+      status_code: 200,
+      message: "تمت العملية بنجاح",
+      messageAr: "تمت العملية بنجاح",
+      messageEn: "Done Successfully",
+      pagenation: {
+        size: item.length,
+        totalElements: total,
+        totalPages: Math.floor(total / limit),
+        pageNumber: page,
+      },
+    };
+    reply.send(response);
+  } catch {
+    throw boom.boomify();
+  }
+};
+
 
 //admin
 exports.updateOrderByAdmin = async (req, reply) => {
@@ -1496,7 +896,6 @@ exports.adminCancelOrder = async (req, reply) => {
   }
 };
 
-// update order status
 exports.updateOrderByUser = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
@@ -1669,370 +1068,6 @@ exports.updateOrderByUser = async (req, reply) => {
   }
 };
 
-// exports.addOrdertoEmployee = async (req, reply) => {
-//   try {
-//     let emp_id = req.user._id;
-//     const employee = await employee.findById(emp_id);
-//     const sp = await Order.findByIdAndUpdate(
-//       req.params.id,
-//       {
-//         employee_id: emp_id,
-//         StatusId: req.body.StatusId,
-//       },
-//       { new: true }
-//     )
-//       .populate("supplier_id", "-token")
-//       .populate("user_id", "-token");
-
-//     var msg = `تم اضافة طلب جديد اليك`;
-//     var msg2 = `تم قبول طلبك بنجاح`;
-
-//     CreateGeneralNotification(
-//       employee.fcmToken,
-//       NOTIFICATION_TITILES.ORDERS,
-//       msg,
-//       NOTIFICATION_TYPE.ORDERS,
-//       sp._id,
-//       sp.supplier_id._id,
-//       employee._id,
-//       sp.supplier_id.name,
-//       employee.full_name
-//     );
-
-//     if (sp.user_id.isEnableNotifications == true) {
-//       CreateGeneralNotification(
-//         sp.user_id.fcmToken,
-//         NOTIFICATION_TITILES.ORDERS,
-//         msg2,
-//         NOTIFICATION_TYPE.ORDERS,
-//         sp._id,
-//         sp.supplier_id._id,
-//         sp.user_id._id,
-//         sp.supplier_id.name,
-//         sp.user_id.full_name
-//       );
-//     }
-
-//     reply
-//       .code(200)
-//       .send(
-//         success(
-//           language,
-//           200,
-//           MESSAGE_STRING_ARABIC.SUCCESS,
-//           MESSAGE_STRING_ENGLISH.SUCCESS,
-//           sp
-//         )
-//       );
-//     return;
-//   } catch (err) {
-//     throw boom.boomify(err);
-//   }
-// };
-
-// Get user Order
-exports.getUserOrder = async (req, reply) => {
-  const language = req.headers["accept-language"];
-  try {
-    let userId = req.user._id;
-    var page = parseFloat(req.query.page, 10);
-    var limit = parseFloat(req.query.limit, 10);
-
-    var query = {};
-    if (Number(req.query.StatusId) == 2 || Number(req.query.StatusId) == 3) {
-      query = {
-        $and: [{ user_id: userId }, { StatusId: { $in: [2, 3] } }],
-      };
-    } else if (Number(req.query.StatusId) == 5) {
-      query = {
-        $and: [{ user_id: userId }, { StatusId: { $in: [5, 6, 7] } }],
-      };
-    } else if (Number(req.query.StatusId) == 4) {
-      query = {
-        $and: [{ user_id: userId }, { StatusId: 4 }],
-      };
-    } 
-    else {
-      if (Number(req.query.StatusId) == 1 || Number(req.query.StatusId) == -1) {
-        query = {
-          $and: [{ user_id: userId }, { StatusId: { $in: [1, -1] } }],
-        };
-     }
-    }
-
-    // if (req.query.StatusId && req.query.StatusId != "") {
-    //   query = {
-    //     $and: [{ user_id: userId }, { StatusId: req.query.StatusId }],
-    //   };
-    // } else {
-    //   reply
-    //     .code(200)
-    //     .send(
-    //       errorAPI(
-    //         language,
-    //         400,
-    //         MESSAGE_STRING_ARABIC.ENTER_STATUS,
-    //         MESSAGE_STRING_ENGLISH.ENTER_STATUS,
-    //         []
-    //       )
-    //     );
-    //   return;
-    // }
-
-    const total = await Order.find(query).countDocuments();
-    const item = await Order.find(query)
-      .sort({ _id: -1 })
-      .populate("supplier_id", "-token")
-      .populate("employee_id", "-token")
-      .populate({ path: "items.product_id", populate: { path: "product_id" } })
-      .populate({
-        path: "items.product_id",
-        populate: {
-          path: "category_id",
-        },
-      })
-      .sort({ _id: -1 })
-      .skip(page * limit)
-      .limit(limit)
-      .select("-couponCode");
-    var arr = [];
-    item.forEach((element) => {
-      let obj = {
-        _id: element._id,
-        Order_no: element.Order_no,
-        Total: element.Total,
-        StatusId: element.StatusId,
-        dt_date: element.dt_date,
-        dt_time: element.dt_time,
-        address: element.address,
-        OrderType: element.OrderType,
-        supplier_id: element.supplier_id,
-        isExpress: element.isExpress,
-      };
-      arr.push(obj);
-    });
-    reply.code(200).send(
-      success(
-        language,
-        200,
-        MESSAGE_STRING_ARABIC.SUCCESS,
-        MESSAGE_STRING_ENGLISH.SUCCESS,
-        arr,
-        {
-          size: item.length,
-          totalElements: total,
-          totalPages: Math.floor(total / limit),
-          pageNumber: page,
-        }
-      )
-    );
-    return;
-  } catch (err) {
-    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
-    return;
-  }
-};
-
-// Get Order Details
-exports.getOrderDetails = async (req, reply) => {
-  const language = req.headers["accept-language"];
-  try {
-    var providerArr = [];
-    var isRate = false;
-    var isChatEnabled = false;
-    var isTrackingEnabled = false;
-
-    var rate = await Rate.findOne({
-      $and: [{ order_id: req.params.id }, { type: 1 }],
-    });
-
-    if (rate) {
-      isRate = true;
-    }
-
-    var item = await Order.findById(req.params.id)
-      .populate("employee_id", "-token")
-      .populate("user_id", "-token")
-      .lean();
-    if (!item) {
-      reply
-        .code(200)
-        .send(
-          errorAPI(
-            language,
-            400,
-            MESSAGE_STRING_ARABIC.ERROR,
-            MESSAGE_STRING_ENGLISH.ERROR
-          )
-        );
-      return;
-    }
-    if (item.StatusId == 2 || item.StatusId == 3) {
-      isChatEnabled = true;
-      isTrackingEnabled = true;
-    }
-    for await (const data of item.items) {
-      var ProviderArrIndex = _.findIndex(providerArr, function (_item) {
-        return String(_item.supplier_id) == String(item.supplier_id);
-      });
-      if (ProviderArrIndex >= 0) {
-        //exsits
-        var product = await Product.findOne({
-          $and: [{ _id: data.product_id }, { isDeleted: false }],
-        })
-          .populate("by_user_id", "-token")
-          .populate("category_id");
-
-        if (product) {
-          const newObj = product.toObject();
-          const checkFavorite = await Favorite.findOne({
-            $and: [{ user_id: req.user._id }, { product_id: product._id }],
-          });
-          if (checkFavorite) {
-            newObj.favorite_id = checkFavorite._id;
-          } else {
-            newObj.favorite_id = null;
-          }
-
-          var cateogory = {
-            _id: product.category_id._id,
-            name: product.category_id[`${language}Name`],
-            image: product.category_id.image ? product.category_id.image : "",
-          };
-
-          delete newObj.arName;
-          delete newObj.enName;
-          delete newObj.arDescription;
-          delete newObj.enDescription;
-          newObj.discountPrice = 0;
-          newObj.price_for_new = 0;
-          newObj.price_for_replacment = 0;
-          newObj.name = product[`${language}Name`];
-          newObj.description = product[`${language}Description`];
-          newObj.category_id = cateogory;
-          newObj.qty = data.qty;
-          newObj.Total = data.Total;
-          newObj.TotalDiscount = data.TotalDiscount;
-          providerArr[ProviderArrIndex].products.push(newObj);
-        }
-      } else {
-        // new
-        var provider_data = await Supplier.findOne({
-          $and: [
-            { _id: item.supplier_id },
-            { isDeleted: false },
-            { isBlock: false },
-          ],
-        }).select(["-token", "-password", "-cities"]);
-
-        if (!provider_data) {
-          reply
-            .code(200)
-            .send(
-              errorAPI(
-                language,
-                400,
-                MESSAGE_STRING_ARABIC.ERROR,
-                MESSAGE_STRING_ENGLISH.ERROR
-              )
-            );
-          return;
-        }
-        var providerobject = provider_data.toObject();
-
-        providerobject._id = item._id;
-        providerobject.supplier_id = item.supplier_id;
-        providerobject.Order_no = item.Order_no;
-        providerobject.lat = item.lat;
-        providerobject.lng = item.lng;
-        providerobject.dt_date = item.dt_date;
-        providerobject.dt_time = item.dt_time;
-        providerobject.Total = item.Total;
-        providerobject.TotalDiscount = item.TotalDiscount;
-        providerobject.StatusId = item.StatusId;
-        providerobject.PaymentType = item.PaymentType;
-        providerobject.OrderType = item.OrderType;
-        providerobject.address = item.address;
-        providerobject.employee_id = item.employee_id;
-        providerobject.client_id = item.user_id._id;
-        providerobject.client_name = item.user_id.full_name;
-        providerobject.client_phone_number = item.user_id.phone_number;
-        providerobject.client_image = item.user_id.image;
-        providerobject.client_fcmToken = item.user_id.fcmToken;
-        providerobject.isRate = isRate;
-        providerobject.isExpress = item.isExpress;
-        providerobject.products = [];
-
-        var _product = await Product.findOne({
-          $and: [{ _id: data.product_id }, { isDeleted: false }],
-        })
-          .populate("by_user_id", "-token")
-          .populate("category_id");
-        if (_product) {
-          const newObj = _product.toObject();
-          const checkFavorite = await Favorite.findOne({
-            $and: [{ user_id: req.user._id }, { product_id: _product._id }],
-          });
-          if (checkFavorite) {
-            newObj.favorite_id = checkFavorite._id;
-          } else {
-            newObj.favorite_id = null;
-          }
-
-          var cateogory = {
-            _id: _product.category_id._id,
-            name: _product.category_id[`${language}Name`],
-            image: _product.category_id.image ? _product.category_id.image : "",
-          };
-
-          delete newObj.arName;
-          delete newObj.enName;
-          delete newObj.arDescription;
-          delete newObj.enDescription;
-          newObj.discountPrice = 0;
-          newObj.price_for_new = 0;
-          newObj.price_for_replacment = 0;
-          newObj.name = _product[`${language}Name`];
-          newObj.description = _product[`${language}Description`];
-          newObj.category_id = cateogory;
-          newObj.qty = data.qty;
-          newObj.Total = data.Total;
-          newObj.TotalDiscount = data.TotalDiscount;
-
-          providerobject.products.push(newObj);
-          providerArr.push(providerobject);
-        }
-      }
-    }
-    const response = {
-      items: providerArr,
-      tax: Number(item.Tax),
-      deliveryCost: Number(item.DeliveryCost),
-      total_price: Number(parseFloat(item.NetTotal).toFixed(2)),
-      total_discount: Number(parseFloat(item.TotalDiscount).toFixed(2)),
-      final_total: Number(parseFloat(item.Total).toFixed(2)),
-      isChatEnabled: isChatEnabled,
-      isTrackingEnabled: isTrackingEnabled,
-      isRated: isRate,
-    };
-
-    reply
-      .code(200)
-      .send(
-        success(
-          language,
-          200,
-          MESSAGE_STRING_ARABIC.SUCCESS,
-          MESSAGE_STRING_ENGLISH.SUCCESS,
-          response
-        )
-      );
-    return;
-  } catch (err) {
-    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
-    return;
-  }
-};
 
 exports.getUserRatedOrders = async (req, reply) => {
   try {
@@ -2347,7 +1382,6 @@ exports.getEmployeeOrder = async (req, reply) => {
           path: "category_id",
         },
       })
-      .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit)
       .select("-couponCode");
@@ -2585,129 +1619,6 @@ exports.updateOrderByEmployee = async (req, reply) => {
   }
 };
 
-// add Rate of Orders and products
-exports.addRateFromUserToEmployee = async (req, reply) => {
-  const language = req.headers["accept-language"];
-  try {
-    const ord = await Order.findById(req.params.id)
-      .populate("user_id", "-token")
-      .populate("supplier_id", "-token");
-    if (!ord) {
-      reply
-        .code(200)
-        .send(
-          errorAPI(
-            language,
-            400,
-            MESSAGE_STRING_ARABIC.ERROR,
-            MESSAGE_STRING_ENGLISH.ERROR
-          )
-        );
-      return;
-    }
-    if (ord.StatusId == 4) {
-      var checkBefore = await Rate.findOne({
-        $and: [{ order_id: ord._id }, { user_id: ord.user_id }, { type: 1 }],
-      });
-
-      if (checkBefore) {
-        reply
-          .code(200)
-          .send(
-            errorAPI(
-              language,
-              400,
-              MESSAGE_STRING_ARABIC.RATE_BEFORE,
-              MESSAGE_STRING_ENGLISH.RATE_BEFORE
-            )
-          );
-        return;
-      }
-
-      if (!req.body.rate_from_user_to_provider) {
-        reply
-          .code(200)
-          .send(
-            errorAPI(
-              language,
-              400,
-              VALIDATION_MESSAGE_ARABIC.ALL_REQUIRED,
-              VALIDATION_MESSAGE_ENGLISH.ALL_REQUIRED
-            )
-          );
-        return;
-      }
-      let Rates = new Rate({
-        order_id: ord._id,
-        user_id: ord.user_id,
-        supplier_id: ord.supplier_id,
-        rate_from_user_to_provider: req.body.rate_from_user_to_provider,
-        note_from_user_to_provider: req.body.note_from_user_to_provider,
-        createAt: getCurrentDateTime(),
-        type: 1,
-      });
-
-      let rs = await Rates.save();
-      var totalRates = await Rate.find({
-        $and: [{ supplier_id: ord.supplier_id }, { type: 1 }],
-      }).countDocuments();
-      var summation = await Rate.find({
-        $and: [{ supplier_id: ord.supplier_id }, { type: 1 }],
-      });
-      let sum = lodash.sumBy(summation, function (o) {
-        return o.rate_from_user_to_provider;
-      });
-
-      await Supplier.findByIdAndUpdate(ord.supplier_id, {
-        rate: Number(sum / totalRates).toFixed(1),
-      });
-
-      var msg = `تمت اضافة تعليق جديد على طلب رقم: ${ord.Order_no}`;
-      let _Notification2 = new Notifications({
-        fromId: ord.user_id._id,
-        user_id: USER_TYPE.PANEL,
-        title: NOTIFICATION_TITILES.ORDERS,
-        msg: msg,
-        dt_date: getCurrentDateTime(),
-        type: NOTIFICATION_TYPE.ORDERS,
-        body_parms: ord._id,
-        isRead: false,
-        fromName: ord.user_id.full_name,
-        toName: USER_TYPE.PANEL,
-      });
-
-      _Notification2.save();
-
-      reply
-        .code(200)
-        .send(
-          success(
-            language,
-            200,
-            MESSAGE_STRING_ARABIC.SUCCESS,
-            MESSAGE_STRING_ENGLISH.SUCCESS
-          )
-        );
-    } else {
-      reply
-        .code(200)
-        .send(
-          errorAPI(
-            language,
-            400,
-            MESSAGE_STRING_ARABIC.ERROR_RATE,
-            MESSAGE_STRING_ENGLISH.ERROR_RATE
-          )
-        );
-      return;
-    }
-  } catch (err) {
-    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
-    return;
-  }
-};
-
-// add Rate of Orders and products
 exports.addRateFromProviderToUser = async (req, reply) => {
   try {
     const ord = await Order.findById(req.params.id)
@@ -2760,29 +1671,6 @@ exports.addRateFromProviderToUser = async (req, reply) => {
       reply.code(200).send(response);
     }
   } catch (err) {
-    throw boom.boomify(err);
-  }
-};
-
-exports.updateRate = async (req, reply) => {
-  try {
-    await Order.findByIdAndUpdate(
-      req.params.id,
-      {
-        isOpen: true,
-      },
-      { new: true }
-    );
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      messageAr: "تمت العملية بنجاح",
-      messageEn: "Done Successfully",
-      items: null,
-    };
-    reply.send(response);
-  } catch {
     throw boom.boomify(err);
   }
 };
@@ -2842,10 +1730,8 @@ exports.getOrdersSearchFilter = async (req, reply) => {
           path: "category_id",
         },
       })
-      .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit)
-      .sort({ _id: -1 })
       .select("-couponCode");
     var arr = [];
     item.forEach((element) => {
@@ -3748,39 +2634,25 @@ exports.getOrders = async (req, reply) => {
       };
     }
 
-    if (req.body.provider_id && req.body.provider_id != "")
-      query["supplier_id"] = req.body.provider_id;
-
-    if (req.body.statusId && req.body.statusId != ""){
-      if(req.body.statusId == -1 || req.body.statusId == 1){
-        query["StatusId"] = {$in:[1,-1]}
-      }else{
-        query["StatusId"] = req.body.statusId;
+    if (req.body.status && req.body.status != ""){
+      if(req.body.status == 'finished'){
+        query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]}
+      }
+      else if(req.body.status == 'canceled' ){
+        query["status"] = {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}
+      }
+      else{
+        query["status"] = req.body.status;
       }
     }
-    if (req.body.Order_no && req.body.Order_no != "")
-      query["Order_no"] = req.body.Order_no;
+    if (req.body.order_no && req.body.order_no != "")
+      query["order_no"] = req.body.order_no;
 
     const total = await Order.find(query).countDocuments();
-
-    const _paymentLogAll = await Order.find(query);
-    let Admin_Total = lodash.sumBy(_paymentLogAll, function (o) {
-      return o.Admin_Total;
-    });
-    let provider_Total = lodash.sumBy(_paymentLogAll, function (o) {
-      return o.provider_Total;
-    });
-    let Total = lodash.sumBy(_paymentLogAll, function (o) {
-      return o.Total;
-    });
-
-    var item = await Order.find(query)
+    const item = await Order.find(query)
       .sort({ _id: -1 })
-      .populate("supplier_id", ["-token", "-password"])
-      .populate("place_id")
-      .populate("user_id", ["-token", "-password"])
-      .populate("employee_id", ["-token", "-password"])
-      .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate("user", ["-token"])
+      .populate({ path: "offers", populate: { path: "user" } })
       .skip(page * limit)
       .limit(limit)
       .select();
@@ -3790,9 +2662,6 @@ exports.getOrders = async (req, reply) => {
       code: 200,
       message: "تمت العملية بنجاح",
       items: item,
-      Admin_Total: Admin_Total,
-      provider_Total: provider_Total,
-      Total: Total,
       pagination: {
         size: item.length,
         totalElements: total,
@@ -3804,137 +2673,6 @@ exports.getOrders = async (req, reply) => {
   } catch (err) {
     reply.code(200).send(errorAPI(language, 400, err.message, err.message));
     return;
-  }
-};
-
-exports.updateOrder = async (req, reply) => {
-  const language = "ar";
-  try {
-    const orderDetails = await Order.findById(req.params.id);
-    if (!orderDetails) {
-      reply
-        .code(200)
-        .send(
-          errorAPI(
-            language,
-            400,
-            MESSAGE_STRING_ARABIC.ERROR,
-            MESSAGE_STRING_ARABIC.ERROR,
-            {}
-          )
-        );
-      return;
-    }
-    if (orderDetails.StatusId == 5) {
-      reply
-        .code(200)
-        .send(
-          errorAPI(
-            language,
-            400,
-            MESSAGE_STRING_ARABIC.CANCEL_ORDER_FAILED2,
-            MESSAGE_STRING_ARABIC.CANCEL_ORDER_FAILED2,
-            {}
-          )
-        );
-      return;
-    }
-    var notes = "";
-    if (req.body.notes && req.body.notes != "") {
-      notes = req.body.notes;
-    }
-    var sp = {};
-    var msg = "";
-    if (req.body.statusId == 2) {
-      //approve
-
-      sp = await Order.findByIdAndUpdate(
-        req.params.id,
-        {
-          StatusId: req.body.statusId,
-          employee_id: req.body.employee_id,
-        },
-        { new: true }
-      )
-        .populate("provider_id", ["-token", "-password"])
-        .populate("user_id", ["-token", "-password"]);
-      msg = "تم قبول طلبكم رقم " + sp.Order_no + " وجاري التنفيذ ";
-
-      CreateGeneralNotification(
-        sp.user_id ? sp.user_id.fcmToken : "",
-        "الطلبات",
-        msg,
-        1,
-        sp._id,
-        USER_TYPE.PANEL,
-        sp.user_id._id,
-        USER_TYPE.PANEL,
-        sp.user_id.full_name
-      );
-
-      CreateGeneralNotification(
-        sp.employee_id ? sp.employee_id.fcmToken : "",
-        "طلب جديد",
-        msg,
-        1,
-        sp._id,
-        USER_TYPE.PANEL,
-        sp.employee_id._id,
-        USER_TYPE.PANEL,
-        sp.employee_id.full_name
-      );
-    }
-    // if (req.body.statusId == 3) {
-    //   //process
-    //   msg = " جاري توصيل طلبكم رقم " + sp.Order_no;
-    // }
-    // if (req.body.statusId == 4) {
-    //   //deliverd
-    //   msg = " تم توصيل طلبكم رقم " + sp.Order_no;
-    // }
-    if (req.body.statusId == 5) {
-      //cancel
-      msg =
-        " عذرا .. تم الغاء طلبكم رقم " + sp.Order_no + " وذلك بسبب " + notes;
-
-      sp = await Order.findByIdAndUpdate(
-        req.params.id,
-        {
-          StatusId: req.body.statusId,
-          notes: req.body.notes,
-        },
-        { new: true }
-      )
-        .populate("provider_id", ["-token", "-password"])
-        .populate("user_id", ["-token", "-password"]);
-
-      CreateGeneralNotification(
-        sp.user_id ? sp.user_id.fcmToken : "",
-        "الطلبات",
-        msg,
-        1,
-        sp._id,
-        USER_TYPE.PANEL,
-        sp.user_id._id,
-        USER_TYPE.PANEL,
-        sp.user_id.full_name
-      );
-    }
-
-    reply
-      .code(200)
-      .send(
-        success(
-          language,
-          200,
-          MESSAGE_STRING_ARABIC.SUCCESS,
-          MESSAGE_STRING_ARABIC.SUCCESS,
-          sp
-        )
-      );
-    return;
-  } catch (err) {
-    throw boom.boomify(err);
   }
 };
 
@@ -3976,14 +2714,20 @@ exports.getOrdersRateList = async (req, reply) => {
         },
       };
     }
-    if (req.body.provider_id != "") query["supplier_id"] = req.body.provider_id;
 
     const total = await Rate.find(query).countDocuments();
     const item = await Rate.find(query)
-      .populate("order_id")
-      .populate("user_id", ["-password", "-token"])
-      .populate("supplier_id", ["-password", "-token"])
-      .populate("employee_id", ["-password", "-token"])
+    .populate("order_id")
+    .populate({
+      path: 'order_id',
+      populate: {
+          path: 'offers', 
+          populate: {
+              path: 'user',
+          }
+      }
+     })
+    .populate("user_id", ["-password", "-token"])
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -3995,7 +2739,9 @@ exports.getOrdersRateList = async (req, reply) => {
       rateArray.push(newObject);
     }
 
-    reply.code(200).send(
+    reply
+      .code(200)
+      .send(
       success(
         language,
         200,
@@ -4067,19 +2813,15 @@ exports.getOrdersMap = async (req, reply) => {
 
       var query = {}
       query["dt_date"]= { $gte: searchDate } 
-      if(req.query.status_id == -1 || req.query.status_id == 1){
-        query["StatusId"] = {$in:[1,-1]}
-      }else{
-        query["StatusId"] = req.query.status_id;
-      }
+      query["status"] = req.query.status_id;
+      
       
 
+    console.log(query)
     const item = await Order.find(query)
       .sort({ _id: -1 })
-      .populate("user_id", "-token")
-      .populate("supplier_id", "-token")
-      .populate("employee_id", "-token")
-      .sort({ _id: -1 });
+      .populate("user", "-token")
+      .populate({ path: "offers.user", populate: { path: "user" } })
     // .limit(2000)
     // if (err) return handleError(err);
     const response = {
@@ -4091,7 +2833,7 @@ exports.getOrdersMap = async (req, reply) => {
       items: item,
     };
     reply.send(response);
-  } catch {
+  } catch(err) {
     throw boom.boomify(err);
   }
 };

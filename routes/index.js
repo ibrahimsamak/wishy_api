@@ -931,12 +931,7 @@ const mobile_routes = [
     beforeHandler: [auth.getToken],
     handler: productController.getProductsSearchFilter,
   },
-  {
-    method: "GET",
-    url: "/api/mobile/product/refill",
-    beforeHandler: [auth.getToken],
-    handler: productController.getRefillProducts,
-  },
+
 
   //Users
   {
@@ -1130,15 +1125,28 @@ const mobile_routes = [
   },
   {
     method: "POST",
+    url: "/api/mobile/order/offer/:id",
+    beforeHandler: [auth.getToken],
+    handler: orderController.addOffer,
+  },
+  {
+    method: "POST",
+    url: "/api/mobile/order/offer/update/:id",
+    beforeHandler: [auth.getToken],
+    handler: orderController.updateOffer,
+  },
+
+  {
+    method: "POST",
     url: "/api/mobile/order/add",
     beforeHandler: [auth.getToken],
     handler: orderController.addOrder,
   },
   {
     method: "POST",
-    url: "/api/mobile/order/refill",
+    url: "/api/mobile/order/update/:id",
     beforeHandler: [auth.getToken],
-    handler: orderController.addRefillOrder,
+    handler: orderController.updateOrder,
   },
   {
     method: "GET",
@@ -1152,7 +1160,18 @@ const mobile_routes = [
     beforeHandler: [auth.getToken],
     handler: orderController.updateOrderByUser,
   },
-
+  {
+    method: "GET",
+    url: "/api/mobile/order/map",
+    beforeHandler: [auth.getToken],
+    handler: orderController.getUserOrderMap,
+  },
+  {
+    method: "GET",
+    url: "/api/mobile/order/list",
+    beforeHandler: [auth.getToken],
+    handler: orderController.getUserOrder,
+  },
   {
     method: "POST",
     url: "/api/mobile/order/rate/:id",
@@ -1168,16 +1187,17 @@ const mobile_routes = [
   //coupon
   {
     method: "POST",
-    url: "/api/mobile/cart/coupon",
-    beforeHandler: [auth.getToken],
-    handler: couponController.checkCouponCart,
-  },
-  {
-    method: "POST",
-    url: "/api/mobile/replacment/coupon",
+    url: "/api/mobile/check/coupon",
     beforeHandler: [auth.getToken],
     handler: couponController.checkCouponReplacment,
   },
+  //transaction
+  {
+    method: "GET",
+    url: "/api/mobile/transaction/list",
+    beforeHandler: [auth.getToken],
+    handler: orderController.getTransaction,
+  }
 ];
 
 //mobile driver
