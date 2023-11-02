@@ -431,7 +431,7 @@ exports.changePassword = async (req, reply) => {
 exports.Resend = async (req, reply) => {
   const language = req.headers["accept-language"];
   var msg = "";
-  const sms_code = makeid(4);
+  const sms_code = "1234";//makeid(4);
   const user = await employee.findByIdAndUpdate(
     req.body.id,
     {
