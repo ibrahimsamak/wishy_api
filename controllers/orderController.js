@@ -138,7 +138,10 @@ exports.addOrder = async (req, reply) => {
             user: userId,
             notes: req.body.notes,
             canceled_note:"",
-            coordinates: [req.body.f_lat, req.body.f_lng]
+            loc: {
+              type: "Point",
+              coordinates: [req.body.f_lat, req.body.f_lng],
+            },
           });
 
           let geoQuery = geoFire.query({
@@ -687,38 +690,39 @@ exports.getUserOrderMap = async (req, reply) => {
     //search in raduis 
     var q = []
     if(req.query.address && req.query.address != ""){
-      q = [
-        { status: ORDER_STATUS.new },
-        { "f_address": { "$regex": req.query.address, "$options": "i" } },
-        {  
-          location: {
-            $near: {
-              $maxDistance: Number(raduis.value),
-              $geometry: {
-                  type: "Point",
-                  coordinates: [req.query.lat, req.query.lng]
+      q = {$and: [
+          { status: ORDER_STATUS.new },
+          { "f_address": { "$regex": req.query.address, "$options": "i" } },
+          {  
+            loc: {
+              $near: {
+                $maxDistance: Number(raduis.value),
+                $geometry: {
+                    type: "Point",
+                    coordinates: [req.query.lat, req.query.lng]
+                  }
                 }
-              }
+            }
           }
-        }
-      ]
+        ]}
     }else {
-      q = [
-        { status: ORDER_STATUS.new },
-        {  
-          location: {
-            $near: {
-              $maxDistance: Number(raduis.value),
-              $geometry: {
-                  type: "Point",
-                  coordinates: [req.query.lat, req.query.lng]
+      q = {$and: [
+          { status: ORDER_STATUS.new },
+          {  
+            loc: {
+              $near: {
+                $maxDistance: Number(raduis.value),
+                $geometry: {
+                    type: "Point",
+                    coordinates: [req.query.lat, req.query.lng]
+                  }
                 }
-              }
+            }
           }
-        }
-      ]
+        ]}
     }
    
+    console.log(q)
     const items = await Order.find(q)
     .sort({ _id: -1 })
     .populate("user", "-token")

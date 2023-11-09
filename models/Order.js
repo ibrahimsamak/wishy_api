@@ -48,12 +48,19 @@ const Orderschema = mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
     notes: { type: String },
     canceled_note: { type: String },
-    coordinates:{
-      type:[Number]
-    }
+    // coordinates:{
+    //   type:[Number]
+    // }
+    loc: {
+      type: { type: String },
+      coordinates: {type:[Number]},
+    },
   },
   { versionKey: false }
 );
+
+
+
 
 const RateSchema = mongoose.Schema(
   {
@@ -92,10 +99,12 @@ const PaymentTransactionsSchema = mongoose.Schema(
   },
   { versionKey: false }
 );
+
 PaymentTransactionsSchema.index({ provider_id: 1 });
 PaymentTransactionsSchema.index({ employee_id: 1 });
 PaymentTransactionsSchema.index({ createAt: 1 });
 
+Orderschema.index({ loc: "2dsphere" });
 Orderschema.index({ user_id: 1, StatusId: 1 });
 Orderschema.index({ createAt: 1 });
 
