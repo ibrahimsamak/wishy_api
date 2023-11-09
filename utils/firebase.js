@@ -1,13 +1,14 @@
 const firebase = require("firebase");
 
 const config = {
-  apiKey: "AIzaSyAf0zZLbXlI8mAcpNosj1omzk-wZttdl_M",
-  authDomain: "khawi.firebaseapp.com",
-  databaseURL: "https://khawi.firebaseio.com",
-  projectId: "khawi",
-  storageBucket: "khawi.appspot.com",
-  messagingSenderId: "245312403399",
-  appId: "1:245312403399:web:b33a388f5a3b3a87860be2",
+  apiKey: "AIzaSyBRCDFoYc_rEpvuYlM37npS_Fe0x9zGYfU",
+  authDomain: "khawii.firebaseapp.com",
+  databaseURL: "https://khawii-default-rtdb.firebaseio.com",
+  projectId: "khawii",
+  storageBucket: "khawii.appspot.com",
+  messagingSenderId: "445759952118",
+  appId: "1:445759952118:web:ea93fb0f0e4533338908d7",
+  measurementId: "G-RVSR1GHBF3"
 };
 
 const Firebase = firebase.initializeApp(config);

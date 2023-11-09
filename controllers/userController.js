@@ -39,6 +39,7 @@ const {
   getAddress,
   emailRegex,
   handleError,
+  NewPayment
 } = require("../utils/utils");
 const { success, errorAPI } = require("../utils/responseApi");
 const {
@@ -262,6 +263,7 @@ exports.addUsers = async (req, reply) => {
         os: req.body.os,
         lat: parseFloat(req.body.lat),
         lng: parseFloat(req.body.lng),
+        coordinates:[req.body.lat, req.body.lng],
         fcmToken: req.body.fcmToken,
         createAt: getCurrentDateTime(),
         verify_code: verify_code,
@@ -1162,7 +1164,7 @@ exports.deleteUser = async (req, reply) => {
       status_code: 200,
       status: true,
       message: "تمت العملية بنجاح",
-      items: [],
+      items: {},
     };
     reply.code(200).send(response);
   } catch (err) {
@@ -1923,4 +1925,24 @@ exports.updateUserAddressAdmin = async (req, reply) => {
     items: _rs,
   };
   reply.code(200).send(response);
+};
+
+exports.updateWallet = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const _user = await NewPayment(req.user._id, "شحن المحفظة الالكترونية", "+", req.body.amount, "Online" );
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _user
+      )
+    );   
+  } catch (err) {
+    throw boom.boomify(err);
+  }
 };

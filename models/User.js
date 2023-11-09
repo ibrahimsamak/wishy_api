@@ -90,7 +90,8 @@ const UserSchema = mongoose.Schema(
     },
     rate:{
       type: Number 
-    }
+    },
+
   },
   { versionKey: false }
 );

@@ -290,7 +290,7 @@ exports.addMassNotification = async (req, reply) => {
     }
 
     const response = {
-      items: [],
+      items: {},
       status: true,
       status_code: 200,
       message: "تم ارسال التنبيه بنجاح",
@@ -327,7 +327,7 @@ exports.addSingleNotification = async (req, reply) => {
     await sendWhatsApp(doc.phone_number,"","",req.body.msg)
 
     const response = {
-      items: [],
+      items: {},
       status: true,
       status_code: 200,
       message: "تم ارسال التنبيه بنجاح",

@@ -4,12 +4,8 @@ const userController = require("../controllers/userController");
 const notificationController = require("../controllers/notificationController");
 const constantController = require("../controllers/constantController");
 const adminController = require("../controllers/adminController");
-const favoriteController = require("../controllers/favoriteController");
 const couponController = require("../controllers/couponController");
-const productController = require("../controllers/productController");
-const cartController = require("../controllers/cartController");
 const orderController = require("../controllers/orderController");
-const employeeController = require("../controllers/employeeController");
 const providerController = require("../controllers/providerController");
 const homeController = require("../controllers/homeController");
 
@@ -20,13 +16,6 @@ const fastify = require("fastify")({
 // Import Swagger documentation
 // const documentation = require('./documentation/carApi')
 const admin_routes = [
-  
-  {
-    method: "POST",
-    url: "/api/sms/test",
-    handler: employeeController.testsend,
-  },
-
   //admins
   {
     method: "GET",
@@ -118,7 +107,6 @@ const admin_routes = [
     beforeHandler: [auth.getAdminToken],
     handler: constantController.updateContact,
   },
-
   {
     method: "GET",
     url: "/api/constant/complaints",
@@ -494,63 +482,12 @@ const admin_routes = [
     handler: orderController.getProivdeOrders,
   },
 
-  //employee
-  {
-    method: "GET",
-    url: "/api/stores/employee/:id",
-    beforeHandler: [auth.getAdminToken],
-    handler: employeeController.getStoresEmployees,
-  },
-  {
-    method: "POST",
-    url: "/api/users/employee",
-    beforeHandler: [auth.getAdminToken],
-    handler: employeeController.getEmployees,
-  },
-  {
-    method: "POST",
-    url: "/api/users/employee-excel",
-    beforeHandler: [auth.getAdminToken],
-    handler: employeeController.getEmployeesExcel,
-  },
-  {
-    method: "GET",
-    url: "/api/employee/details/:id",
-    beforeHandler: [auth.getAdminToken],
-    handler: employeeController.getSingleEmployeesAdmin,
-  },
-  {
-    method: "POST",
-    url: "/api/employee/sms/:id",
-    beforeHandler: [auth.getAdminToken],
-    handler: employeeController.sendEmployeeSMS,
-  },
-
-  {
-    method: "POST",
-    url: "/api/employee/update",
-    beforeHandler: [auth.getAdminToken],
-    handler: employeeController.updateEmploye,
-  },
-  {
-    method: "POST",
-    url: "/api/employee/block",
-    beforeHandler: [auth.getAdminToken],
-    handler: employeeController.block,
-  },
-  {
-    method: "POST",
-    url: "/api/employee/add",
-    beforeHandler: [auth.getAdminToken],
-    handler: employeeController.addEmployee,
-  },
   {
     method: "GET",
     url: "/api/employee/orders/:id",
     beforeHandler: [auth.getAdminToken],
     handler: orderController.getEmployeesOrder,
   },
-
   //places
   {
     method: "GET",
@@ -585,6 +522,7 @@ const admin_routes = [
     beforeHandler: [auth.getAdminToken],
     handler: constantController.deletePlace,
   },
+
   //coupons
   {
     method: "GET",
@@ -617,87 +555,6 @@ const admin_routes = [
     handler: couponController.deletecoupon,
   },
 
-  //products
-  {
-    method: "POST",
-    url: "/api/products/list",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.getAllProductsByAdmin,
-  },
-  {
-    method: "GET",
-    url: "/api/products/list/all",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.getAllProductsList,
-  },
-  {
-    method: "POST",
-    url: "/api/products/list_excel",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.getAllProductsExcelByAdmin,
-  },
-  {
-    method: "POST",
-    url: "/api/products/delete/:id",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.deleteProduct,
-  },
-  {
-    method: "POST",
-    url: "/api/products/add",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.addProduct,
-  },
-  {
-    method: "POST",
-    url: "/api/products/update/:id",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.updateProduct,
-  },
-  {
-    method: "GET",
-    url: "/api/products/details/:id",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.getSingleProduct,
-  },
-
-  //place_Products
-  {
-    method: "POST",
-    url: "/api/products/places/list",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.getAllProductPlaceByAdmin,
-  },
-  {
-    method: "POST",
-    url: "/api/products/places/list_excel",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.getAllProductPlaceExcelByAdmin,
-  },
-  {
-    method: "POST",
-    url: "/api/products/places/delete/:id",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.deleteProductPlace,
-  },
-  {
-    method: "POST",
-    url: "/api/products/places/add",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.addProductPlace,
-  },
-  {
-    method: "POST",
-    url: "/api/products/places/update/:id",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.updateProductPlace,
-  },
-  {
-    method: "GET",
-    url: "/api/products/places/details/:id",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.getSingleProductPlace,
-  },
   //orders
   {
     method: "POST",
@@ -723,36 +580,7 @@ const admin_routes = [
     beforeHandler: [auth.getAdminToken],
     handler: orderController.deleteRate,
   },
-  {
-    method: "POST",
-    url: "/api/supplier/place",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.addSupplierPlace,
-  },
-  {
-    method: "POST",
-    url: "/api/supplier/place/:id",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.updateSupplierPlace,
-  },
-  {
-    method: "POST",
-    url: "/api/supplier/delete-place/:id",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.deleteSupplierPlace,
-  },
-  {
-    method: "POST",
-    url: "/api/supplier/place/list",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.getSupplierPlaceAdmin,
-  },
-  {
-    method: "GET",
-    url: "/api/supplier/place/:id",
-    beforeHandler: [auth.getAdminToken],
-    handler: productController.getSingleSupplierPlace,
-  },
+
   //charts
   {
     method: "GET",
@@ -803,11 +631,6 @@ const admin_routes = [
 
 //mobile client
 const mobile_routes = [
-  {
-    method: "GET",
-    url: "/api/getSuppliers",
-    handler: productController.getSuppliers,
-  },
   {
     method: "GET",
     url: "/api/getPlaces",
@@ -907,33 +730,13 @@ const mobile_routes = [
     // beforeHandler: [auth.getToken],
     handler: constantController.addComplains,
   },
-  //products
-  {
-    method: "GET",
-    url: "/api/mobile/category/list",
-    handler: productController.getCategories,
-  },
-  {
-    method: "POST",
-    url: "/api/mobile/home/get",
-    beforeHandler: [auth.getToken],
-    handler: productController.getHome,
-  },
-  {
-    method: "GET",
-    url: "/api/mobile/category/get/:id",
-    beforeHandler: [auth.getToken],
-    handler: productController.getProductsByCategoryId,
-  },
-  {
-    method: "POST",
-    url: "/api/mobile/category/search",
-    beforeHandler: [auth.getToken],
-    handler: productController.getProductsSearchFilter,
-  },
-
-
   //Users
+  {
+    method: "POST",
+    url: "/api/mobile/user/wallet",
+    beforeHandler: [auth.getToken],
+    handler: userController.updateWallet,
+  },
   {
     method: "POST",
     url: "/api/mobile/user/create_login",
@@ -1022,68 +825,6 @@ const mobile_routes = [
     url: "/api/mobile/user/logout/:id",
     // beforeHandler: [auth.getToken],
     handler: userController.logout,
-  },
-  //favorite
-  {
-    method: "POST",
-    url: "/api/mobile/favorite/add",
-    beforeHandler: [auth.getToken],
-    handler: favoriteController.addDeleteFavorite,
-  },
-  {
-    method: "GET",
-    url: "/api/mobile/favorite/get",
-    beforeHandler: [auth.getToken],
-    handler: favoriteController.getFavoriteByUserId,
-  },
-  //Cart
-  {
-    method: "POST",
-    url: "/api/mobile/cart/add",
-    beforeHandler: [auth.getToken],
-    handler: cartController.addProduct,
-  },
-  {
-    method: "POST",
-    url: "/api/mobile/cart/update",
-    beforeHandler: [auth.getToken],
-    handler: cartController.UpdateCart,
-  },
-  {
-    method: "POST",
-    url: "/api/mobile/cart/delete-cart",
-    beforeHandler: [auth.getToken],
-    handler: cartController.deleteCart,
-  },
-  {
-    method: "POST",
-    url: "/api/mobile/cart/delete",
-    beforeHandler: [auth.getToken],
-    handler: cartController.deleteItemCart,
-  },
-  {
-    method: "GET",
-    url: "/api/mobile/cart/count",
-    beforeHandler: [auth.getToken],
-    handler: cartController.getCartCount,
-  },
-  {
-    method: "POST",
-    url: "/api/mobile/cart/total",
-    beforeHandler: [auth.getToken],
-    handler: cartController.getCartTotalsUserId,
-  },
-  {
-    method: "POST",
-    url: "/api/mobile/cart/replacment_total",
-    beforeHandler: [auth.getToken],
-    handler: cartController.getCartReplacmentTotalsUserId,
-  },
-  {
-    method: "POST",
-    url: "/api/mobile/cart/get",
-    beforeHandler: [auth.getToken],
-    handler: cartController.getCartUserId,
   },
   //notifications
   {
@@ -1208,43 +949,6 @@ const driver_routes = [
     handler: constantController.welcomeDriver,
   },
   {
-    method: "POST",
-    url: "/api/driver/login",
-    handler: employeeController.loginEmployee,
-  },
-  {
-    method: "POST",
-    url: "/api/driver/verify",
-    handler: employeeController.verify,
-  },
-  {
-    method: "POST",
-    url: "/api/driver/resend",
-    handler: employeeController.Resend,
-  },
-  {
-    method: "POST",
-    url: "/api/driver/forget",
-    handler: employeeController.forgetPassword,
-  },
-  {
-    method: "POST",
-    url: "/api/driver/logout/:id",
-    handler: employeeController.logout,
-  },
-  {
-    method: "POST",
-    url: "/api/driver/available/update",
-    beforeHandler: [auth.getToken],
-    handler: employeeController.updateAvailable,
-  },
-  {
-    method: "GET",
-    url: "/api/driver/profile",
-    beforeHandler: [auth.getToken],
-    handler: employeeController.getSingleEmployee,
-  },
-  {
     method: "GET",
     url: "/api/driver/order",
     beforeHandler: [auth.getToken],
@@ -1255,12 +959,6 @@ const driver_routes = [
     url: "/api/driver/order-update/:id",
     beforeHandler: [auth.getToken],
     handler: orderController.updateOrderByEmployee,
-  },
-  {
-    method: "POST",
-    url: "/api/driver/change-password",
-    beforeHandler: [auth.getToken],
-    handler: employeeController.changePassword,
   },
   {
     method: "GET",

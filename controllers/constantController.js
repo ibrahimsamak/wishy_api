@@ -124,7 +124,7 @@ exports.deleteComplains = async (req, reply) => {
       status_code: 200,
       status: true,
       message: "تمت العملية بنجاح",
-      items: [],
+      items: {},
     };
     reply.code(200).send(response);
   } catch (err) {

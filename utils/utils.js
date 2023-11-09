@@ -12,7 +12,10 @@ var xhr = new XMLHttpRequest();
 const { Notifications } = require("../models/Notifications");
 const { Admin } = require("../models/Admin");
 const { getCurrentDateTime } = require("../models/Constant");
-const { getLanguage } = require("../models/User");
+const { getLanguage, Users } = require("../models/User");
+
+const { Transactions } = require("../models/Order");
+const utils = require("../utils/utils");
 
 cloudinary.config({
   cloud_name: "dfrogfdqd",
@@ -28,6 +31,8 @@ const options = {
 };
 
 const geocoder = NodeGeocoder(options);
+
+exports.emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
 exports.encryptPassword = function (password) {
   try {
@@ -330,7 +335,7 @@ exports.CreateGeneralNotification = function (
     xhr.open("POST", "https://fcm.googleapis.com/fcm/send");
     xhr.setRequestHeader(
       "Authorization",
-      "key=AAAAOR3CN8c:APA91bG7FLqIgCqr-YKYds59bkAIedwgvtwUYczZiudN-Lt-DLeD8W44RR7w015WRjMmDyTnuCcMc_TYVTQo9KQgzhdWkhNozpXojHPi0FeMqtbUpSmcSo8HRAWwlT80xTprsOs-CVuv"
+      "key=AAAAZ8ldFPY:APA91bE3eeL5kCX28ZElBjeobvkMORu7Hb7SQjXrZuI_pZMGgPOUOjiQyb1Fskb2BfUln-6bP6cBOsnrGJoybdUlCofzqQjMR4Z-8oBy52xGFXOfLj7-T6vfR9DuZym24OZ4EZ2krBfn"
     );
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.send(data);
@@ -384,7 +389,7 @@ exports.CreateNotificationMultiple = function (deviceId, title, msg, order_id) {
     xhr.open("POST", "https://fcm.googleapis.com/fcm/send");
     xhr.setRequestHeader(
       "Authorization",
-      "key=AAAAOR3CN8c:APA91bG7FLqIgCqr-YKYds59bkAIedwgvtwUYczZiudN-Lt-DLeD8W44RR7w015WRjMmDyTnuCcMc_TYVTQo9KQgzhdWkhNozpXojHPi0FeMqtbUpSmcSo8HRAWwlT80xTprsOs-CVuv"
+      "key=AAAAZ8ldFPY:APA91bE3eeL5kCX28ZElBjeobvkMORu7Hb7SQjXrZuI_pZMGgPOUOjiQyb1Fskb2BfUln-6bP6cBOsnrGJoybdUlCofzqQjMR4Z-8oBy52xGFXOfLj7-T6vfR9DuZym24OZ4EZ2krBfn"
     );
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.send(data);
@@ -429,8 +434,6 @@ exports.getAddress = async function (lat, lng) {
     reply.code(200).send(response);
   }
 };
-
-exports.emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
 exports.check_request_params = function (
   request_data_body,
@@ -496,4 +499,29 @@ exports.handleError = function (error) {
     }
   }
   return arr;
+};
+
+exports.NewPayment = async function (user_id, to, sign, amount, paymentType) {
+  var orderNo = `#${utils.makeid(6)}`;
+  let _payment = new Transactions({
+    order_no: orderNo,
+    user: user_id,
+    details: to,
+    total: amount,
+    type: sign,
+    paymentType: paymentType,
+    createAt: getCurrentDateTime(),
+  });
+
+  await _payment.save();
+
+  var _amount = 0;
+  if (sign == "-") _amount = Number(-1 * amount);
+  else _amount = amount;
+  const _user = await Users.findByIdAndUpdate(
+    user_id,
+    { $inc: { wallet: _amount } },
+    { new: true }
+  );
+  return _user;
 };

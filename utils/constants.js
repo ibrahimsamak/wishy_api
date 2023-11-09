@@ -40,7 +40,7 @@ const NOTIFICATION_TYPE = Object.freeze({
 
 const NOTIFICATION_TITILES = Object.freeze({
   ORDERS: "متابعة الطلبات",
-  COUPON: "الادارة",
+  COUPON: "كوبون",
   GENERAL: "الادارة",
 });
 
@@ -53,6 +53,7 @@ const ACTORS = Object.freeze({
 
 const ORDER_STATUS = Object.freeze({
   new: "new",
+  accpeted: "accpeted",
   started: "started",
   finished: "finished",
   rated: "rated",
@@ -76,12 +77,18 @@ exports.MESSAGE_STRING_ENGLISH = {
   ERROR: "An error occure",
   WARNING: "Sorry ... your current location is not disturbed",
   EXIT: "We already have this item",
+  OFFER_ERROR: "This order is not recived offer for now",
+
+
   ERROR_PRICE: "Sorry...the price entered is not between the minimum and maximum for this trip",
   
   CANT_COMPLETEL_PROCESS:
     "can't complete process please make sure of status you are send it",
 
-  WELCOME: "Welcome to English Mastery your verification code is: ",
+  WALLET: "There is no enough balance in your wallet",
+  NOCAR: "Sorry...please add a car so you can add an offer.",
+  
+  WELCOME: "Welcome to Khawi your verification code is: ",
   INVALID_TOKEN: "Invalid token",
   INVALID_TOKEN2: "Invalid token",
   ACCESS_DENIED: "Access denied. No token provided.",
@@ -160,13 +167,17 @@ exports.MESSAGE_STRING_ARABIC = {
   ERROR: "عذرا .. حدث خطأ ما الرجاء المحاولة في وقت لاحق",
   WARNING: "عذرا .. موقعك الحالي غير مغظى",
   EXIT: " هذا العنصر موجود لدينا مسبقا",
+  OFFER_ERROR: "لا يمكن اضافة عرض على هذا الطلب",
 
   ERROR_PRICE: "عذرا .. السعر المدخل ليس بين الحد الادنى والاعلى لهذه الرحلة",
 
 
   CANT_COMPLETEL_PROCESS:
     "عذرا .. لا يمكن اتمام العملية الرجاء التأكد من الحالة المرسلة",
-  WELCOME: "أهلا بكم في منصة انجلش ماستري رمز التفعيل هو: ",
+  WELCOME: "أهلا بكم في منصة خوي رمز التفعيل هو: ",
+  WALLET: "عذرا .. ليس لديك الرصيد الكافي في المحفظة",
+  NOCAR: "عذرا .. يرجى اضافة سيارة لتتمكن من اضافة عرض",
+
   INVALID_TOKEN: "Invalid token",
   INVALID_TOKEN2: "Invalid token",
   ACCESS_DENIED: "تم رفض الوصول الى هذه العملية",
@@ -213,7 +224,7 @@ exports.MESSAGE_STRING_ARABIC = {
   INVALID_PAYMENT: "عذرا .. الباقة المختارة قد انتهت",
   EMPTY_CART: "عذرا .. السلة فارغة",
   ENTER_STATUS: "الرجاء ادخال الحالة",
-  ERROR_RATE: "عذرا .. لا يمكن التقييم حتى الانتهاء من توصيل الطلب",
+  ERROR_RATE: "عذرا .. لا يمكن التقييم حتى الانتهاء من الطلب",
   RATE_BEFORE: "عذرا .. تم تقييم الطلب مسبقا",
   NOT_COVERED:
     "عذرا .. منطقتك غير مغطاة نسعى جاهدين لتغطية جميع المناطق في أقرب وقت ممكن",

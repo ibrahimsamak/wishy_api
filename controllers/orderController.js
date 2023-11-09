@@ -55,6 +55,7 @@ const {
   check_request_params,
   handleError,
   CreateNotificationMultiple,
+  NewPayment,
 } = require("../utils/utils");
 const { success, errorAPI } = require("../utils/responseApi");
 const { string, number } = require("@hapi/joi");
@@ -92,6 +93,21 @@ exports.addOrder = async (req, reply) => {
           var statusCode = 200;
           var orderNo = `${makeOrderNumber(6)}`;
 
+          
+          if(req.body.orderType == 2 && Number(req.body.price) > Number(userObj.walllet)){
+            reply
+            .code(200)
+            .send(
+              errorAPI(
+                language,
+                400,
+                MESSAGE_STRING_ARABIC.WALLET,
+                MESSAGE_STRING_ENGLISH.WALLET,
+                {}
+              )
+            );
+          return;
+          }
           let Orders = new Order({
             title: req.body.title,
             f_lat: req.body.f_lat,
@@ -121,13 +137,178 @@ exports.addOrder = async (req, reply) => {
             offers: [],
             user: userId,
             notes: req.body.notes,
-            canceled_note:""
+            canceled_note:"",
+            coordinates: [req.body.f_lat, req.body.f_lng]
+          });
+
+          let geoQuery = geoFire.query({
+            center: [Number(req.body.f_lat), Number(req.body.f_lng)],
+            radius: Number(raduis.value),
           });
 
           let rs = await Orders.save();
           let msg = "لديك طلب جديد";
           var notifications_arr = []
-          ////search for firebase for near by users and send notification for them
+          var keys_arr = [];
+
+          //search for firebase for near by users and send notification for them
+          var onKeyEnteredRegistration = geoQuery.on("key_entered", async function (key, location, distance) {
+              console.log("first")
+              console.log( key + " Key " + location + " (" + distance + " km from center)" );
+              var _employees = await Users.find({ hasCar: true })
+              var employees = _employees.map((x) => String(x._id));
+              
+              if (employees.includes(key)) {
+                let obj = {
+                  key: key,
+                  location: location,
+                  distance: distance,
+                };  
+                console.log(distance)    
+                console.log(Number(raduis.value))  
+                console.log(distance <= Number(raduis.value))  
+                if (distance <= Number(raduis.value)) {
+                  keys_arr.push(obj);
+                }
+              }
+              keys_arr.sort(function (a, b) { return a.distance > b.distance });
+              var ids = keys_arr.map((x) => x.key);
+              if (keys_arr.length > 0) {
+                  var _users = []
+                  if(req.body.orderType == 1){
+                    _users =  await Users.find({ $and: [{ _id: { $in: ids } }, { isDeleted: false }, { hasCar: false }] });
+                  }else{
+                    _users =  await Users.find({ $and: [{ _id: { $in: ids } }, { isDeleted: false }, { hasCar: true }] });
+                  }
+
+                  console.log(keys_arr)
+                  CreateNotificationMultiple(_users.map(x=>x.fcmToken),NOTIFICATION_TITILES.ORDERS,msg,rs._id);
+
+                  _users.forEach(element => {
+                    let _Notification2 = new Notifications({
+                      fromId: userId,
+                      user_id: element._id,
+                      title: NOTIFICATION_TITILES.ORDERS,
+                      msg: msg,
+                      dt_date: getCurrentDateTime(),
+                      type: NOTIFICATION_TYPE.ORDERS,
+                      body_parms: rs._id,
+                      isRead: false,
+                      fromName: userObj.full_name,
+                      toName: element.full_name,
+                    });
+                    notifications_arr.push(_Notification2)
+                  });
+
+                  await Notifications.insertMany(notifications_arr, (err, _docs) => {
+                    if (err) {
+                      return console.error(err);
+                    } else {
+                      console.log("Multiple documents inserted to Collection");
+                    }
+                  });
+                  onKeyEnteredRegistration.cancel();
+                  reply
+                    .code(200)
+                    .send(
+                      success(
+                        language,
+                        200,
+                        MESSAGE_STRING_ARABIC.SUCCESS,
+                        MESSAGE_STRING_ENGLISH.SUCCESS,
+                        {_id: Orders._id}
+                      )
+                    );
+                  return;
+                  
+              } else {
+                reply
+                  .code(200)
+                  .send(
+                    errorAPI(
+                      language,
+                      400,
+                      MESSAGE_STRING_ARABIC.NOT_COVERED,
+                      MESSAGE_STRING_ENGLISH.NOT_COVERED,
+                      {}
+                    )
+                  );
+                return;
+              }
+            }
+          );
+      
+          // var onKeyExitedRegistration = geoQuery.on("ready", async function (key, location, distance) {
+          //     console.log("second")
+          //     console.log(key + " Key " + location + " (" + distance + " km from center)");
+          //     onKeyEnteredRegistration.cancel();
+          //     console.log(keys_arr)
+          //     var ids = keys_arr.map((x) => x.key);
+          //     if (keys_arr.length > 0) {
+          //         var _users = []
+          //         if(req.body.orderType == 1){
+          //           _users =  await Users.find({ $and: [{ _id: { $in: ids } }, { isDeleted: false }, { hasCar: false }] });
+          //         }else{
+          //           _users =  await Users.find({ $and: [{ _id: { $in: ids } }, { isDeleted: false }, { hasCar: true }] });
+          //         }
+
+          //         console.log(keys_arr)
+          //         CreateNotificationMultiple(_users.map(x=>x.fcmToken),NOTIFICATION_TITILES.ORDERS,msg,rs._id);
+
+          //         _users.forEach(element => {
+          //           let _Notification2 = new Notifications({
+          //             fromId: userId,
+          //             user_id: element._id,
+          //             title: NOTIFICATION_TITILES.ORDERS,
+          //             msg: msg,
+          //             dt_date: getCurrentDateTime(),
+          //             type: NOTIFICATION_TYPE.ORDERS,
+          //             body_parms: rs._id,
+          //             isRead: false,
+          //             fromName: userObj.full_name,
+          //             toName: element.full_name,
+          //           });
+          //           notifications_arr.push(_Notification2)
+          //         });
+
+          //         await Notifications.insertMany(notifications_arr, (err, _docs) => {
+          //           if (err) {
+          //             return console.error(err);
+          //           } else {
+          //             console.log("Multiple documents inserted to Collection");
+          //           }
+          //         });
+
+          //         reply
+          //           .code(200)
+          //           .send(
+          //             success(
+          //               language,
+          //               200,
+          //               MESSAGE_STRING_ARABIC.SUCCESS,
+          //               MESSAGE_STRING_ENGLISH.SUCCESS,
+          //               {_id: Orders._id}
+          //             )
+          //           );
+          //         return;
+                  
+          //     } else {
+          //       reply
+          //         .code(200)
+          //         .send(
+          //           errorAPI(
+          //             language,
+          //             400,
+          //             MESSAGE_STRING_ARABIC.NOT_COVERED,
+          //             MESSAGE_STRING_ENGLISH.NOT_COVERED,
+          //             {}
+          //           )
+          //         );
+          //       return;
+          //     }
+          //   }
+          // );
+          
           // current_employee.forEach(element => {
           //   let _Notification2 = new Notifications({
           //     fromId: userId,
@@ -143,7 +324,9 @@ exports.addOrder = async (req, reply) => {
           //   });
           //   notifications_arr.push(_Notification2)
           // });
+          
           // CreateNotificationMultiple(current_employee.map(x=>x.fcmToken),NOTIFICATION_TITILES.ORDERS,msg,rs._id)
+          
           // await Notifications.insertMany(notifications_arr, (err, _docs) => {
           //   if (err) {
           //     return console.error(err);
@@ -152,7 +335,8 @@ exports.addOrder = async (req, reply) => {
           //   }
           // });
 
-          reply.code(200).send(success(language, statusCode, ar_msg, en_msg, {}));
+          //reply.code(200).send(success(language, statusCode, ar_msg, en_msg, {}));
+          
           return;
         } else {
           reply.send(response);
@@ -168,6 +352,8 @@ exports.addOffer = async (req, reply) => {
   try {
     let userId = req.user._id
     const checkOrder = await Order.findById(req.params.id);
+    let _userObj = await Users.findById(userId);
+
     if(!checkOrder) {
         reply
         .code(200)
@@ -196,6 +382,50 @@ exports.addOffer = async (req, reply) => {
       );
     return;
     }else{ 
+      if(checkOrder.status != ORDER_STATUS.new){
+          reply
+          .code(200)
+          .send(
+            errorAPI(
+              language,
+              400,
+              MESSAGE_STRING_ARABIC.OFFER_ERROR,
+              MESSAGE_STRING_ENGLISH.OFFER_ERROR
+            )
+          );
+          return;
+      }
+              
+      if(req.body.orderType == 1 && Number(req.body.price) > Number(_userObj.walllet)){
+        reply
+        .code(200)
+        .send(
+          errorAPI(
+            language,
+            400,
+            MESSAGE_STRING_ARABIC.WALLET,
+            MESSAGE_STRING_ENGLISH.WALLET,
+            {}
+          )
+        );
+      return;
+      }
+
+      if(req.body.orderType == 2 && _userObj.hasCar != true){
+        reply
+        .code(200)
+        .send(
+          errorAPI(
+            language,
+            400,
+            MESSAGE_STRING_ARABIC.NOCAR,
+            MESSAGE_STRING_ENGLISH.NOCAR,
+            {}
+          )
+        );
+      return;
+      }
+
       if( Number(req.body.price) >= Number(checkOrder.min_price) && Number(req.body.price)<= Number(checkOrder.max_price)){
        let offer = {
         user:      userId,
@@ -219,32 +449,22 @@ exports.addOffer = async (req, reply) => {
           { new: true }
        )
 
-        var msg = `تم اضافة طلب جديد اليك`;
+        var msg = `تم اضافة عرض عبى طلبك`;
         var msg2 = `تم قبول طلبك بنجاح`;
     
-        // CreateGeneralNotification(
-        //   employee.fcmToken,
-        //   NOTIFICATION_TITILES.ORDERS,
-        //   msg,
-        //   NOTIFICATION_TYPE.ORDERS,
-        //   sp._id,
-        //   sp.supplier_id._id,
-        //   employee._id,
-        //   sp.supplier_id.name,
-        //   employee.full_name
-        // );
-    
-        // CreateGeneralNotification(
-        //   sp.user_id.fcmToken,
-        //   NOTIFICATION_TITILES.ORDERS,
-        //   msg2,
-        //   NOTIFICATION_TYPE.ORDERS,
-        //   sp._id,
-        //   sp.supplier_id._id,
-        //   sp.user_id._id,
-        //   sp.supplier_id.name,
-        //   sp.user_id.full_name
-        // );
+        let userObj = await Users.findById(sp.user);
+        CreateGeneralNotification(
+          userObj.fcmToken,
+          NOTIFICATION_TITILES.ORDERS,
+          msg,
+          NOTIFICATION_TYPE.ORDERS,
+          sp._id,
+          userId,
+          userObj._id,
+          "",
+          userObj.full_name
+        );
+
         reply
         .code(200)
         .send(
@@ -269,7 +489,6 @@ exports.addOffer = async (req, reply) => {
         );
       return;
       }
-
     }
   } catch (err) {
     throw boom.boomify(err);
@@ -278,47 +497,61 @@ exports.addOffer = async (req, reply) => {
 
 exports.updateOffer = async (req, reply) => {
   try {
-    let userId = req.user._id
-    const sp = await Order.findOneAndUpdate({
-             $and:[
+      let userId = req.user._id
+      const sp = await Order.findOneAndUpdate(
+         {
+            $and:[
               {_id: req.params.id}, 
               { offers: { $elemMatch: { _id: req.body.offer} }}
             ]
          },
-        {
+         {
           $set: {
             "offers.$.status": req.body.status
           }
-        },
-        { new: true }
+         },
+         { new: true }
       )
 
-      var msg = `تم اضافة طلب جديد اليك`;
-      var msg2 = `تم قبول طلبك بنجاح`;
+      // var msg = `تم اضافة طلب جديد اليك`;
+      var msg = ""
+      var msg_accpet = `تم قبول عرضك على الطلب بنجاح`;
+      var msg_reject = `تم رفض عرضك على الطلب`;
+      // var msg_attend = `تم حضور الزبون بنجاح`;
+      // var msg_not_attend = `بم يتم حضور الزبون `;
+      
+      if(req.body.status == PASSENGER_STATUS.accept_offer){
+        msg = msg_accpet;
+        if(sp.orderType != 1){
+          await Order.findByIdAndUpdate(sp._id, { status: ORDER_STATUS.accpeted }, { new: true } )
+        }
+      }
+      if(req.body.status == PASSENGER_STATUS.reject_offer){
+        msg = msg_reject;
+      }
+
+      // if(req.body.status == 'attend'){
+      //   msg = msg_attend;
+      // }
+      // if(req.body.status == 'not_attend'){
+      //   msg = msg_not_attend;
+      // }
+
+      var to_userId = sp.offers.find(x=>x._id == req.body.offer)
+      var userObj = await Users.findById(to_userId.user)
+      
+      CreateGeneralNotification(
+        userObj.fcmToken,
+        NOTIFICATION_TITILES.ORDERS,
+        msg,
+        NOTIFICATION_TYPE.ORDERS,
+        sp._id,
+        userId,
+        userObj._id,
+        "",
+        ""
+      );
   
-      // CreateGeneralNotification(
-      //   employee.fcmToken,
-      //   NOTIFICATION_TITILES.ORDERS,
-      //   msg,
-      //   NOTIFICATION_TYPE.ORDERS,
-      //   sp._id,
-      //   sp.supplier_id._id,
-      //   employee._id,
-      //   sp.supplier_id.name,
-      //   employee.full_name
-      // );
-  
-      // CreateGeneralNotification(
-      //   sp.user_id.fcmToken,
-      //   NOTIFICATION_TITILES.ORDERS,
-      //   msg2,
-      //   NOTIFICATION_TYPE.ORDERS,
-      //   sp._id,
-      //   sp.supplier_id._id,
-      //   sp.user_id._id,
-      //   sp.supplier_id.name,
-      //   sp.user_id.full_name
-      // );
       reply
       .code(200)
       .send(
@@ -349,32 +582,85 @@ exports.updateOrder = async (req, reply) => {
         { new: true }
       )
 
-      var msg = `تم اضافة طلب جديد اليك`;
-      var msg2 = `تم قبول طلبك بنجاح`;
+      var msg = ""
+      var msg_started = `تم قبول عرضك على الطلب بنجاح`;
+      var msg_finished = `تم رفض عرضك على الطلب`;
+      var msg_canceled_by_driver = `تم حضور الزبون بنجاح`;
+      var msg_canceled_by_user = `بم يتم حضور الزبون `;
+      
+      if(req.body.status == ORDER_STATUS.started) {
+        msg = msg_started;
+      }
+      if(req.body.status == ORDER_STATUS.finished) {
+        msg = msg_finished;
+        if(sp.orderType == 1) {
+          let use = await Users.findById(sp.user);
+          let offers_users = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer);
+          if(offers_users.length > 0) {
+            for await (const i of offers_users){
+              await NewPayment(use._id, `اكمال طلب ${sp.title}`, '+', i.price, 'Online');
+              await NewPayment(i.user, `اكمال طلب ${sp.title}`, '-', i.price, 'Online');
+            }
+          }
+        }else {
+         let use = await Users.findById(sp.user);
+         let offers_users = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer);
+         if(offers_users.length > 0) {
+          await NewPayment(use._id, `اكمال طلب ${sp.title}`, '-', sp.price, 'Online');
+          await NewPayment(offers_users[0].user, `اكمال طلب ${sp.title}`, '+', sp.price, 'Online');
+         }
+        }
+      }
+      
+      if(req.body.status == ORDER_STATUS.canceled_by_driver){
+        msg = msg_canceled_by_driver;
+      }
+
+      if(req.body.status == ORDER_STATUS.canceled_by_user){
+        msg = msg_canceled_by_user;
+      }
   
-      // CreateGeneralNotification(
-      //   employee.fcmToken,
-      //   NOTIFICATION_TITILES.ORDERS,
-      //   msg,
-      //   NOTIFICATION_TYPE.ORDERS,
-      //   sp._id,
-      //   sp.supplier_id._id,
-      //   employee._id,
-      //   sp.supplier_id.name,
-      //   employee.full_name
-      // );
-  
-      // CreateGeneralNotification(
-      //   sp.user_id.fcmToken,
-      //   NOTIFICATION_TITILES.ORDERS,
-      //   msg2,
-      //   NOTIFICATION_TYPE.ORDERS,
-      //   sp._id,
-      //   sp.supplier_id._id,
-      //   sp.user_id._id,
-      //   sp.supplier_id.name,
-      //   sp.user_id.full_name
-      // );
+      if(sp.orderType == 1){
+        var  _users10 = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer)
+        var _users = _users10.map(x=>x.user);
+
+        if(_users.length > 0){
+          var _userObjs = await Users.find({_id:{$in:_users}});
+          for await(const i of _userObjs){
+            await CreateGeneralNotification(
+              i.fcmToken,
+              NOTIFICATION_TITILES.ORDERS,
+              msg,
+              NOTIFICATION_TYPE.ORDERS,
+              sp._id,
+              userId,
+              i._id,
+              "",
+              ""
+            );
+          }
+        }
+      }else {
+        var  _users = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer)
+        if(_users.length > 0) {
+          var _userObjs = await Users.find({ _id: { $in:_users } });
+          var _userTo = await Users.find({ _id: sp._id });
+          for await(const i of _userObjs) {
+            await CreateGeneralNotification(
+              i.fcmToken,
+              NOTIFICATION_TITILES.ORDERS,
+              msg,
+              NOTIFICATION_TYPE.ORDERS,
+              sp._id,
+              i._id,
+              _userTo._id,
+              "",
+              ""
+            );
+          }
+        }
+      }
+
       reply
       .code(200)
       .send(
@@ -399,30 +685,59 @@ exports.getUserOrderMap = async (req, reply) => {
     const raduis = await setting.findOne({ code: "RADUIS" });
 
     //search in raduis 
-    var  query = { $and: [
-      { status: ORDER_STATUS.new },
-      { "f_address": { "$regex": req.query.address, "$options": "i" } },
-    ]};
+    var q = []
+    if(req.query.address && req.query.address != ""){
+      q = [
+        { status: ORDER_STATUS.new },
+        { "f_address": { "$regex": req.query.address, "$options": "i" } },
+        {  
+          location: {
+            $near: {
+              $maxDistance: Number(raduis.value),
+              $geometry: {
+                  type: "Point",
+                  coordinates: [req.query.lat, req.query.lng]
+                }
+              }
+          }
+        }
+      ]
+    }else {
+      q = [
+        { status: ORDER_STATUS.new },
+        {  
+          location: {
+            $near: {
+              $maxDistance: Number(raduis.value),
+              $geometry: {
+                  type: "Point",
+                  coordinates: [req.query.lat, req.query.lng]
+                }
+              }
+          }
+        }
+      ]
+    }
    
-    const items = await Order.find(query)
-      .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "offers.user", populate: { path: "user" } })
+    const items = await Order.find(q)
+    .sort({ _id: -1 })
+    .populate("user", "-token")
+    .populate({ path: "offers.user", populate: { path: "user" } })
 
-      reply.code(200).send(
-      success(
-        language,
-        200,
-        MESSAGE_STRING_ARABIC.SUCCESS,
-        MESSAGE_STRING_ENGLISH.SUCCESS,
-        items,
-        // {
-        //   size: item.length,
-        //   totalElements: total,
-        //   totalPages: Math.floor(total / limit),
-        //   pageNumber: page,
-        // }
-      )
+    reply.code(200).send(
+    success(
+      language,
+      200,
+      MESSAGE_STRING_ARABIC.SUCCESS,
+      MESSAGE_STRING_ENGLISH.SUCCESS,
+      items,
+      // {
+      //   size: item.length,
+      //   totalElements: total,
+      //   totalPages: Math.floor(total / limit),
+      //   pageNumber: page,
+      // }
+    )
     );
     return;
   } catch (err) {
@@ -559,19 +874,19 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       }
       var checkBefore = await Rate.findOne({ $and: [{ order_id: ord._id }, { driver_id: driver_id }, { type: 1 }] });
 
-      // if (checkBefore) {
-      //   reply
-      //     .code(200)
-      //     .send(
-      //       errorAPI(
-      //         language,
-      //         400,
-      //         MESSAGE_STRING_ARABIC.RATE_BEFORE,
-      //         MESSAGE_STRING_ENGLISH.RATE_BEFORE
-      //       )
-      //     );
-      //   return;
-      // }
+      if (checkBefore) {
+        reply
+          .code(200)
+          .send(
+            errorAPI(
+              language,
+              400,
+              MESSAGE_STRING_ARABIC.RATE_BEFORE,
+              MESSAGE_STRING_ENGLISH.RATE_BEFORE
+            )
+          );
+        return;
+      }
 
       if (!req.body.rate_from_user) {
         reply
@@ -602,24 +917,21 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       var summation = await Rate.find({ $and: [{ driver_id: driver_id }, { type: 1 }] });
       let sum = lodash.sumBy(summation, function (o) { return o.rate_from_user; });
 
-      await Users.findByIdAndUpdate(driver_id, { rate: Number(sum / totalRates).toFixed(1), });
+      let driver = await Users.findByIdAndUpdate(driver_id, { rate: Number(sum / totalRates).toFixed(1), });
       await Order.findByIdAndUpdate(ord._id, { status: ORDER_STATUS.rated });
 
-      // var msg = `تمت اضافة تعليق جديد على طلب رقم: ${ord.Order_no}`;
-      // let _Notification2 = new Notifications({
-      //   fromId: ord.user_id._id,
-      //   user_id: USER_TYPE.PANEL,
-      //   title: NOTIFICATION_TITILES.ORDERS,
-      //   msg: msg,
-      //   dt_date: getCurrentDateTime(),
-      //   type: NOTIFICATION_TYPE.ORDERS,
-      //   body_parms: ord._id,
-      //   isRead: false,
-      //   fromName: ord.user_id.full_name,
-      //   toName: USER_TYPE.PANEL,
-      // });
-
-      // _Notification2.save();
+      var msg = `تمت اضافة تقييم جديد على طلب رقم: ${ord.title}`;
+      await CreateGeneralNotification(
+        driver.fcmToken,
+        NOTIFICATION_TITILES.ORDERS,
+        msg,
+        NOTIFICATION_TYPE.ORDERS,
+        ord._id,
+        userId,
+        driver_id,
+        "",
+        ""
+      );
 
       reply
         .code(200)
@@ -662,11 +974,10 @@ exports.getTransaction = async (req, reply) => {
     
     const total = await Transactions.find({ user: userId }).countDocuments();
     const item = await Transactions.find({ user: userId })
-      .sort({ _id: -1 })
-      .populate("user", "-token")
-      .skip(page * limit)
-      .limit(limit);
-
+    .sort({ _id: -1 })
+    .populate("user", "-token")
+    .skip(page * limit)
+    .limit(limit);
 
     // let trans = new Transactions({
     //     order_no: "2030394",
@@ -679,7 +990,7 @@ exports.getTransaction = async (req, reply) => {
     //   await trans.save();
 
     const items = await Transactions.find({ user: userId }).sort({createAt:-1}).limit(1)
-    if(item.length > 0 ){
+    if(item.length > 0 ) {
       last_date = items[0].createAt
     }
     items.forEach(element => {
@@ -2635,7 +2946,7 @@ exports.getOrders = async (req, reply) => {
     }
 
     if (req.body.status && req.body.status != ""){
-      if(req.body.status == 'finished'){
+      if(req.body.status == ORDER_STATUS.finished){
         query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]}
       }
       else if(req.body.status == 'canceled' ){
@@ -2685,7 +2996,7 @@ exports.deleteRate = async (req, reply) => {
       status_code: 200,
       status: true,
       message: "تمت العملية بنجاح",
-      items: [],
+      items: {},
     };
     reply.code(200).send(response);
   } catch (err) {

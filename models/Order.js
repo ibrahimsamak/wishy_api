@@ -43,10 +43,14 @@ const Orderschema = mongoose.Schema(
       status: { type: String },
       dt_date: { type: Date },
       dt_time: { type: String },
+      
     }]},
     user: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
     notes: { type: String },
     canceled_note: { type: String },
+    coordinates:{
+      type:[Number]
+    }
   },
   { versionKey: false }
 );
