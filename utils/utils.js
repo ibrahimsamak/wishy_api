@@ -319,7 +319,7 @@ exports.CreateGeneralNotification = function (
         sound: "default",
         badge: 1,
       },
-      data: {},
+      data: null,
       to: deviceId,
     };
     var data = JSON.stringify(postModel);

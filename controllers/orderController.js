@@ -103,7 +103,7 @@ exports.addOrder = async (req, reply) => {
                 400,
                 MESSAGE_STRING_ARABIC.WALLET,
                 MESSAGE_STRING_ENGLISH.WALLET,
-                {}
+                null
               )
             );
           return;
@@ -233,7 +233,7 @@ exports.addOrder = async (req, reply) => {
                       400,
                       MESSAGE_STRING_ARABIC.NOT_COVERED,
                       MESSAGE_STRING_ENGLISH.NOT_COVERED,
-                      {}
+                      null
                     )
                   );
                 return;
@@ -408,7 +408,7 @@ exports.addOffer = async (req, reply) => {
             400,
             MESSAGE_STRING_ARABIC.WALLET,
             MESSAGE_STRING_ENGLISH.WALLET,
-            {}
+            null
           )
         );
       return;
@@ -423,7 +423,7 @@ exports.addOffer = async (req, reply) => {
             400,
             MESSAGE_STRING_ARABIC.NOCAR,
             MESSAGE_STRING_ENGLISH.NOCAR,
-            {}
+            null
           )
         );
       return;
@@ -476,7 +476,7 @@ exports.addOffer = async (req, reply) => {
             200,
             MESSAGE_STRING_ARABIC.SUCCESS,
             MESSAGE_STRING_ENGLISH.SUCCESS,
-            {}
+            null
           )
         );
       }else{
@@ -563,7 +563,7 @@ exports.updateOffer = async (req, reply) => {
           200,
           MESSAGE_STRING_ARABIC.SUCCESS,
           MESSAGE_STRING_ENGLISH.SUCCESS,
-          {}
+          null
         )
       );
     
@@ -672,7 +672,7 @@ exports.updateOrder = async (req, reply) => {
           200,
           MESSAGE_STRING_ARABIC.SUCCESS,
           MESSAGE_STRING_ENGLISH.SUCCESS,
-          {}
+          null
         )
       );
     
@@ -1980,7 +1980,7 @@ exports.addRateFromProviderToUser = async (req, reply) => {
         status: false,
         messageAr: "عذرا .. لا يمكن التقييم حتى الانتهاء من الخدمة",
         messageEn: "Sorry .. you can't rate righ now",
-        items: {},
+        items: null,
       };
 
       reply.code(200).send(response);
@@ -3000,7 +3000,7 @@ exports.deleteRate = async (req, reply) => {
       status_code: 200,
       status: true,
       message: "تمت العملية بنجاح",
-      items: {},
+      items: null,
     };
     reply.code(200).send(response);
   } catch (err) {

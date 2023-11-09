@@ -48,7 +48,7 @@ exports.errorAPI = (
   statusCode,
   messageAr,
   messageEn,
-  items = {}
+  items = null
 ) => {
   // List of common HTTP request code
   const err = new Error();

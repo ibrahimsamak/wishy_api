@@ -176,7 +176,7 @@ exports.getToken = async (request, reply, done) => {
           400,
           MESSAGE_STRING_ARABIC.PLEASE_LOGIN,
           MESSAGE_STRING_ENGLISH.PLEASE_LOGIN,
-          {}
+          null
         );
         done(response);
       }
@@ -190,7 +190,7 @@ exports.getToken = async (request, reply, done) => {
             405,
             MESSAGE_STRING_ARABIC.USER_BLOCK,
             MESSAGE_STRING_ENGLISH.USER_BLOCK,
-            {}
+            null
           );
           done(response);
         }
@@ -200,7 +200,7 @@ exports.getToken = async (request, reply, done) => {
             410,
             MESSAGE_STRING_ARABIC.USER_VERIFY,
             MESSAGE_STRING_ENGLISH.USER_VERIFY,
-            {}
+            null
           );
           done(response);
         }
@@ -211,7 +211,7 @@ exports.getToken = async (request, reply, done) => {
             405,
             MESSAGE_STRING_ARABIC.USER_BLOCK,
             MESSAGE_STRING_ENGLISH.USER_BLOCK,
-            {}
+            null
           );
           done(response);
         }
@@ -221,7 +221,7 @@ exports.getToken = async (request, reply, done) => {
             410,
             MESSAGE_STRING_ARABIC.USER_VERIFY,
             MESSAGE_STRING_ENGLISH.USER_VERIFY,
-            {}
+            null
           );
           done(response);
         }
@@ -231,7 +231,7 @@ exports.getToken = async (request, reply, done) => {
           420,
           MESSAGE_STRING_ARABIC.USER_NOT_FOUND,
           MESSAGE_STRING_ENGLISH.USER_NOT_FOUND,
-          {}
+          null
         );
         done(response);
       }
@@ -242,7 +242,7 @@ exports.getToken = async (request, reply, done) => {
       430,
       MESSAGE_STRING_ARABIC.INVALID_TOKEN,
       MESSAGE_STRING_ENGLISH.INVALID_TOKEN,
-      {}
+      null
     );
     done(response);
   }

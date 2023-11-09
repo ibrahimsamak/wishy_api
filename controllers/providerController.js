@@ -98,7 +98,7 @@ exports.updateTime = async (req, reply) => {
       status_code: 200,
       status: true,
       message: "تمت العملية بنجاح",
-      items: {},
+      items: null,
     };
     reply.code(200).send(response);
   } catch (err) {
@@ -120,7 +120,7 @@ exports.deleteTime = async (req, reply) => {
       status_code: 200,
       status: true,
       message: "تمت العملية بنجاح",
-      items: {},
+      items: null,
     };
     reply.code(200).send(response);
   } catch (err) {
@@ -239,7 +239,7 @@ exports.sendSupplierMS = async (req, reply) => {
       status_code: 400,
       status: false,
       message: "حدث خطأ .. الرجاء المحاولة فيما بعد",
-      items: {},
+      items: null,
     };
     reply.code(200).send(response);
   }
@@ -250,7 +250,7 @@ exports.sendSupplierMS = async (req, reply) => {
     status_code: 200,
     status: true,
     message: "تم ارسال الرسالة بنجاح",
-    items: {},
+    items: null,
   };
   reply.code(200).send(response);
 };
@@ -780,7 +780,7 @@ exports.driversOnFirebase = async (req, reply) => {
         status_code: 400,
         status: false,
         message: "حدث خطأ !!",
-        items: {},
+        items: null,
       };
       reply.code(200).send(response);
     }); 

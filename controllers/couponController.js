@@ -196,7 +196,7 @@ exports.addcoupon = async (req, reply) => {
         status_code: 400,
         status: false,
         message: "عذرا .. الكوبون مضاف مسبقا",
-        items: {},
+        items: null,
       };
       reply.send(response);
       return;
@@ -379,7 +379,7 @@ exports.checkCouponReplacment = async (req, reply) => {
             400,
             MESSAGE_STRING_ARABIC.EMPTY_CART,
             MESSAGE_STRING_ENGLISH.EMPTY_CART,
-            {}
+            null
           )
         );
       return;

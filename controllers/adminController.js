@@ -82,7 +82,7 @@ exports.addAdmin = async (req, reply) => {
         status_code: 400,
         status: false,
         message: "البريد الالكتروني موجود مسبقا",
-        items: {},
+        items: null,
       };
       reply.code(200).send(response);
     }
