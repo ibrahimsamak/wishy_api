@@ -693,7 +693,7 @@ exports.updateOrder = async (req, reply) => {
         //TODO: transfer from wallet
       }
   
-      if(sp.orderType == 1){
+      if(sp.orderType == 1) {
         var  _users10 = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer)
         var _users = _users10.map(x=>x.user);
 
@@ -717,7 +717,7 @@ exports.updateOrder = async (req, reply) => {
         var  _users = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer)
         if(_users.length > 0) {
           var _userObjs = await Users.find({ _id: { $in:_users } });
-          var _userTo = await Users.find({ _id: sp._id });
+          var _userTo = await Users.find({ _id: sp.user });
           for await(const i of _userObjs) {
             await CreateGeneralNotification(
               i.fcmToken,
