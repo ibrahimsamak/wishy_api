@@ -224,29 +224,28 @@ exports.mail_general = function (req, to, sub, text, data) {
 
 exports.sendSMS = async function(number, from, to, code){
   let msg = encodeURI(code)
-  let pass = '!khawi@2023'
-  var url = `http://www.jawalbsms.ws/api.php/sendsms?user=khawi&pass=${pass}&to=${number}&message=${msg}&sender=khawi&unicode=u`
+  var url = `https://api.oursms.com/msgs/sms`
   
-  // let _config = {
-  //   headers: {
-  //     "Content-Type": "application/json",
-  //     Authorization: "Bearer " + "44|rX60FE8axfKv20uJjocIoPQU13FBI6YumP6o3pmh"
-  //   },
-  // };
-  // let body = { 
-  //   "number": number,
-  //   "body": code
-  // }
+  let _config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + "8xjeMpt-PBVa_e7SBVS4"
+    },
+  };
+  let body = {
+    "src": "faz3h-sa",
+    "body": code,
+    "dests": [number]
+  }
 
-  // console.log(url)
-  axios
-  .get(url)
-  .then((response) => {
-    //console.log(response)
-  })
-  .catch((error) => {
-    //console.log(error)
-  });
+  // axios
+  // .post(url,body, _config)
+  // .then((response) => {
+  //   console.log(response)
+  // })
+  // .catch((error) => {
+  //   console.log(error)
+  // });
 }
 
 exports.sendWhatsApp = async function(number, from, to, code){

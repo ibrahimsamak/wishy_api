@@ -1265,6 +1265,7 @@ exports.AddSMS = async (req, reply) => {
   let phone = req.body.phone_number;
 
   sendSMS(phone, "", "", msg);
+  
   const response = {
     status_code: 200,
     status: true,

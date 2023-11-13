@@ -113,10 +113,10 @@ exports.addOrder = async (req, reply) => {
             f_lat: req.body.f_lat,
             f_lng: req.body.f_lng,
             t_lat: req.body.t_lat,
-            t_lng: req.body.t_lat,
+            t_lng: req.body.t_lng,
             max_price: req.body.max_price,
             min_price: req.body.min_price,
-            price: 0,
+            price: req.body.price,
             f_address: req.body.f_address,
             t_address: req.body.t_address,
             order_no: orderNo,
@@ -429,7 +429,7 @@ exports.addOffer = async (req, reply) => {
       return;
       }
 
-      if( Number(req.body.price) >= Number(checkOrder.min_price) && Number(req.body.price)<= Number(checkOrder.max_price)){
+      if(checkOrder.orderType == 1 && Number(req.body.price) >= Number(checkOrder.min_price) && Number(req.body.price) <= Number(checkOrder.max_price)){
        let offer = {
         user:      userId,
         f_address: req.body.f_address,
@@ -479,6 +479,58 @@ exports.addOffer = async (req, reply) => {
             null
           )
         );
+        return
+      }else if (checkOrder.orderType == 2){
+        let offer = {
+          user:      userId,
+          f_address: req.body.f_address,
+          t_address: req.body.t_address,
+          f_lat:     req.body.f_lat,
+          f_lng:     req.body.f_lng,
+          t_lat:     req.body.t_lat,
+          t_lng:     req.body.t_lng,
+          price:     Number(req.body.price),
+          notes:     req.body.notes,
+          status:    PASSENGER_STATUS.add_offer,
+          dt_date:   req.body.dt_date,
+          dt_time:   req.body.dt_time,
+        }
+        const sp = await Order.findByIdAndUpdate(
+            req.params.id,
+            {
+              $push: { offers: offer } ,
+            },
+            { new: true }
+         )
+         
+        var msg = `تم اضافة عرض عبى طلبك`;
+        var msg2 = `تم قبول طلبك بنجاح`;
+    
+        let userObj = await Users.findById(sp.user);
+        CreateGeneralNotification(
+          userObj.fcmToken,
+          NOTIFICATION_TITILES.ORDERS,
+          msg,
+          NOTIFICATION_TYPE.ORDERS,
+          sp._id,
+          userId,
+          userObj._id,
+          "",
+          userObj.full_name
+        );
+
+        reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.SUCCESS,
+            MESSAGE_STRING_ENGLISH.SUCCESS,
+            null
+          )
+        );
+        return
       }else{
         reply
         .code(200)
@@ -760,13 +812,14 @@ exports.getUserOrder = async (req, reply) => {
     var query = {
       $and: [
         { 
+          // only accepted offer.
           $or:[ { "offers.user": userId }, { user: userId } ] 
         }
       ]
     };
 
     if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.new) {
-      query.$and.push({ status: {$in:[ORDER_STATUS.new, ORDER_STATUS.started ]}})
+      query.$and.push({ status: {$in:[ORDER_STATUS.new, ORDER_STATUS.started, ORDER_STATUS.accpeted ]}})
     }
     if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.finished) {
       query.$and.push({ status: ORDER_STATUS.finished })
