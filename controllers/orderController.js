@@ -109,7 +109,7 @@ exports.addOrder = async (req, reply) => {
           return;
           }
 
-          if(req.body.orderType == 1 && _userObj.hasCar != true){
+          if(req.body.orderType == 1 && userObj.hasCar != true){
             reply
             .code(200)
             .send(
