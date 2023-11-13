@@ -60,6 +60,7 @@ const ORDER_STATUS = Object.freeze({
   canceled_by_driver: "canceled_by_driver",
   canceled_by_user: "canceled_by_user",
   canceled_by_admin: "canceled_by_admin",
+  canceled:"canceled"
 });
 
 const PASSENGER_STATUS = Object.freeze({

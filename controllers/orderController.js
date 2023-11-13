@@ -654,10 +654,10 @@ exports.updateOrder = async (req, reply) => {
       )
 
       var msg = ""
-      var msg_started = `تم قبول عرضك على الطلب بنجاح`;
-      var msg_finished = `تم رفض عرضك على الطلب`;
-      var msg_canceled_by_driver = `تم حضور الزبون بنجاح`;
-      var msg_canceled_by_user = `بم يتم حضور الزبون `;
+      var msg_started = `تم البدء في تنفيذ الطلب بنجاح`;
+      var msg_finished = `تم الانتهاء من تنفيذ الطلب بنجاح`;
+      var msg_canceled_by_driver = `تم الالغاء من قبل السائق`;
+      var msg_canceled_by_user = `تم الغاء الطلب من قبل الزبون`;
       
       if(req.body.status == ORDER_STATUS.started) {
         msg = msg_started;
@@ -842,7 +842,7 @@ exports.getUserOrder = async (req, reply) => {
     if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.finished) {
       query.$and.push({ status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated ]}})
     }
-    if (req.query.status && req.query.status != "" && req.query.status.includes("canceled")) {
+    if (req.query.status && req.query.status != "" && req.query.status.includes(ORDER_STATUS.canceled)) {
       query.$and.push({ status:{$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]} })
     }
     
@@ -992,7 +992,7 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       var summation = await Rate.find({ $and: [{ driver_id: driver_id }, { type: 1 }] });
       let sum = lodash.sumBy(summation, function (o) { return o.rate_from_user; });
 
-      let driver = await Users.findByIdAndUpdate(driver_id, { rate: Number(sum / totalRates).toFixed(1), });
+      let driver = await Users.findByIdAndUpdate(driver_id, { rate: Number(sum / totalRates).toFixed(1)},{new:true});
       await Order.findByIdAndUpdate(ord._id, { status: ORDER_STATUS.rated });
 
       var msg = `تمت اضافة تقييم جديد على طلب رقم: ${ord.title}`;
