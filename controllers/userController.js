@@ -389,8 +389,8 @@ exports.verify = async (req, reply) => {
           success(
             language,
             200,
-            MESSAGE_STRING_ARABIC.USER_CHANGE_PHONE_SUCCESS,
-            MESSAGE_STRING_ENGLISH.USER_CHANGE_PHONE_SUCCESS,
+            MESSAGE_STRING_ARABIC.USER_VERIFY,
+            MESSAGE_STRING_ENGLISH.USER_VERIFY,
             newUser
           )
         );

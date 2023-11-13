@@ -53,7 +53,7 @@ const ACTORS = Object.freeze({
 
 const ORDER_STATUS = Object.freeze({
   new: "new",
-  accpeted: "accpeted",
+  accpeted: "accepted",
   started: "started",
   finished: "finished",
   rated: "rated",

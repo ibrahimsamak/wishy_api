@@ -468,7 +468,7 @@ exports.addOffer = async (req, reply) => {
           { new: true }
        )
 
-        var msg = `تم اضافة عرض عبى طلبك`;
+        var msg = `تم اضافة عرض على طلبك`;
         var msg2 = `تم قبول طلبك بنجاح`;
     
         let userObj = await Users.findById(sp.user);
@@ -519,7 +519,7 @@ exports.addOffer = async (req, reply) => {
             { new: true }
          )
 
-        var msg = `تم اضافة عرض عبى طلبك`;
+        var msg = `تم اضافة عرض على طلبك`;
         var msg2 = `تم قبول طلبك بنجاح`;
     
         let userObj = await Users.findById(sp.user);
@@ -828,8 +828,8 @@ exports.getUserOrder = async (req, reply) => {
     var query = {
       $and: [
         { 
-          // only accepted offer.
-          $or:[ { "offers.user": userId }, { user: userId } ] 
+          // only accepted offer.       
+          $or:[ { offers: { $elemMatch: { user: userId} }}, { user: userId } ] 
         }
       ]
     };
@@ -841,7 +841,7 @@ exports.getUserOrder = async (req, reply) => {
       query.$and.push({ status: ORDER_STATUS.finished })
     }
     if (req.query.status && req.query.status != "" && req.query.status.includes("canceled")) {
-      query.$and.push({ $in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user] })
+      query.$and.push({ status:{$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]} })
     }
     
     const total = await Order.find(query).countDocuments();
