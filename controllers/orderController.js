@@ -685,10 +685,12 @@ exports.updateOrder = async (req, reply) => {
       
       if(req.body.status == ORDER_STATUS.canceled_by_driver){
         msg = msg_canceled_by_driver;
+        //TODO: transfer from wallet
       }
 
       if(req.body.status == ORDER_STATUS.canceled_by_user){
         msg = msg_canceled_by_user;
+        //TODO: transfer from wallet
       }
   
       if(sp.orderType == 1){
@@ -828,7 +830,7 @@ exports.getUserOrder = async (req, reply) => {
     var query = {
       $and: [
         { 
-          // only accepted offer.       
+          //TODO: only accepted offer.       
           $or:[ { offers: { $elemMatch: { user: userId} }}, { user: userId } ] 
         }
       ]
@@ -838,7 +840,7 @@ exports.getUserOrder = async (req, reply) => {
       query.$and.push({ status: {$in:[ORDER_STATUS.new, ORDER_STATUS.started, ORDER_STATUS.accpeted ]}})
     }
     if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.finished) {
-      query.$and.push({ status: ORDER_STATUS.finished })
+      query.$and.push({ status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated ]}})
     }
     if (req.query.status && req.query.status != "" && req.query.status.includes("canceled")) {
       query.$and.push({ status:{$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]} })
@@ -937,7 +939,7 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       return;
     }
     if (ord.status == ORDER_STATUS.finished) {
-      if(ord.orderType == 1){
+      if(ord.orderType == 1) {
         driver_id = ord.user
       }else{
         let offers = ord.offers.find(x=>String(x.status) === String(PASSENGER_STATUS.accept_offer))

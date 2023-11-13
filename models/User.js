@@ -89,7 +89,8 @@ const UserSchema = mongoose.Schema(
       type: String 
     },
     rate:{
-      type: Number 
+      type: Number ,
+      default: 0,
     },
 
   },
