@@ -108,6 +108,22 @@ exports.addOrder = async (req, reply) => {
             );
           return;
           }
+
+          if(req.body.orderType == 1 && _userObj.hasCar != true){
+            reply
+            .code(200)
+            .send(
+              errorAPI(
+                language,
+                400,
+                MESSAGE_STRING_ARABIC.NOCAR,
+                MESSAGE_STRING_ENGLISH.NOCAR,
+                null
+              )
+            );
+          return;
+          }
+
           let Orders = new Order({
             title: req.body.title,
             f_lat: req.body.f_lat,
@@ -502,7 +518,7 @@ exports.addOffer = async (req, reply) => {
             },
             { new: true }
          )
-         
+
         var msg = `تم اضافة عرض عبى طلبك`;
         var msg2 = `تم قبول طلبك بنجاح`;
     
