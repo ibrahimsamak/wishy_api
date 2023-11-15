@@ -947,6 +947,7 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
           driver_id = offers[0].user
         }
       }
+
       var checkBefore = await Rate.findOne({ $and: [{ order_id: ord._id }, { driver_id: driver_id }, { type: 1 }] });
 
       if (checkBefore) {
@@ -1015,7 +1016,8 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
             language,
             200,
             MESSAGE_STRING_ARABIC.SUCCESS,
-            MESSAGE_STRING_ENGLISH.SUCCESS
+            MESSAGE_STRING_ENGLISH.SUCCESS,
+            {}
           )
         );
     } else {
