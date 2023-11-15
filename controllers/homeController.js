@@ -5,7 +5,7 @@ const { Admin } = require("../models/Admin");
 const { Users } = require("../models/User");
 const { Order } = require("../models/Order");
 const { Supplier, Product, Product_Price } = require("../models/Product");
-const { USER_TYPE } = require("../utils/constants");
+const { USER_TYPE, ORDER_STATUS } = require("../utils/constants");
 const { employee } = require("../models/Employee");
 
 exports.getTop10NewUsers = async (req, reply) => {
@@ -30,10 +30,10 @@ exports.getTop10NewUsers = async (req, reply) => {
 exports.getTop10Orders = async (req, reply) => {
   try {
     var query = {};
-    query["StatusId"] = 1;
+    query["status"] = ORDER_STATUS.new
     const item = await Order.find(query)
-      .populate("user_id")
-      .populate("supplier_id")
+      .populate("user", "-token")
+      .populate({ path: "offers.user", populate: { path: "user" } })
       .limit(10)
       .sort({ _id: -1 });
     const response = {
@@ -51,13 +51,13 @@ exports.getTop10Orders = async (req, reply) => {
 exports.getCounterOrdersWithStatus = async (req, reply) => {
   try {
     // if (req.user.userType == USER_TYPE.ADMIN) {
-    const NewOrder = await Order.find({ StatusId: 1 }).countDocuments();
+    const NewOrder = await Order.find({ status: ORDER_STATUS.new }).countDocuments();
     const ProccessingOrder = await Order.find({
-      $or: [{ StatusId: 2 }, { StatusId: 3 }],
+      $or: [{ status: ORDER_STATUS.started }, { status: ORDER_STATUS.accpeted }],
     }).countDocuments();
-    const DoneOrder = await Order.find({ StatusId: 4 }).countDocuments();
+    const DoneOrder = await Order.find({ $or:[{status: ORDER_STATUS.finished }, {status: ORDER_STATUS.rated }]}).countDocuments();
     const CancelOrder = await Order.find({
-      $or: [{ StatusId: 5 }, { StatusId: 6 }],
+      $or: [{ status: ORDER_STATUS.canceled_by_driver }, { status: ORDER_STATUS.canceled_by_admin }, { status: ORDER_STATUS.canceled_by_user }],
     }).countDocuments();
     const AllOrder = await Order.find({}).countDocuments();
 

@@ -1066,11 +1066,14 @@ exports.getTransaction = async (req, reply) => {
 
     const items = await Transactions.find({ user: userId }).sort({createAt:-1}).limit(1)
     const _items = await Transactions.find({ user: userId }).sort({createAt:-1})
+   
     if(item.length > 0 ) {
       last_date = items[0].createAt
     }
+
     _items.forEach(element => {
-      last_total += Number(element.total)
+      if(element.total)
+        last_total += Number(element.total)
     });
 
     const response = {
