@@ -15,6 +15,8 @@ const {
   USER_TYPE,
   VALIDATION_MESSAGE_ARABIC,
   VALIDATION_MESSAGE_ENGLISH,
+  NOTIFICATION_TYPE,
+  ORDER_STATUS,
 } = require("../utils/constants");
 
 const {
@@ -212,7 +214,7 @@ exports.addMassNotification = async (req, reply) => {
     var arr = [];
     if (String(req.body.type) == "1") {
       arr = [];
-      const object = await Users.find({$and: [{ isBlock: false }]});
+      const object = await Users.find({$and: [{ isBlock: false }]}).sort({createAt:-1});
       object.forEach((x) => {arr.push(x.fcmToken)});
 
       for await (const doc of object) {
@@ -222,7 +224,7 @@ exports.addMassNotification = async (req, reply) => {
           title: req.body.title,
           msg: req.body.msg,
           dt_date: getCurrentDateTime(),
-          type: 3,
+          type: NOTIFICATION_TYPE.GENERAL,
           body_parms: "",
           isRead: false,
           fromName: USER_TYPE.PANEL,
@@ -231,9 +233,10 @@ exports.addMassNotification = async (req, reply) => {
         _Notification.save();
       }
 
-      for await (const item of object){
-        await sendWhatsApp(item.phone_number,"","",req.body.msg)
-      }
+      // for await (const item of object){
+      //   await sendWhatsApp(item.phone_number,"","",req.body.msg)
+      // }
+
       CreateNotificationMultiple(arr, req.body.title, req.body.msg, "");
     }
 
@@ -317,14 +320,14 @@ exports.addSingleNotification = async (req, reply) => {
       doc.fcmToken,
       req.body.title,
       req.body.msg,
-      3,
+      NOTIFICATION_TYPE.GENERAL,
       "",
       "الادارة",
       doc._id,
       "الادارة",
-      doc.full_name ? doc.full_name : doc.name
+      doc.full_name ? doc.full_name : ""
     );
-    await sendWhatsApp(doc.phone_number,"","",req.body.msg)
+    // await sendWhatsApp(doc.phone_number,"","",req.body.msg)
 
     const response = {
       items: null,

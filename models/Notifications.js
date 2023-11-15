@@ -24,7 +24,7 @@ const Notificationschema = mongoose.Schema(
       type: Date,
     },
     type: {
-      type: Number,
+      type: String,
     },
     body_parms: {
       type: String,
