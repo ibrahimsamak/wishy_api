@@ -472,7 +472,7 @@ exports.addOffer = async (req, reply) => {
         var msg2 = `تم قبول طلبك بنجاح`;
     
         let userObj = await Users.findById(sp.user);
-        CreateGeneralNotification(
+        await CreateGeneralNotification(
           userObj.fcmToken,
           NOTIFICATION_TITILES.ORDERS,
           msg,
@@ -523,7 +523,7 @@ exports.addOffer = async (req, reply) => {
         var msg2 = `تم قبول طلبك بنجاح`;
     
         let userObj = await Users.findById(sp.user);
-        CreateGeneralNotification(
+        await CreateGeneralNotification(
           userObj.fcmToken,
           NOTIFICATION_TITILES.ORDERS,
           msg,
@@ -611,7 +611,7 @@ exports.updateOffer = async (req, reply) => {
       var to_userId = sp.offers.find(x=>x._id == req.body.offer)
       var userObj = await Users.findById(to_userId.user)
       
-      CreateGeneralNotification(
+      await CreateGeneralNotification(
         userObj.fcmToken,
         NOTIFICATION_TITILES.ORDERS,
         msg,
@@ -942,9 +942,9 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       if(ord.orderType == 1) {
         driver_id = ord.user
       }else{
-        let offers = ord.offers.find(x=>String(x.status) === String(PASSENGER_STATUS.accept_offer))
-        if(offers) {
-          driver_id = offers.user
+        let offers = ord.offers.filter(x=>String(x.status) === String(PASSENGER_STATUS.accept_offer))
+        if(offers.length > 0) {
+          driver_id = offers[0].user
         }
       }
       var checkBefore = await Rate.findOne({ $and: [{ order_id: ord._id }, { driver_id: driver_id }, { type: 1 }] });
@@ -1160,7 +1160,7 @@ exports.updateOrderByAdmin = async (req, reply) => {
     }
 
     // if (sp.user_id.isEnableNotifications == true) {
-      CreateGeneralNotification(
+    await CreateGeneralNotification(
         sp.user_id.fcmToken,
         NOTIFICATION_TITILES.ORDERS,
         msg2,
@@ -1205,7 +1205,7 @@ exports.addOrdertoEmployee = async (req, reply) => {
     var msg = `تم اضافة طلب جديد اليك`;
     var msg2 = `تم قبول طلبك بنجاح`;
 
-    CreateGeneralNotification(
+    await CreateGeneralNotification(
       employee.fcmToken,
       NOTIFICATION_TITILES.ORDERS,
       msg,
@@ -1218,7 +1218,7 @@ exports.addOrdertoEmployee = async (req, reply) => {
     );
 
     // if (sp.user_id.isEnableNotifications == true) {
-      CreateGeneralNotification(
+      await CreateGeneralNotification(
         sp.user_id.fcmToken,
         NOTIFICATION_TITILES.ORDERS,
         msg2,
@@ -1259,7 +1259,7 @@ exports.adminCancelOrder = async (req, reply) => {
     var msg2 = `عذرا ..  تم رفض طلبك `;
 
     // if (sp.user_id.isEnableNotifications == true) {
-      CreateGeneralNotification(
+      await  CreateGeneralNotification(
         sp.user_id.fcmToken,
         NOTIFICATION_TITILES.ORDERS,
         msg2,
