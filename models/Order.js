@@ -91,7 +91,7 @@ const PaymentTransactionsSchema = mongoose.Schema(
   {
     order_no: { type: String },
     user: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
-    // admin: { type: String },
+    type: { type: String },
     total: { type: Number },
     createAt: { type: Date },
     paymentType: { type: String, enum: ["Cash", "Online", "Wallet"] },

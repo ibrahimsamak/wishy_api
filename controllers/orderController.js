@@ -642,6 +642,7 @@ exports.updateOffer = async (req, reply) => {
 
 exports.updateOrder = async (req, reply) => {
   try {
+    const settings = await setting.findOne({code:"ORDER_REFERAL"});
     let userId = req.user._id
 
     const sp = await Order.findByIdAndUpdate(
@@ -655,6 +656,7 @@ exports.updateOrder = async (req, reply) => {
 
       var msg = ""
       var msg_started = `تم البدء في تنفيذ الطلب بنجاح`;
+      var msg_accpet = `تم الانتهاء من مرحلة تلقي العروض على الطلب`;
       var msg_finished = `تم الانتهاء من تنفيذ الطلب بنجاح`;
       var msg_canceled_by_driver = `تم الالغاء من قبل السائق`;
       var msg_canceled_by_user = `تم الغاء الطلب من قبل الزبون`;
@@ -662,23 +664,39 @@ exports.updateOrder = async (req, reply) => {
       if(req.body.status == ORDER_STATUS.started) {
         msg = msg_started;
       }
+      if(req.body.status == ORDER_STATUS.accpeted) {
+        msg = msg_accpet;
+      }
       if(req.body.status == ORDER_STATUS.finished) {
         msg = msg_finished;
         if(sp.orderType == 1) {
           let use = await Users.findById(sp.user);
-          let offers_users = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer);
+          var orderNo = `#${makeid(6)}`;
+          await NewPayment(use._id, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+" , Number(settings.value), "Online")
+          if(use.by && use.by != "") {
+            await NewPayment(use.by, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+", Number(settings.value), "Online")
+          }
+
+          let offers_users = sp.offers.filter((x) => x.status == PASSENGER_STATUS.accept_offer);
           if(offers_users.length > 0) {
             for await (const i of offers_users){
-              await NewPayment(use._id, `اكمال طلب ${sp.title}`, '+', i.price, 'Online');
-              await NewPayment(i.user, `اكمال طلب ${sp.title}`, '-', i.price, 'Online');
+              await NewPayment(use._id, sp.order_no , `اكمال طلب ${sp.order_no}` , '+' , i.price , 'Online');
+              await NewPayment(i.user, sp.order_no , `اكمال طلب ${sp.order_no}` , '-' , i.price , 'Online');
             }
           }
         }else {
          let use = await Users.findById(sp.user);
+         var orderNo = `#${makeid(6)}`;
+         await NewPayment(use._id, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+" , Number(settings.value), "Online")
+         if(use.by && use.by != "") {
+           await NewPayment(use.by, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+", Number(settings.value), "Online")
+         }
+
          let offers_users = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer);
+         console.log(offers_users)
          if(offers_users.length > 0) {
-          await NewPayment(use._id, `اكمال طلب ${sp.title}`, '-', sp.price, 'Online');
-          await NewPayment(offers_users[0].user, `اكمال طلب ${sp.title}`, '+', sp.price, 'Online');
+          await NewPayment(use._id, sp.order_no , `اكمال طلب ${sp.order_no}` , '-' , sp.price , 'Online');
+          await NewPayment(offers_users[0].user, sp.order_no , `اكمال طلب ${sp.order_no}` , '+' , sp.price , 'Online');
          }
         }
       }
@@ -693,6 +711,8 @@ exports.updateOrder = async (req, reply) => {
         //TODO: transfer from wallet
       }
   
+      console.log(msg)
+
       if(sp.orderType == 1) {
         var  _users10 = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer)
         var _users = _users10.map(x=>x.user);
@@ -848,11 +868,11 @@ exports.getUserOrder = async (req, reply) => {
     
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
-      .sort({ _id: -1 })
       .populate("user", "-token")
       .populate({ path: "offers.user", populate: { path: "user" } })
       .skip(page * limit)
-      .limit(limit);
+      .limit(limit)
+      .sort({ createAt: -1 });
 
     const response = {
       items: item,
@@ -1075,7 +1095,13 @@ exports.getTransaction = async (req, reply) => {
 
     _items.forEach(element => {
       if(element.total)
-        last_total += Number(element.total)
+        var num = 0
+        if(element.type == '-'){
+          num = -1 * Number(element.total)
+        }else{
+          num = Number(element.total)
+        }
+        last_total += num
     });
 
     const response = {

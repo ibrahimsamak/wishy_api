@@ -34,7 +34,7 @@ exports.getNotfications = async (req, reply) => {
     const _Notification = await Notifications.find({
       $and: [{ user_id: user_id }, { isRead: false }],
     })
-      .sort({ _id: -1 })
+      .sort({ dt_date: -1 })
       .limit(50);
     reply
       .code(200)

@@ -30,5 +30,21 @@ const Couponchema = mongoose.Schema(
   { versionKey: false }
 );
 
+
+const CouponUsageSchema = mongoose.Schema(
+  {
+    coupon: { type: String },
+    dt_date: { type: Date },   
+    amount: { type: Number },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
+
+  },
+  { versionKey: false }
+);
+
+
 const coupon = mongoose.model("coupons", Couponchema);
+const coupon_usage = mongoose.model("coupons_usage", CouponUsageSchema);
+
 exports.coupon = coupon;
+exports.coupon_usage = coupon_usage;

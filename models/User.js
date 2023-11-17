@@ -92,7 +92,10 @@ const UserSchema = mongoose.Schema(
       type: Number ,
       default: 0,
     },
-
+    by:{
+      type: String,
+      default: ""
+    },
   },
   { versionKey: false }
 );

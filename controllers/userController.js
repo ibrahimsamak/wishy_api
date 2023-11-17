@@ -7,6 +7,8 @@ const async = require("async");
 const lodash = require("lodash");
 const moment = require("moment-timezone");
 const Joi = require("@hapi/joi");
+const axios = require("axios");
+const utils = require("../utils/utils");
 
 // Get Data Models
 
@@ -39,7 +41,8 @@ const {
   getAddress,
   emailRegex,
   handleError,
-  NewPayment
+  NewPayment,
+  makeOrderNumber
 } = require("../utils/utils");
 const { success, errorAPI } = require("../utils/responseApi");
 const {
@@ -50,11 +53,13 @@ const {
   VALIDATION_MESSAGE_ARABIC,
   VALIDATION_MESSAGE_ENGLISH,
 } = require("../utils/constants");
+const { coupon_usage } = require("../models/Coupon");
 
 // Get all Users
 exports.getUsers = async (req, reply) => {
-  try {
-    console.log(req.body);
+  // try {
+    console.log('xxxxxxxx')
+
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
     let search_field = req.body.search_field;
@@ -63,13 +68,20 @@ exports.getUsers = async (req, reply) => {
     let query1 = {};
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
 
+    console.log('xxxxxxxx')
     const total = await Users.find(query1).countDocuments();
     const item = await Users.find(query1)
       .populate("city_id")
       .skip(page * limit)
       .limit(limit);
-    console.log(item);
-    const response = {
+
+      for await (const i of item){
+        var referal = await Users.find({by:i._id})
+        console.log(referal)
+        item.favorites = referal.length
+      }
+
+      const response = {
       status_code: 200,
       status: true,
       message: "تمت العملية بنجاح",
@@ -82,9 +94,9 @@ exports.getUsers = async (req, reply) => {
       },
     };
     reply.send(response);
-  } catch (err) {
-    throw boom.boomify(err);
-  }
+  // } catch (err) {
+  //   throw boom.boomify(err);
+  // }
 };
 
 exports.getUsersExcel = async (req, reply) => {
@@ -359,6 +371,7 @@ exports.verify = async (req, reply) => {
         {
           phone_number: req.body.phone_number,
           isVerify: true,
+          by: req.body.by,
           token: jwt.sign(
             { _id: _user._id, userType: USER_TYPE.USER },
             config.get("jwtPrivateKey"),
@@ -382,6 +395,14 @@ exports.verify = async (req, reply) => {
       // newUser.favorite = favorits;
       newUser.orders = orders;
       newUser.delivery_address = address;
+
+      var orderNo = `#${utils.makeid(6)}`;
+      const settings = await setting.findOne({code:"WALLET_REFERAL"});
+      await NewPayment(update._id, orderNo, "دعوة من احد الأصدقاء", "+" , Number(settings.value), "Online")
+      if(req.body.by && req.body.by != "") {
+        console.log(req.body.by)
+        await NewPayment(req.body.by, orderNo, "دعوة من احد الأصدقاء", "+", Number(settings.value), "Online")
+      }
 
       reply
         .code(200)
@@ -1567,14 +1588,12 @@ exports.getUsers = async (req, reply) => {
     var newArr = [];
     for await (const data of item) {
       var newUser = data.toObject();
-      var _order = await Order.find({
+      var _order = await Order.countDocuments({
         $and: [{ user_id: newUser._id }, { StatusId: 4 }],
-      }).countDocuments();
-      var _favorite = await Favorite.find({
-        user_id: newUser._id,
-      }).countDocuments();
+      });
+      var referal = await Users.countDocuments({by:data._id})
+      newUser.favorites = referal
       newUser.orders = _order;
-      newUser.favorites = _favorite;
       newArr.push(newUser);
     }
 
@@ -1931,7 +1950,17 @@ exports.updateUserAddressAdmin = async (req, reply) => {
 exports.updateWallet = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
-    const _user = await NewPayment(req.user._id, "شحن المحفظة الالكترونية", "+", req.body.amount, "Online" );
+    var orderNo = `${makeOrderNumber(6)}`;
+    const _user = await NewPayment(req.user._id, orderNo ,"شحن المحفظة الالكترونية", "+", req.body.amount, "Online" );
+    if(req.body.coupon && req.body.coupon != ""){
+      let usage = new coupon_usage({
+        coupon: req.body.coupon,
+        dt_date: getCurrentDateTime(),   
+        amount: Number(req.body.amount),
+        user: req.user._id
+      });
+      await usage.save()
+    }
     reply
     .code(200)
     .send(
@@ -1946,4 +1975,87 @@ exports.updateWallet = async (req, reply) => {
   } catch (err) {
     throw boom.boomify(err);
   }
+};
+
+
+exports.referalDeepLink = async (req, reply) => {
+  // let msg = req.body.msg;
+  const language = "ar";
+  const user = await Users.findById(req.user._id);
+  var body = {
+      "dynamicLinkInfo": {
+      "domainUriPrefix": "https://khawi.page.link",
+      "link": "https://google.com?referal_id="+user._id,
+      "androidInfo": {
+        "androidPackageName": "com.khawi",
+        "androidFallbackLink": "https://google.com"
+      },
+      "iosInfo": {
+        "iosBundleId": "com.Fazaa.Khawi",
+        "iosFallbackLink": "https://google.com",
+      },
+      "navigationInfo": {
+        "enableForcedRedirect": true
+      }
+    },
+    "suffix": {
+      "option": "UNGUESSABLE"
+    }
+  };
+
+  let _config = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  const url = "https://firebasedynamiclinks.googleapis.com/v1/shortLinks?key=AIzaSyBR15gqERpWd0IbmAk1zGIGur_hrlRbEm4";
+  axios
+  .post(url, body, {})
+  .then(async (response) => {
+    if(response.data){
+      let obj = {
+        shortLink: response.data.shortLink,
+        previewLink: response.data.previewLink,
+      }
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          obj
+        )
+      );  
+    }else{
+      reply
+      .code(200)
+      .send(
+        errorAPI(
+          language,
+          400,
+          MESSAGE_STRING_ARABIC.USER_BLOCK,
+          MESSAGE_STRING_ENGLISH.USER_BLOCK,
+          null
+        )
+      );
+    return;
+    }
+  })
+  .catch((error) => {
+    reply
+    .code(200)
+    .send(
+      errorAPI(
+        language,
+        400,
+        MESSAGE_STRING_ARABIC.USER_BLOCK,
+        MESSAGE_STRING_ENGLISH.USER_BLOCK,
+        null
+      )
+    );
+  return;
+  });
 };

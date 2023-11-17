@@ -7,7 +7,7 @@ const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const _ = require("underscore");
 
 // Get Data Models
-const { coupon } = require("../models/Coupon");
+const { coupon, coupon_usage } = require("../models/Coupon");
 const { Order } = require("../models/Order");
 const { Cart } = require("../models/Cart");
 const { package, setting, place } = require("../models/Constant");
@@ -344,303 +344,70 @@ exports.updatecoupon = async (req, reply) => {
 
 // Check Coupon
 exports.checkCouponReplacment = async (req, reply) => {
-  const language = req.headers["accept-language"];
+  const language = "ar";
   try {
-    var place_id = req.headers["place"];
-    var supplier_id = req.headers["supplier"];
-    const tax = await setting.findOne({ code: "TAX" });
     const user_id = req.user._id;
-
-    var totalPrice = 0.0;
-    var totalDiscount = 0.0;
     var today = moment().tz("Asia/Riyadh");
-    var deliverycost = 0.0;
-    var expresscost = 0.0;
-    var providerArr = [];
-    var ar_msg = "";
-    var en_msg = "";
-    var statusCode = 200;
-    var newPlaceId = "";
-    var lat = 0.0;
-    var lng = 0.0;
 
-    const _sp = await Order.findOne({
-      $and: [{ user_id: user_id }, { couponCode: req.body.coupon }],
-    });
-
-    const cart_arr = req.body.items;
-
-    if (cart_arr.length == 0) {
-      reply
-        .code(200)
-        .send(
-          errorAPI(
-            language,
-            400,
-            MESSAGE_STRING_ARABIC.EMPTY_CART,
-            MESSAGE_STRING_ENGLISH.EMPTY_CART,
-            null
-          )
-        );
-      return;
-    }
-
-    for await (const data of cart_arr) {
-      var Product_Price_Object = await Product_Price.findOne({
-        $and: [
-          { place_id: place_id },
-          { supplier_id: supplier_id },
-          { product_id: data.product_id },
-          { isDeleted: false },
-        ],
-      });
-
-      if (Product_Price_Object) {
-        // reply
-        //   .code(200)
-        //   .send(
-        //     errorAPI(
-        //       language,
-        //       400,
-        //       MESSAGE_STRING_ARABIC.ERROR,
-        //       MESSAGE_STRING_ENGLISH.ERROR
-        //     )
-        //   );
-        // return;
-
-        if (
-          Product_Price_Object.discountPriceReplacment &&
-          Product_Price_Object.discountPriceReplacment != 0
-        ) {
-          totalPrice +=
-            Number(Product_Price_Object.price_for_replacment) * data.qty;
-          totalDiscount += Number(
-            Product_Price_Object.discountPriceReplacment * data.qty
-          );
-        } else {
-          totalPrice +=
-            Number(Product_Price_Object.price_for_replacment) * data.qty;
-        }
-
-        deliverycost +=
-          Number(Product_Price_Object.deliveryCost) * Number(data.qty);
-        expresscost +=
-          Number(Product_Price_Object.expressCost) * Number(data.qty);
-      }
-    }
-    var sub_total = totalPrice - totalDiscount;
-    let sub_total_delivery = Number(sub_total) + Number(deliverycost);
-    let sub_total_express_delivery = Number(sub_total) + Number(expresscost);
-    var final_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
-    var final_express_total = Number(sub_total_express_delivery * Number(tax.value)) + Number(sub_total_express_delivery);
-
-    if (
-      String(req.body.is_address_book) == "true" &&
-      req.body.address_book &&
-      req.body.address_book != ""
-    ) {
-      var newAddress = await User_Address.findById(req.body.address_book);
-      if (newAddress) {
-        lat = Number(newAddress.lat);
-        lng = Number(newAddress.lng);
-        if (newAddress.discount != 0)
-          personalDiscount = Number(newAddress.discount);
-      } else {
-        reply
-          .code(200)
-          .send(
-            errorAPI(
-              language,
-              400,
-              MESSAGE_STRING_ARABIC.ERROR,
-              MESSAGE_STRING_ENGLISH.ERROR
-            )
-          );
-        return;
-      }
-    } else {
-      lat = Number(req.body.lat);
-      lng = Number(req.body.lng);
-    }
-
-    if (lat != 0.0 && lng != 0.0) {
-      // user delivery address in change
-      var PoinInPolygon = await place.find({
-        $and: [
-          {
-            loc: {
-              $geoIntersects: {
-                $geometry: {
-                  type: "Point",
-                  coordinates: [lng, lat],
-                },
-              },
-            },
-          },
-          { isDeleted: false },
-        ],
-      });
-      if (PoinInPolygon.length > 0) {
-        if (place_id == PoinInPolygon[0]._id) {
-          newPlaceId = place_id;
-          // same location don't doing anything .. and get nearest driver in same place and supplier
-        } else {
-          // change prices to new distination send it with new alert and new prices
-          newPlaceId = PoinInPolygon[0]._id;
-        }
-      } else {
-        var sub_total = totalPrice - totalDiscount;
-        let sub_total_delivery = Number(sub_total) + Number(deliverycost);
-        let sub_total_express_delivery = Number(sub_total) + Number(expresscost);
-        var final_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
-        var final_express_total = Number(sub_total_express_delivery * Number(tax.value)) + Number(sub_total_express_delivery);
-
-        var returnObject = {
-          results: [],
-          tax: Number(sub_total_delivery * Number(tax.value)),
-          deliveryCost: Number(deliverycost),
-          expressCost : Number(expresscost),
-          total_price: Number(parseFloat(totalPrice).toFixed(2)),
-          total_discount: Number(parseFloat(totalDiscount).toFixed(2)),
-          final_total: Number(parseFloat(final_total).toFixed(2)),
-          final_express_total: Number(parseFloat(final_express_total).toFixed(2)),
-        };
-
-        reply
-          .code(200)
-          .send(
-            errorAPI(
-              language,
-              400,
-              MESSAGE_STRING_ARABIC.DESTINATION_NOT_COVERED,
-              MESSAGE_STRING_ENGLISH.DESTINATION_NOT_COVERED,
-              returnObject
-            )
-          );
-        return;
-      }
-    } else {
-      reply
-        .code(200)
-        .send(
-          errorAPI(
-            language,
-            400,
-            MESSAGE_STRING_ARABIC.ERROR,
-            MESSAGE_STRING_ENGLISH.ERROR
-          )
-        );
-      return;
-    }
-
+    const _sp = await coupon_usage.findOne({ $and: [{ user_id: user_id }, { coupon: req.body.coupon }] });
     const sp = await coupon.findOne({
       $and: [
         { dt_from: { $lte: today } },
         { dt_to: { $gte: today } },
-        { coupon: req.body.coupon },
-        { place_id: newPlaceId },
+        { coupon: req.body.coupon }
       ],
     });
 
-    if (_sp) {
-      var sub_total = totalPrice - totalDiscount;
-      let sub_total_delivery = Number(sub_total) + Number(deliverycost);
-      let sub_total_express_delivery = Number(sub_total) + Number(expresscost);
-      var final_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
-      var final_express_total = Number(sub_total_express_delivery * Number(tax.value)) + Number(sub_total_express_delivery);
-
-      var returnObject = {
-        results: [],
-        tax: Number(sub_total_delivery * Number(tax.value)),
-        deliveryCost: Number(deliverycost),
-        expressCost: Number(expresscost),
-        total_price: Number(parseFloat(totalPrice).toFixed(2)),
-        total_discount: Number(parseFloat(totalDiscount).toFixed(2)),
-        final_total: Number(parseFloat(final_total).toFixed(2)),
-        final_express_total: Number(parseFloat(final_express_total).toFixed(2)),
-      };
-
+    if(_sp) {
       reply
-        .code(200)
-        .send(
-          errorAPI(
-            language,
-            400,
-            MESSAGE_STRING_ARABIC.COUPON_ERROR,
-            MESSAGE_STRING_ENGLISH.COUPON_ERROR,
-            returnObject
-          )
-        );
+      .code(200)
+      .send(
+        errorAPI(
+          language,
+          400,
+          MESSAGE_STRING_ARABIC.COUPON_ERROR,
+          MESSAGE_STRING_ENGLISH.COUPON_ERROR,
+          {}
+        )
+      );
       return;
-    } else {
-      if (sp) {
-        let newDeliverycost = deliverycost //- Number(deliverycost * sp.discount_rate);
-        let newExpresscost = expresscost //- Number(deliverycost * sp.discount_rate);
-        var sub_total = totalPrice - totalDiscount;
-        let sub_total_delivery = Number(sub_total) + Number(newDeliverycost);
-        let sub_total_express_delivery = Number(sub_total) + Number(newExpresscost);
-        var final_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
-        var final_express_total = Number(sub_total_express_delivery * Number(tax.value)) + Number(sub_total_express_delivery);
-
-
-        var new_final_total = final_total - Number(final_total * sp.discount_rate);
-        var new_final_express_total = final_express_total - Number(final_express_total * sp.discount_rate);
-
-        var returnObject = {
-          results: [],
-          tax: Number(sub_total_delivery * Number(tax.value)),
-          deliveryCost: Number(newDeliverycost),
-          expressCost: Number(newExpresscost),
-          total_price: Number(parseFloat(totalPrice).toFixed(2)),
-          total_discount: Number(parseFloat(totalDiscount).toFixed(2)),
-          final_total: Number(parseFloat(new_final_total).toFixed(2)),
-          final_express_total: Number(parseFloat(new_final_express_total).toFixed(2)),
-        };
-
-        reply
-          .code(200)
-          .send(
-            success(
-              language,
-              200,
-              MESSAGE_STRING_ARABIC.SUCCESS,
-              MESSAGE_STRING_ENGLISH.SUCCESS,
-              returnObject
-            )
-          );
-        return;
-      } else {
-        var sub_total = totalPrice - totalDiscount;
-        let sub_total_delivery = Number(sub_total) + Number(deliverycost);
-        let sub_total_express_delivery = Number(sub_total) + Number(expresscost);
-        var final_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
-        var final_express_total = Number(sub_total_express_delivery * Number(tax.value)) + Number(sub_total_express_delivery);
-
-        var returnObject = {
-          results: [],
-          tax: Number(sub_total_delivery * Number(tax.value)),
-          deliveryCost: Number(deliverycost),
-          expressCost: Number(expresscost),
-          total_price: Number(parseFloat(totalPrice).toFixed(2)),
-          total_discount: Number(parseFloat(totalDiscount).toFixed(2)),
-          final_total: Number(parseFloat(final_total).toFixed(2)),
-          final_express_total: Number(parseFloat(final_express_total).toFixed(2)),
-        };
-
-        reply
-          .code(200)
-          .send(
-            errorAPI(
-              language,
-              400,
-              MESSAGE_STRING_ARABIC.COUPON_ERROR,
-              MESSAGE_STRING_ENGLISH.COUPON_ERROR,
-              returnObject
-            )
-          );
-        return;
-      }
     }
+
+    if(!sp) {
+      reply
+      .code(200)
+      .send(
+        errorAPI(
+          language,
+          400,
+          MESSAGE_STRING_ARABIC.COUPON_ERROR,
+          MESSAGE_STRING_ENGLISH.COUPON_ERROR,
+          {}
+        )
+      );
+      return;
+    }
+
+    var discount_rate = Number(req.body.amount) * Number(sp.discount_rate);
+    var final_total = Number(req.body.amount) - discount_rate;
+    
+    var returnObject = {
+      final_total: Number(final_total),
+      discount: discount_rate
+    };
+
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          returnObject
+        )
+      );
+    return;
   } catch (err) {
     throw boom.boomify(err);
   }

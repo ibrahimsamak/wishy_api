@@ -297,6 +297,7 @@ exports.CreateGeneralNotification = function (
   toName
 ) {
   return new Promise(function (resolve, reject) {
+    console.log(msg)
     let _Notification = new Notifications({
       fromId: fromId,
       user_id: to_user_id,
@@ -311,6 +312,7 @@ exports.CreateGeneralNotification = function (
     });
 
     let rs = _Notification.save();
+    console.log(rs)
     let postModel = {
       notification: {
         title: title,
@@ -500,10 +502,10 @@ exports.handleError = function (error) {
   return arr;
 };
 
-exports.NewPayment = async function (user_id, to, sign, amount, paymentType) {
-  var orderNo = `#${utils.makeid(6)}`;
+exports.NewPayment = async function (user_id, order_no ,to, sign, amount, paymentType) {
+  // var orderNo = `#${utils.makeid(6)}`;
   let _payment = new Transactions({
-    order_no: orderNo,
+    order_no: order_no,
     user: user_id,
     details: to,
     total: amount,

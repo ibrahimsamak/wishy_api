@@ -738,6 +738,12 @@ const mobile_routes = [
   //Users
   {
     method: "POST",
+    url: "/api/mobile/user/referal",
+    beforeHandler: [auth.getToken],
+    handler: userController.referalDeepLink,
+  },
+  {
+    method: "POST",
     url: "/api/mobile/user/wallet",
     beforeHandler: [auth.getToken],
     handler: userController.updateWallet,
