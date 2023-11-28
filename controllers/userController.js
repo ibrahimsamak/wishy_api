@@ -605,11 +605,10 @@ exports.updateProfile = async (req, reply) => {
               lng: req.raw.body.lng,
               address: req.raw.body.address,
 
-              hasCar:req.raw.body.hasCar,  
-              carType:req.raw.body.carType,
-              carModel:req.raw.body.carModel,
-              carColor:req.raw.body.carColor,
-              carNumber:req.raw.body.carNumber,
+              streetName: req.raw.body.streetName,
+              floorNo: req.raw.body.floorNo,
+              buildingNo: req.raw.body.buildingNo,
+              flatNo: req.raw.body.flatNo
             },
             { new: true }
           );
@@ -672,11 +671,10 @@ exports.updateProfile = async (req, reply) => {
               lat: req.raw.body.lat,
               lng: req.raw.body.lng,
               address: req.raw.body.address,
-              hasCar:req.raw.body.hasCar,  
-              carType:req.raw.body.carType,
-              carModel:req.raw.body.carModel,
-              carColor:req.raw.body.carColor,
-              carNumber:req.raw.body.carNumber,
+              streetName: req.raw.body.streetName,
+              floorNo: req.raw.body.floorNo,
+              buildingNo: req.raw.body.buildingNo,
+              flatNo: req.raw.body.flatNo
             },
             { new: true }
           );
@@ -1852,11 +1850,10 @@ exports.updateUser = async (req, reply) => {
             email: String(req.raw.body.email).toLowerCase(),
             address: req.raw.body.address,
             full_name: req.raw.body.full_name,
-            hasCar:req.raw.body.hasCar,  
-            carType:req.raw.body.carType,
-            carModel:req.raw.body.carModel,
-            carColor:req.raw.body.carColor,
-            carNumber:req.raw.body.carNumber,
+            streetName: req.raw.body.streetName,
+            floorNo: req.raw.body.floorNo,
+            buildingNo: req.raw.body.buildingNo,
+            flatNo: req.raw.body.flatNo
           },
           { new: true }
         ).select();
@@ -1890,11 +1887,10 @@ exports.updateUser = async (req, reply) => {
             email: String(req.raw.body.email).toLowerCase(),
             address: req.raw.body.address,
             full_name: req.raw.body.full_name,
-            hasCar:req.raw.body.hasCar,  
-            carType:req.raw.body.carType,
-            carModel:req.raw.body.carModel,
-            carColor:req.raw.body.carColor,
-            carNumber:req.raw.body.carNumber,
+            streetName: req.raw.body.streetName,
+            floorNo: req.raw.body.floorNo,
+            buildingNo: req.raw.body.buildingNo,
+            flatNo: req.raw.body.flatNo
           },
           { new: true }
         ).select();

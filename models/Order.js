@@ -3,19 +3,12 @@ const { getCurrentDateTime } = require("../models/Constant");
 
 const Orderschema = mongoose.Schema(
   {
-    title: { type: String },
-    f_lat: { type: Number },
-    f_lng: { type: Number },
-    t_lat: { type: Number },
-    t_lng: { type: Number },
-    max_price: { type: Number },
-    min_price: { type: Number },
+    lat: { type: Number },
+    lng: { type: Number },
     price: { type: Number },
-    f_address: { type: String },
-    t_address: { type: String },
+    address: { type: String },
     order_no: { type: String, required: false },
     tax: { type: Number },
-    deliveryCost: { type: Number },
     total: { type: Number, required: false },
     totalDiscount: { type: Number },
     netTotal: { type: Number, required: false },
@@ -23,34 +16,17 @@ const Orderschema = mongoose.Schema(
     createAt: { type: Date },
     dt_date: { type: Date },
     dt_time: { type: String },
-    is_repeated: { type: Boolean },
-    days: { type: [String] },
     couponCode: { type: String },
-    paymentType: { type: Number },
+    paymentType: { type: String },
     orderType: { type: Number },
-    max_passenger: { type: Number },
-    passengers:{type:[ {type: mongoose.Schema.Types.ObjectId, ref: "Users"} ]},
-    offers:{type:[{
-      user: {type: mongoose.Schema.Types.ObjectId, ref: "Users"},
-      f_address: { type: String },
-      t_address: { type: String },
-      f_lat: { type: Number },
-      f_lng: { type: Number },
-      t_lat: { type: Number },
-      t_lng: { type: Number },
-      price: { type: Number },
-      notes: { type: String },
-      status: { type: String },
-      dt_date: { type: Date },
-      dt_time: { type: String },
-      
-    }]},
+    category_id: { type: mongoose.Schema.Types.ObjectId, ref: "category"},
+    sub_category_id: { type: mongoose.Schema.Types.ObjectId, ref: "subcategory"} ,
+    extra:{type:[ {type: mongoose.Schema.Types.ObjectId, ref: "subcategory"} ]},
     user: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
+    provider: { type: mongoose.Schema.Types.ObjectId, ref: "supplier" },
+    employee: { type: mongoose.Schema.Types.ObjectId, ref: "employees" },
     notes: { type: String },
     canceled_note: { type: String },
-    // coordinates:{
-    //   type:[Number]
-    // }
     loc: {
       type: { type: String },
       coordinates: {type:[Number]},
@@ -58,8 +34,6 @@ const Orderschema = mongoose.Schema(
   },
   { versionKey: false }
 );
-
-
 
 
 const RateSchema = mongoose.Schema(
@@ -105,7 +79,7 @@ PaymentTransactionsSchema.index({ employee_id: 1 });
 PaymentTransactionsSchema.index({ createAt: 1 });
 
 Orderschema.index({ loc: "2dsphere" });
-Orderschema.index({ user_id: 1, StatusId: 1 });
+Orderschema.index({ user_id: 1, status: 1 });
 Orderschema.index({ createAt: 1 });
 
 RateSchema.index({ createAt: 1 });

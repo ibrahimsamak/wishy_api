@@ -29,7 +29,7 @@ const {
 } = require("../models/Constant");
 const { Users } = require("../models/User");
 const { employee } = require("../models/Employee");
-const { Place_Delivery, Supplier, Category } = require("../models/Product");
+const { Place_Delivery, Supplier, Category, SubCategory } = require("../models/Product");
 const { mail_general } = require("../utils/utils");
 
 const { success, errorAPI } = require("../utils/responseApi");
@@ -45,6 +45,50 @@ const {
 
 const { emailRegex, handleError } = require("../utils/utils");
 const { Adv } = require("../models/adv");
+
+exports.getAllCategoryAndSubCategory = async (req, reply) => {
+  try {
+    const language = "ar"; //req.headers["accept-language"];
+    const cats = await Category.find({isDeleted: false}).sort({ _id: -1 });
+    var arr = [];
+    for await(const element of cats){
+      var newObject = element.toObject();
+      var subs = []
+      var _subs = await SubCategory.find({$and:[{isDeleted: false},{category_id:newObject._id }]}).sort({ _id: -1 });
+      for await(const i of _subs){
+        var _newObject = i.toObject();
+        var obj = {
+          _id: _newObject._id,
+          price: _newObject.price,
+          title: _newObject[`${language}Name`],
+        };
+        subs.push(obj)
+      }
+      var obj = {
+        _id: newObject._id,
+        title: newObject[`${language}Name`],
+        sub:subs
+      };
+      arr.push(obj);
+    }
+
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          arr
+        )
+      );
+
+    return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
 
 exports.getUpdates = async (req, reply) => {
   try {
@@ -2980,3 +3024,148 @@ exports.getSingleCategory = async (req, reply) => {
     throw boom.boomify(err);
   }
 };
+
+
+exports.addSubCategory = async (req, reply) => {
+  try {
+    let _Category = new SubCategory({
+      arName: req.body.arName,
+      enName: req.body.enName,
+      category_id: req.body.category_id,
+      price: req.body.price,
+      isDeleted: false,
+    });
+    var _return = handleError(_Category.validateSync());
+    if (_return.length > 0) {
+      reply.code(200).send({
+        status_code: 400,
+        status: false,
+        message: _return[0],
+        items: _return,
+      });
+      return;
+    }
+    let rs = await _Category.save();
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      items: rs,
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.updateSubCategory = async (req, reply) => {
+  try {
+    const _Category = await SubCategory.findByIdAndUpdate(
+      req.params.id,
+      {
+        arName: req.body.arName,
+        enName: req.body.enName,
+        category_id: req.body.category_id,
+        price: req.body.price,
+      },
+      { new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      items: Category,
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.deleteSubCategory = async (req, reply) => {
+  try {
+    const previousCategory = await SubCategory.findById(req.params.id);
+    const _Category = await SubCategory.findByIdAndUpdate(
+      req.params.id,
+      { isDeleted: !previousCategory.isDeleted },
+      { new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      items: [],
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getSubCategory = async (req, reply) => {
+  try {
+    var arr = [];
+    const language = req.headers["accept-language"];
+    const _Category = await SubCategory.find({ $and:[{isDeleted: false}, {category_id: req.params.id}] })
+    .populate("category_id")
+    .sort({_id: -1});
+
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          _Category
+        )
+      );
+    return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getSingleSubCategory = async (req, reply) => {
+  try {
+    const _Category = await SubCategory.findById(req.params.id).sort({ _id: -1 });
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      items: _Category,
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+

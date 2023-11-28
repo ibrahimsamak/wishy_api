@@ -24,6 +24,12 @@ const LANGUAGE_ENUM = Object.freeze({
   AR: "ar",
 });
 
+const PAYMENT_TYPE = Object.freeze({
+  ONLINE: "online",
+  CASH: "cash",
+  WALLET: "wallet",
+});
+
 const USER_TYPE = Object.freeze({
   USER: "user",
   DRIVER: "driver",
@@ -336,3 +342,4 @@ exports.ACTORS = ACTORS;
 exports.CONTROLLER_ENUM = CONTROLLER_ENUM;
 exports.ORDER_STATUS = ORDER_STATUS;
 exports.PASSENGER_STATUS = PASSENGER_STATUS
+exports.PAYMENT_TYPE = PAYMENT_TYPE

@@ -84,6 +84,28 @@ const schema = mongoose.Schema({
   },
 });
 
+const subschema = mongoose.Schema({
+  arName: {
+    type: String,
+    required: [true, "arabic name is required"],
+  },
+  enName: {
+    type: String,
+    required: [true, "english name is required"],
+  },
+  category_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "category",
+    required: [true, "category is required"],
+  },
+  price: {
+    type: Number,
+  },
+  isDeleted: {
+    type: Boolean,
+  },
+});
+
 const Supplierschema = mongoose.Schema({
   name: {
     type: String,
@@ -196,12 +218,14 @@ Productschema.index({ category_id: 1 });
 ProductPlacePriceSchema.index({ product_id: 1 });
 
 const Category = mongoose.model("category", schema);
+const SubCategory = mongoose.model("subcategory", subschema);
 const Supplier = mongoose.model("supplier", Supplierschema);
 const Product = mongoose.model("product", Productschema);
 const product_price = mongoose.model("product_price", ProductPlacePriceSchema);
 const Place_Delivery = mongoose.model("place_deliveries", PlaceDeliverySchema);
 
 exports.Category = Category;
+exports.SubCategory = SubCategory;
 exports.Supplier = Supplier;
 exports.Product = Product;
 exports.Product_Price = product_price;

@@ -25,12 +25,13 @@ const {
   Supplier,
   Product_Price,
   Place_Delivery,
+  SubCategory,
 } = require("../models/Product");
 const { getCurrentDateTime } = require("../models/Constant");
 const { coupon } = require("../models/Coupon");
 const { tokens } = require("../models/Constant");
 // const { companyCommision } = require("../models/companyCommision");
-const { Users, User_Address } = require("../models/User");
+const { Users, User_Address, User_Uncovered } = require("../models/User");
 const { Cart } = require("../models/Cart");
 const {
   MESSAGE_STRING_ENGLISH,
@@ -72,291 +73,120 @@ exports.addOrder = async (req, reply) => {
       var validationArray = [
         { name: "couponCode" },
         { name: "paymentType" },
+        { name: "category_id" },
+        { name: "sub_category_id" },
         { name: "dt_date" },
         { name: "dt_time" },
       ];
 
-      validationArray.push({ name: "f_lat" });
-      validationArray.push({ name: "f_lng" });
-      validationArray.push({ name: "t_lng" });
-      validationArray.push({ name: "t_lng" });
+      validationArray.push({ name: "lat" });
+      validationArray.push({ name: "lng" });
     
       check_request_params(req.body, validationArray, async function (response) {
         if (response.success) {
           var userId = req.user._id;
           const userObj = await Users.findById(userId);
           const tax = await setting.findOne({ code: "TAX" });
-          const raduis = await setting.findOne({ code: "RADUIS" });
-
-          var ar_msg = MESSAGE_STRING_ARABIC.SUCCESSNEW;
-          var en_msg = MESSAGE_STRING_ENGLISH.SUCCESSNEW;
-          var statusCode = 200;
+          const sub_category = await SubCategory.findById(req.body.sub_category_id);
           var orderNo = `${makeOrderNumber(6)}`;
+          var _supplier = null;
+          var _employee = null;
 
-          
-          if(req.body.orderType == 2 && Number(req.body.price) > Number(userObj.walllet)){
+          var PoinInPolygon = await place.find({
+            $and: [
+              {
+                loc: {
+                  $geoIntersects: {
+                    $geometry: {
+                      type: "Point",
+                      coordinates: [Number(req.body.lng), Number(req.body.lat)],
+                    },
+                  },
+                },
+              },
+              { isDeleted: false },
+            ],
+          });
+      
+          if (PoinInPolygon.length == 0) {
+            let rs = new User_Uncovered({
+              user_id: userId,
+              user_type: "",
+              lat: req.body.lat,
+              lng: req.body.lng,
+              address: req.body.address,
+            });
+            await rs.save();
+
             reply
-            .code(200)
-            .send(
-              errorAPI(
-                language,
-                400,
-                MESSAGE_STRING_ARABIC.WALLET,
-                MESSAGE_STRING_ENGLISH.WALLET,
-                null
-              )
-            );
-          return;
+              .code(200)
+              .send(
+                errorAPI(
+                  language,
+                  400,
+                  MESSAGE_STRING_ARABIC.NOT_COVERED,
+                  MESSAGE_STRING_ENGLISH.NOT_COVERED,
+                  []
+                )
+              );
+            return;
+     
+          } 
+
+          var supplierDelivery = await Place_Delivery.findOne({place_id:PoinInPolygon[0]._id })
+          if(supplierDelivery){
+            _supplier = supplierDelivery.supplier_id 
           }
 
-          if(req.body.orderType == 1 && userObj.hasCar != true){
-            reply
-            .code(200)
-            .send(
-              errorAPI(
-                language,
-                400,
-                MESSAGE_STRING_ARABIC.NOCAR,
-                MESSAGE_STRING_ENGLISH.NOCAR,
-                null
-              )
-            );
-          return;
-          }
-
+          var total = (Number(sub_category.price) * Number(tax.value)) + Number(sub_category.price)
           let Orders = new Order({
             title: req.body.title,
-            f_lat: req.body.f_lat,
-            f_lng: req.body.f_lng,
-            t_lat: req.body.t_lat,
-            t_lng: req.body.t_lng,
-            max_price: req.body.max_price,
-            min_price: req.body.min_price,
-            price: req.body.price,
-            f_address: req.body.f_address,
-            t_address: req.body.t_address,
+            lat: req.body.lat,
+            lng: req.body.lng,           
+            price: sub_category.price,
+            address: req.body.address,
+            streetName: req.body.streetName,
+            buildingNo: req.body.buildingNo,
+            flatNo: req.body.flatNo,
+            floorNo: req.body.floorNo,
             order_no: orderNo,
             tax: Number( tax.value ),
+            total:total,
             totalDiscount: 0,
-            netTotal: 0,
+            netTotal: total,
             status: ORDER_STATUS.new,
             createAt: getCurrentDateTime(),
             dt_date: req.body.dt_date,
             dt_time: req.body.dt_time,
-            is_repeated: req.body.is_repeated,
-            days: req.body.days,
+            sub_category_id: req.body.sub_category_id,
+            category_id: req.body.category_id,
             couponCode: "",
             paymentType: req.body.paymentType,
-            orderType: req.body.orderType,
-            max_passenger: req.body.max_passenger,
-            passengers: [],
-            offers: [],
             user: userId,
             notes: req.body.notes,
             canceled_note:"",
+            employee: null,
+            provider: _supplier,
+            extra: [],
             loc: {
               type: "Point",
-              coordinates: [req.body.f_lat, req.body.f_lng],
+              coordinates: [req.body.lat, req.body.lng],
             },
           });
 
-          let geoQuery = geoFire.query({
-            center: [Number(req.body.f_lat), Number(req.body.f_lng)],
-            radius: Number(raduis.value),
-          });
-
           let rs = await Orders.save();
-          let msg = "لديك طلب جديد";
-          var notifications_arr = []
-          var keys_arr = [];
-
-          //search for firebase for near by users and send notification for them
-          var onKeyEnteredRegistration = geoQuery.on("key_entered", async function (key, location, distance) {
-              console.log("first")
-              console.log( key + " Key " + location + " (" + distance + " km from center)" );
-              var _employees = await Users.find({ hasCar: true })
-              var employees = _employees.map((x) => String(x._id));
-              
-              if (employees.includes(key)) {
-                let obj = {
-                  key: key,
-                  location: location,
-                  distance: distance,
-                };  
-                console.log(distance)    
-                console.log(Number(raduis.value))  
-                console.log(distance <= Number(raduis.value))  
-                if (distance <= Number(raduis.value)) {
-                  keys_arr.push(obj);
-                }
-              }
-              keys_arr.sort(function (a, b) { return a.distance > b.distance });
-              var ids = keys_arr.map((x) => x.key);
-              if (keys_arr.length > 0) {
-                  var _users = []
-                  if(req.body.orderType == 1){
-                    _users =  await Users.find({ $and: [{ _id: { $in: ids } }, { isDeleted: false }, { hasCar: false }] });
-                  }else{
-                    _users =  await Users.find({ $and: [{ _id: { $in: ids } }, { isDeleted: false }, { hasCar: true }] });
-                  }
-
-                  console.log(keys_arr)
-                  CreateNotificationMultiple(_users.map(x=>x.fcmToken),NOTIFICATION_TITILES.ORDERS,msg,rs._id);
-
-                  _users.forEach(element => {
-                    let _Notification2 = new Notifications({
-                      fromId: userId,
-                      user_id: element._id,
-                      title: NOTIFICATION_TITILES.ORDERS,
-                      msg: msg,
-                      dt_date: getCurrentDateTime(),
-                      type: NOTIFICATION_TYPE.ORDERS,
-                      body_parms: rs._id,
-                      isRead: false,
-                      fromName: userObj.full_name,
-                      toName: element.full_name,
-                    });
-                    notifications_arr.push(_Notification2)
-                  });
-
-                  await Notifications.insertMany(notifications_arr, (err, _docs) => {
-                    if (err) {
-                      return console.error(err);
-                    } else {
-                      console.log("Multiple documents inserted to Collection");
-                    }
-                  });
-                  onKeyEnteredRegistration.cancel();
-                  reply
-                    .code(200)
-                    .send(
-                      success(
-                        language,
-                        200,
-                        MESSAGE_STRING_ARABIC.SUCCESS,
-                        MESSAGE_STRING_ENGLISH.SUCCESS,
-                        {_id: Orders._id}
-                      )
-                    );
-                  return;
-                  
-              } else {
-                reply
-                  .code(200)
-                  .send(
-                    errorAPI(
-                      language,
-                      400,
-                      MESSAGE_STRING_ARABIC.NOT_COVERED,
-                      MESSAGE_STRING_ENGLISH.NOT_COVERED,
-                      null
-                    )
-                  );
-                return;
-              }
-            }
+          reply
+          .code(200)
+          .send(
+            success(
+              language,
+              200,
+              MESSAGE_STRING_ARABIC.SUCCESS,
+              MESSAGE_STRING_ENGLISH.SUCCESS,
+              {_id: rs._id}
+            )
           );
-      
-          // var onKeyExitedRegistration = geoQuery.on("ready", async function (key, location, distance) {
-          //     console.log("second")
-          //     console.log(key + " Key " + location + " (" + distance + " km from center)");
-          //     onKeyEnteredRegistration.cancel();
-          //     console.log(keys_arr)
-          //     var ids = keys_arr.map((x) => x.key);
-          //     if (keys_arr.length > 0) {
-          //         var _users = []
-          //         if(req.body.orderType == 1){
-          //           _users =  await Users.find({ $and: [{ _id: { $in: ids } }, { isDeleted: false }, { hasCar: false }] });
-          //         }else{
-          //           _users =  await Users.find({ $and: [{ _id: { $in: ids } }, { isDeleted: false }, { hasCar: true }] });
-          //         }
-
-          //         console.log(keys_arr)
-          //         CreateNotificationMultiple(_users.map(x=>x.fcmToken),NOTIFICATION_TITILES.ORDERS,msg,rs._id);
-
-          //         _users.forEach(element => {
-          //           let _Notification2 = new Notifications({
-          //             fromId: userId,
-          //             user_id: element._id,
-          //             title: NOTIFICATION_TITILES.ORDERS,
-          //             msg: msg,
-          //             dt_date: getCurrentDateTime(),
-          //             type: NOTIFICATION_TYPE.ORDERS,
-          //             body_parms: rs._id,
-          //             isRead: false,
-          //             fromName: userObj.full_name,
-          //             toName: element.full_name,
-          //           });
-          //           notifications_arr.push(_Notification2)
-          //         });
-
-          //         await Notifications.insertMany(notifications_arr, (err, _docs) => {
-          //           if (err) {
-          //             return console.error(err);
-          //           } else {
-          //             console.log("Multiple documents inserted to Collection");
-          //           }
-          //         });
-
-          //         reply
-          //           .code(200)
-          //           .send(
-          //             success(
-          //               language,
-          //               200,
-          //               MESSAGE_STRING_ARABIC.SUCCESS,
-          //               MESSAGE_STRING_ENGLISH.SUCCESS,
-          //               {_id: Orders._id}
-          //             )
-          //           );
-          //         return;
-                  
-          //     } else {
-          //       reply
-          //         .code(200)
-          //         .send(
-          //           errorAPI(
-          //             language,
-          //             400,
-          //             MESSAGE_STRING_ARABIC.NOT_COVERED,
-          //             MESSAGE_STRING_ENGLISH.NOT_COVERED,
-          //             {}
-          //           )
-          //         );
-          //       return;
-          //     }
-          //   }
-          // );
-          
-          // current_employee.forEach(element => {
-          //   let _Notification2 = new Notifications({
-          //     fromId: userId,
-          //     user_id: element._id,
-          //     title: NOTIFICATION_TITILES.ORDERS,
-          //     msg: msg,
-          //     dt_date: getCurrentDateTime(),
-          //     type: NOTIFICATION_TYPE.ORDERS,
-          //     body_parms: rs._id,
-          //     isRead: false,
-          //     fromName: userObj.full_name,
-          //     toName: element.full_name,
-          //   });
-          //   notifications_arr.push(_Notification2)
-          // });
-          
-          // CreateNotificationMultiple(current_employee.map(x=>x.fcmToken),NOTIFICATION_TITILES.ORDERS,msg,rs._id)
-          
-          // await Notifications.insertMany(notifications_arr, (err, _docs) => {
-          //   if (err) {
-          //     return console.error(err);
-          //   } else {
-          //     console.log("Multiple documents inserted to Collection");
-          //   }
-          // });
-
-          //reply.code(200).send(success(language, statusCode, ar_msg, en_msg, {}));
-          
-          return;
+        return;
         } else {
           reply.send(response);
         }
@@ -669,36 +499,36 @@ exports.updateOrder = async (req, reply) => {
       }
       if(req.body.status == ORDER_STATUS.finished) {
         msg = msg_finished;
-        if(sp.orderType == 1) {
-          let use = await Users.findById(sp.user);
-          var orderNo = `#${makeid(6)}`;
-          await NewPayment(use._id, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+" , Number(settings.value), "Online")
-          if(use.by && use.by != "") {
-            await NewPayment(use.by, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+", Number(settings.value), "Online")
-          }
+        // if(sp.orderType == 1) {
+        //   let use = await Users.findById(sp.user);
+        //   var orderNo = `#${makeid(6)}`;
+        //   await NewPayment(use._id, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+" , Number(settings.value), "Online")
+        //   if(use.by && use.by != "") {
+        //     await NewPayment(use.by, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+", Number(settings.value), "Online")
+        //   }
 
-          let offers_users = sp.offers.filter((x) => x.status == PASSENGER_STATUS.accept_offer);
-          if(offers_users.length > 0) {
-            for await (const i of offers_users){
-              await NewPayment(use._id, sp.order_no , `اكمال طلب ${sp.order_no}` , '+' , i.price , 'Online');
-              await NewPayment(i.user, sp.order_no , `اكمال طلب ${sp.order_no}` , '-' , i.price , 'Online');
-            }
-          }
-        }else {
-         let use = await Users.findById(sp.user);
-         var orderNo = `#${makeid(6)}`;
-         await NewPayment(use._id, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+" , Number(settings.value), "Online")
-         if(use.by && use.by != "") {
-           await NewPayment(use.by, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+", Number(settings.value), "Online")
-         }
+        //   let offers_users = sp.offers.filter((x) => x.status == PASSENGER_STATUS.accept_offer);
+        //   if(offers_users.length > 0) {
+        //     for await (const i of offers_users){
+        //       await NewPayment(use._id, sp.order_no , `اكمال طلب ${sp.order_no}` , '+' , i.price , 'Online');
+        //       await NewPayment(i.user, sp.order_no , `اكمال طلب ${sp.order_no}` , '-' , i.price , 'Online');
+        //     }
+        //   }
+        // }else {
+        //  let use = await Users.findById(sp.user);
+        //  var orderNo = `#${makeid(6)}`;
+        //  await NewPayment(use._id, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+" , Number(settings.value), "Online")
+        //  if(use.by && use.by != "") {
+        //    await NewPayment(use.by, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+", Number(settings.value), "Online")
+        //  }
 
-         let offers_users = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer);
-         console.log(offers_users)
-         if(offers_users.length > 0) {
-          await NewPayment(use._id, sp.order_no , `اكمال طلب ${sp.order_no}` , '-' , sp.price , 'Online');
-          await NewPayment(offers_users[0].user, sp.order_no , `اكمال طلب ${sp.order_no}` , '+' , sp.price , 'Online');
-         }
-        }
+        //  let offers_users = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer);
+        //  console.log(offers_users)
+        //  if(offers_users.length > 0) {
+        //   await NewPayment(use._id, sp.order_no , `اكمال طلب ${sp.order_no}` , '-' , sp.price , 'Online');
+        //   await NewPayment(offers_users[0].user, sp.order_no , `اكمال طلب ${sp.order_no}` , '+' , sp.price , 'Online');
+        //  }
+        // }
       }
       
       if(req.body.status == ORDER_STATUS.canceled_by_driver){
@@ -711,48 +541,47 @@ exports.updateOrder = async (req, reply) => {
         //TODO: transfer from wallet
       }
   
-      console.log(msg)
 
-      if(sp.orderType == 1) {
-        var  _users10 = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer)
-        var _users = _users10.map(x=>x.user);
+      // if(sp.orderType == 1) {
+      //   var  _users10 = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer)
+      //   var _users = _users10.map(x=>x.user);
 
-        if(_users.length > 0){
-          var _userObjs = await Users.find({_id:{$in:_users}});
-          for await(const i of _userObjs){
-            await CreateGeneralNotification(
-              i.fcmToken,
-              NOTIFICATION_TITILES.ORDERS,
-              msg,
-              NOTIFICATION_TYPE.ORDERS,
-              sp._id,
-              userId,
-              i._id,
-              "",
-              ""
-            );
-          }
-        }
-      }else {
-        var  _users = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer)
-        if(_users.length > 0) {
-          var _userObjs = await Users.find({ _id: { $in:_users } });
-          var _userTo = await Users.find({ _id: sp.user });
-          for await(const i of _userObjs) {
-            await CreateGeneralNotification(
-              i.fcmToken,
-              NOTIFICATION_TITILES.ORDERS,
-              msg,
-              NOTIFICATION_TYPE.ORDERS,
-              sp._id,
-              i._id,
-              _userTo._id,
-              "",
-              ""
-            );
-          }
-        }
-      }
+      //   if(_users.length > 0){
+      //     var _userObjs = await Users.find({_id:{$in:_users}});
+      //     for await(const i of _userObjs){
+      //       await CreateGeneralNotification(
+      //         i.fcmToken,
+      //         NOTIFICATION_TITILES.ORDERS,
+      //         msg,
+      //         NOTIFICATION_TYPE.ORDERS,
+      //         sp._id,
+      //         userId,
+      //         i._id,
+      //         "",
+      //         ""
+      //       );
+      //     }
+      //   }
+      // }else {
+      //   var  _users = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer)
+      //   if(_users.length > 0) {
+      //     var _userObjs = await Users.find({ _id: { $in:_users } });
+      //     var _userTo = await Users.find({ _id: sp.user });
+      //     for await(const i of _userObjs) {
+      //       await CreateGeneralNotification(
+      //         i.fcmToken,
+      //         NOTIFICATION_TITILES.ORDERS,
+      //         msg,
+      //         NOTIFICATION_TYPE.ORDERS,
+      //         sp._id,
+      //         i._id,
+      //         _userTo._id,
+      //         "",
+      //         ""
+      //       );
+      //     }
+      //   }
+      // }
 
       reply
       .code(200)
@@ -771,74 +600,6 @@ exports.updateOrder = async (req, reply) => {
   }
 };
 
-exports.getUserOrderMap = async (req, reply) => {
-  const language = req.headers["accept-language"];
-  try {
-    let userId = req.user._id;
-    const raduis = await setting.findOne({ code: "RADUIS" });
-
-    //search in raduis 
-    var q = []
-    if(req.query.address && req.query.address != ""){
-      q = {$and: [
-          { status: ORDER_STATUS.new },
-          { "f_address": { "$regex": req.query.address, "$options": "i" } },
-          {  
-            loc: {
-              $near: {
-                $maxDistance: Number(raduis.value),
-                $geometry: {
-                    type: "Point",
-                    coordinates: [req.query.lat, req.query.lng]
-                  }
-                }
-            }
-          }
-        ]}
-    }else {
-      q = {$and: [
-          { status: ORDER_STATUS.new },
-          {  
-            loc: {
-              $near: {
-                $maxDistance: Number(raduis.value),
-                $geometry: {
-                    type: "Point",
-                    coordinates: [req.query.lat, req.query.lng]
-                  }
-                }
-            }
-          }
-        ]}
-    }
-   
-    console.log(q)
-    const items = await Order.find(q)
-    .sort({ _id: -1 })
-    .populate("user", "-token")
-    .populate({ path: "offers.user", populate: { path: "user" } })
-
-    reply.code(200).send(
-    success(
-      language,
-      200,
-      MESSAGE_STRING_ARABIC.SUCCESS,
-      MESSAGE_STRING_ENGLISH.SUCCESS,
-      items,
-      // {
-      //   size: item.length,
-      //   totalElements: total,
-      //   totalPages: Math.floor(total / limit),
-      //   pageNumber: page,
-      // }
-    )
-    );
-    return;
-  } catch (err) {
-    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
-    return;
-  }
-};
 
 exports.getUserOrder = async (req, reply) => {
   try {
@@ -848,12 +609,7 @@ exports.getUserOrder = async (req, reply) => {
     var limit = parseFloat(req.query.limit, 10);
     
     var query = {
-      $and: [
-        { 
-          //TODO: only accepted offer.       
-          $or:[ { offers: { $elemMatch: { user: userId} }}, { user: userId } ] 
-        }
-      ]
+      $and: [ ]
     };
 
     if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.new) {
@@ -906,8 +662,12 @@ exports.getOrderDetails = async (req, reply) => {
 
     var item = await Order.findById(req.params.id)
     .populate("user", "-token")
-    .populate({ path: "offers.user", populate: { path: "user" } })
-      .lean();
+    .populate({ path: "extra", populate: { path: "subcategory" } })
+    .populate("employee", "-token")
+    .populate("provider")
+    .populate("sub_category_id")
+    .populate("category_id")
+    .lean();
     if (!item) {
       reply
         .code(200)
@@ -921,6 +681,28 @@ exports.getOrderDetails = async (req, reply) => {
         );
       return;
     }
+    var obj = item;
+    var arr = []
+    var subCategoryObj = {
+      _id: obj.sub_category_id._id,
+      title: obj.sub_category_id[`${language}Name`],
+      price: obj.price
+    }
+    var categoryObj = {
+      _id: obj.category_id._id,
+      title: obj.category_id[`${language}Name`],
+    }
+    obj.extra.forEach(element => {
+      var _obj = {
+        _id: element._id,
+        title: element[`${language}Name`],
+        price: element.price
+      }
+      arr.push(_obj)
+    });
+    obj.sub_category_id = subCategoryObj
+    obj.category_id = categoryObj
+    obj.extra = arr
 
     reply
       .code(200)
@@ -930,7 +712,7 @@ exports.getOrderDetails = async (req, reply) => {
           200,
           MESSAGE_STRING_ARABIC.SUCCESS,
           MESSAGE_STRING_ENGLISH.SUCCESS,
-          item
+          obj
         )
       );
     return;
@@ -944,7 +726,7 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
   try {
     let userId = req.user._id
     const ord = await Order.findById(req.params.id)
-    var driver_id = ""
+    var driver_id = ord.employee
       if (!ord) {
       reply
         .code(200)
@@ -959,15 +741,7 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       return;
     }
     if (ord.status == ORDER_STATUS.finished) {
-      if(ord.orderType == 1) {
-        driver_id = ord.user
-      }else{
-        let offers = ord.offers.filter(x=>String(x.status) === String(PASSENGER_STATUS.accept_offer))
-        if(offers.length > 0) {
-          driver_id = offers[0].user
-        }
-      }
-
+  
       var checkBefore = await Rate.findOne({ $and: [{ order_id: ord._id }, { driver_id: driver_id }, { type: 1 }] });
 
       if (checkBefore) {
@@ -1016,18 +790,18 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       let driver = await Users.findByIdAndUpdate(driver_id, { rate: Number(sum / totalRates).toFixed(1)},{new:true});
       await Order.findByIdAndUpdate(ord._id, { status: ORDER_STATUS.rated });
 
-      var msg = `تمت اضافة تقييم جديد على طلب رقم: ${ord.title}`;
-      await CreateGeneralNotification(
-        driver.fcmToken,
-        NOTIFICATION_TITILES.ORDERS,
-        msg,
-        NOTIFICATION_TYPE.ORDERS,
-        ord._id,
-        userId,
-        driver_id,
-        "",
-        ""
-      );
+      // var msg = `تمت اضافة تقييم جديد على طلب رقم: ${ord.title}`;
+      // await CreateGeneralNotification(
+      //   driver.fcmToken,
+      //   NOTIFICATION_TITILES.ORDERS,
+      //   msg,
+      //   NOTIFICATION_TYPE.ORDERS,
+      //   ord._id,
+      //   userId,
+      //   driver_id,
+      //   "",
+      //   ""
+      // );
 
       reply
         .code(200)
@@ -2895,20 +2669,16 @@ exports.getUserOrders = async (req, reply) => {
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
 
-    const total = await Order.find({ user_id: userId }).countDocuments();
-    const item = await Order.find({ user_id: userId })
+    const total = await Order.find({ user: userId }).countDocuments();
+    const item = await Order.find({ user: userId })
       .sort({ _id: -1 })
       .populate("place_id")
-      .populate("supplier_id", "-token")
-      .populate("user_id", "-token")
-      .populate("employee_id", "-token")
-      .populate({ path: "items.product_id", populate: { path: "product_id" } })
-      .populate({
-        path: "items.product_id",
-        populate: {
-          path: "category_id",
-        },
-      })
+      .populate("provider", "-token")
+      .populate("user", "-token")
+      .populate("employee", "-token")
+      .populate("sub_category_id")
+      .populate("category_id")
+
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
