@@ -57,6 +57,7 @@ const {
   handleError,
   CreateNotificationMultiple,
   NewPayment,
+  check_coupon,
 } = require("../utils/utils");
 const { success, errorAPI } = require("../utils/responseApi");
 const { string, number } = require("@hapi/joi");
@@ -66,6 +67,8 @@ const e = require("cors");
 var database = Firebase.database();
 var geoFire = new GeoFire(database.ref("userLocation"));
 var language = "ar"
+var total = 0
+var total_discount = 0
 
 exports.addOrder = async (req, reply) => {
   const language = req.headers["accept-language"];
@@ -134,25 +137,42 @@ exports.addOrder = async (req, reply) => {
           } 
 
           var supplierDelivery = await Place_Delivery.findOne({place_id:PoinInPolygon[0]._id })
-          if(supplierDelivery){
+          if(supplierDelivery) {
             _supplier = supplierDelivery.supplier_id 
           }
 
-          var total = (Number(sub_category.price) * Number(tax.value)) + Number(sub_category.price)
+          if(req.body.couponCode && req.body.couponCode != ""){
+            let obj =  await check_coupon(req.user._id, req.body.couponCode, req.body.sub_category_id)
+            console.log(obj)
+            if(obj == null){
+              reply
+              .code(200)
+              .send(
+                errorAPI(
+                  language,
+                  400,
+                  MESSAGE_STRING_ARABIC.COUPON_ERROR,
+                  MESSAGE_STRING_ENGLISH.COUPON_ERROR,
+                  null
+                )
+              );
+              return;
+            }
+            total = obj.final_total;
+            total_discount = obj.discount;
+          }else{
+            total = (Number(sub_category.price) * Number(tax.value)) + Number(sub_category.price)
+          }
+
           let Orders = new Order({
-            title: req.body.title,
             lat: req.body.lat,
             lng: req.body.lng,           
             price: sub_category.price,
             address: req.body.address,
-            streetName: req.body.streetName,
-            buildingNo: req.body.buildingNo,
-            flatNo: req.body.flatNo,
-            floorNo: req.body.floorNo,
             order_no: orderNo,
             tax: Number( tax.value ),
-            total:total,
-            totalDiscount: 0,
+            total: total,
+            totalDiscount: total_discount,
             netTotal: total,
             status: ORDER_STATUS.new,
             createAt: getCurrentDateTime(),
@@ -160,7 +180,8 @@ exports.addOrder = async (req, reply) => {
             dt_time: req.body.dt_time,
             sub_category_id: req.body.sub_category_id,
             category_id: req.body.category_id,
-            couponCode: "",
+            addressType: req.body.addressType,
+            couponCode: req.body.couponCode,
             paymentType: req.body.paymentType,
             user: userId,
             notes: req.body.notes,
@@ -472,10 +493,61 @@ exports.updateOffer = async (req, reply) => {
 
 exports.updateOrder = async (req, reply) => {
   try {
-    const settings = await setting.findOne({code:"ORDER_REFERAL"});
-    let userId = req.user._id
+      var msg = ""
+      let userId = req.user._id
+      const check = await Order.findById(req.params.id).populate("user")
+      var msg_started = `تم البدء في تنفيذ الطلب بنجاح`;
+      var msg_accpet = `تم قبول طلبكم بنجاح وسوف يتم التنفيذ في اقرب وقت ممكن`;
+      var msg_updated = `تم التعديل على الطلب من قبل الفني يرجى تأكيد العملية`;
+      var msg_finished = `تم الانتهاء من تنفيذ الطلب بنجاح`;
+      var msg_canceled_by_driver = `تم الالغاء من قبل السائق`;
+      var msg_canceled_by_user = `تم الغاء الطلب من قبل الزبون`;
+      
+      if(req.body.status == ORDER_STATUS.started) {
+        msg = msg_started;
+        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+      }
+      if(req.body.status == ORDER_STATUS.accpeted) {
+        msg = msg_accpet;
+        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+      }
+      if(req.body.status == ORDER_STATUS.updated) {
+        msg = msg_updated;
+        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+      }     
+      if(req.body.status == ORDER_STATUS.finished) {
+        msg = msg_finished;
+        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+      }
+      
+      if(req.body.status == ORDER_STATUS.canceled_by_driver && check.status != ORDER_STATUS.finished && check.status != ORDER_STATUS.rated){
+        msg = msg_canceled_by_driver;
+        //TODO: transfer from wallet
+        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+      }
 
-    const sp = await Order.findByIdAndUpdate(
+      if(req.body.status == ORDER_STATUS.canceled_by_user){
+        msg = msg_canceled_by_user;
+
+        if(check.status != ORDER_STATUS.new && check.status != ORDER_STATUS.accpeted ){
+          reply
+          .code(200)
+          .send(
+            errorAPI(
+              language,
+              400,
+              MESSAGE_STRING_ARABIC.CANCEL_ORDER_FAILED,
+              MESSAGE_STRING_ENGLISH.CANCEL_ORDER_FAILED
+            )
+          );
+        return;
+        }
+
+        let emplployee = await employee.findById(check.employee)
+        await CreateGeneralNotification(emplployee.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.user._id, emplployee._id, "", "");
+      }
+  
+      const sp = await Order.findByIdAndUpdate(
         req.params.id,
         {
           status: req.body.status,
@@ -484,105 +556,64 @@ exports.updateOrder = async (req, reply) => {
         { new: true }
       )
 
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          null
+        )
+      );
+    
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.updateOrderCode = async (req, reply) => {
+  try {
+     let userId = req.user._id
+     const check = await Order.findById(req.params.id)
       var msg = ""
-      var msg_started = `تم البدء في تنفيذ الطلب بنجاح`;
-      var msg_accpet = `تم الانتهاء من مرحلة تلقي العروض على الطلب`;
-      var msg_finished = `تم الانتهاء من تنفيذ الطلب بنجاح`;
-      var msg_canceled_by_driver = `تم الالغاء من قبل السائق`;
-      var msg_canceled_by_user = `تم الغاء الطلب من قبل الزبون`;
-      
-      if(req.body.status == ORDER_STATUS.started) {
-        msg = msg_started;
+      if(check.status == ORDER_STATUS.updated) {
+        if(String(req.body.update_code) == String(check.update_code)) {
+          const sp = await Order.findByIdAndUpdate(
+            req.params.id,
+            {
+              update_code: req.body.update_code
+            },
+            { new: true }
+          )
+          // send notification to employee 
+        }else {
+          reply
+          .code(200)
+          .send(
+            errorAPI(
+              language,
+              400,
+              MESSAGE_STRING_ARABIC.USER_VERIFY_ERROR,
+              MESSAGE_STRING_ENGLISH.USER_VERIFY_ERROR
+            )
+          );
+        return;
+        }
+      }else{
+        reply
+        .code(200)
+        .send(
+          errorAPI(
+            language,
+            400,
+            MESSAGE_STRING_ARABIC.ERROR,
+            MESSAGE_STRING_ENGLISH.ERROR
+          )
+        );
+        return;
       }
-      if(req.body.status == ORDER_STATUS.accpeted) {
-        msg = msg_accpet;
-      }
-      if(req.body.status == ORDER_STATUS.finished) {
-        msg = msg_finished;
-        // if(sp.orderType == 1) {
-        //   let use = await Users.findById(sp.user);
-        //   var orderNo = `#${makeid(6)}`;
-        //   await NewPayment(use._id, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+" , Number(settings.value), "Online")
-        //   if(use.by && use.by != "") {
-        //     await NewPayment(use.by, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+", Number(settings.value), "Online")
-        //   }
-
-        //   let offers_users = sp.offers.filter((x) => x.status == PASSENGER_STATUS.accept_offer);
-        //   if(offers_users.length > 0) {
-        //     for await (const i of offers_users){
-        //       await NewPayment(use._id, sp.order_no , `اكمال طلب ${sp.order_no}` , '+' , i.price , 'Online');
-        //       await NewPayment(i.user, sp.order_no , `اكمال طلب ${sp.order_no}` , '-' , i.price , 'Online');
-        //     }
-        //   }
-        // }else {
-        //  let use = await Users.findById(sp.user);
-        //  var orderNo = `#${makeid(6)}`;
-        //  await NewPayment(use._id, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+" , Number(settings.value), "Online")
-        //  if(use.by && use.by != "") {
-        //    await NewPayment(use.by, orderNo, "عائد من طلب احد الأصدقاء المدعوون الى التطبيق", "+", Number(settings.value), "Online")
-        //  }
-
-        //  let offers_users = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer);
-        //  console.log(offers_users)
-        //  if(offers_users.length > 0) {
-        //   await NewPayment(use._id, sp.order_no , `اكمال طلب ${sp.order_no}` , '-' , sp.price , 'Online');
-        //   await NewPayment(offers_users[0].user, sp.order_no , `اكمال طلب ${sp.order_no}` , '+' , sp.price , 'Online');
-        //  }
-        // }
-      }
-      
-      if(req.body.status == ORDER_STATUS.canceled_by_driver){
-        msg = msg_canceled_by_driver;
-        //TODO: transfer from wallet
-      }
-
-      if(req.body.status == ORDER_STATUS.canceled_by_user){
-        msg = msg_canceled_by_user;
-        //TODO: transfer from wallet
-      }
-  
-
-      // if(sp.orderType == 1) {
-      //   var  _users10 = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer)
-      //   var _users = _users10.map(x=>x.user);
-
-      //   if(_users.length > 0){
-      //     var _userObjs = await Users.find({_id:{$in:_users}});
-      //     for await(const i of _userObjs){
-      //       await CreateGeneralNotification(
-      //         i.fcmToken,
-      //         NOTIFICATION_TITILES.ORDERS,
-      //         msg,
-      //         NOTIFICATION_TYPE.ORDERS,
-      //         sp._id,
-      //         userId,
-      //         i._id,
-      //         "",
-      //         ""
-      //       );
-      //     }
-      //   }
-      // }else {
-      //   var  _users = sp.offers.filter(x=>x.status == PASSENGER_STATUS.accept_offer)
-      //   if(_users.length > 0) {
-      //     var _userObjs = await Users.find({ _id: { $in:_users } });
-      //     var _userTo = await Users.find({ _id: sp.user });
-      //     for await(const i of _userObjs) {
-      //       await CreateGeneralNotification(
-      //         i.fcmToken,
-      //         NOTIFICATION_TITILES.ORDERS,
-      //         msg,
-      //         NOTIFICATION_TYPE.ORDERS,
-      //         sp._id,
-      //         i._id,
-      //         _userTo._id,
-      //         "",
-      //         ""
-      //       );
-      //     }
-      //   }
-      // }
-
       reply
       .code(200)
       .send(
@@ -625,7 +656,12 @@ exports.getUserOrder = async (req, reply) => {
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
       .populate("user", "-token")
-      .populate({ path: "offers.user", populate: { path: "user" } })
+      .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("provider")
+      .populate("sub_category_id")
+      .populate("category_id")
+      .populate("address")
       .skip(page * limit)
       .limit(limit)
       .sort({ createAt: -1 });
@@ -667,6 +703,7 @@ exports.getOrderDetails = async (req, reply) => {
     .populate("provider")
     .populate("sub_category_id")
     .populate("category_id")
+    .populate("address")
     .lean();
     if (!item) {
       reply
@@ -1425,12 +1462,13 @@ exports.getOrdersSeacrhExcel = async (req, reply) => {
 
     const item = await Order.find(query)
       .sort({ _id: -1 })
-      .populate("user_id")
-      .populate("supplier_id")
-      .populate("employee_id")
-      .populate({ path: "items.product_id", populate: { path: "product_id" } })
-      .populate({ path: "items.unit", populate: { path: "unit" } })
-      .populate({ path: "supplier_id", populate: { path: "type_id" } });
+      .populate("user", "-token")
+      .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("provider")
+      .populate("sub_category_id")
+      .populate("category_id")
+      .populate("address")
     const response = {
       items: item,
       status_code: 200,
@@ -1497,14 +1535,13 @@ exports.getOrdersSeacrh = async (req, reply) => {
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
       .sort({ _id: -1 })
-      .populate("user_id", "-token")
-      .populate("supplier_id", "-token")
-      .populate("employee_id", "-token")
-      .populate({ path: "items.product_id", populate: { path: "product_id" } })
-      .populate({ path: "items.color_id", populate: { path: "color_id" } })
-      .populate({ path: "items.size_id", populate: { path: "size_id" } })
-      .populate({ path: "items.unit", populate: { path: "unit" } })
-      .populate({ path: "supplier_id", populate: { path: "category_id" } })
+      .populate("user", "-token")
+      .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("provider")
+      .populate("sub_category_id")
+      .populate("category_id")
+      .populate("address")
       .skip(page * limit)
       .limit(limit);
     const response = {
@@ -1561,19 +1598,13 @@ exports.getEmployeeOrder = async (req, reply) => {
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
       .sort({ _id: -1 })
-      .populate("supplier_id", "-token")
-      .populate("user_id", "-token")
-      .populate("employee_id", "-token")
-      .populate({
-        path: "items.product_id",
-        populate: { path: "product_id" },
-      })
-      .populate({
-        path: "items.product_id",
-        populate: {
-          path: "category_id",
-        },
-      })
+      .populate("user", "-token")
+      .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("provider")
+      .populate("sub_category_id")
+      .populate("category_id")
+      .populate("address")
       .skip(page * limit)
       .limit(limit)
       .select("-couponCode");
@@ -1909,19 +1940,13 @@ exports.getOrdersSearchFilter = async (req, reply) => {
     const total = await Order.find(query1).countDocuments();
     const item = await Order.find(query1)
       .sort({ _id: -1 })
-      .populate("supplier_id", "-token")
-      .populate("employee_id", "-token")
-      .populate("user_id", "-token")
-      .populate({
-        path: "items.product_id",
-        populate: { path: "product_id" },
-      })
-      .populate({
-        path: "items.product_id",
-        populate: {
-          path: "category_id",
-        },
-      })
+      .populate("user", "-token")
+      .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("provider")
+      .populate("sub_category_id")
+      .populate("category_id")
+      .populate("address")
       .skip(page * limit)
       .limit(limit)
       .select("-couponCode");
@@ -2714,17 +2739,13 @@ exports.getProivdeOrders = async (req, reply) => {
     const total = await Order.find({ supplier_id: userId }).countDocuments();
     const item = await Order.find({ supplier_id: userId })
       .sort({ _id: -1 })
-      .populate("place_id")
-      .populate("supplier_id", "-token")
-      .populate("user_id", "-token")
-      .populate("employee_id", "-token")
-      .populate({ path: "items.product_id", populate: { path: "product_id" } })
-      .populate({
-        path: "items.product_id",
-        populate: {
-          path: "category_id",
-        },
-      })
+      .populate("user", "-token")
+      .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("provider")
+      .populate("sub_category_id")
+      .populate("category_id")
+      .populate("address")
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -2761,21 +2782,13 @@ exports.getEmployeesOrder = async (req, reply) => {
 
     const total = await Order.find({ employee_id: userId }).countDocuments();
     const item = await Order.find({ employee_id: userId })
-      .sort({ _id: -1 })
-      .populate("place_id")
-      .populate("supplier_id", "-token")
-      .populate("user_id", "-token")
-      .populate("employee_id", "-token")
-      .populate({
-        path: "items.product_id",
-        populate: { path: "product_id" },
-      })
-      .populate({
-        path: "items.product_id",
-        populate: {
-          path: "category_id",
-        },
-      })
+      .populate("user", "-token")
+      .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("provider")
+      .populate("sub_category_id")
+      .populate("category_id")
+      .populate("address")
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -2839,8 +2852,13 @@ exports.getOrders = async (req, reply) => {
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
       .sort({ _id: -1 })
-      .populate("user", ["-token"])
-      .populate({ path: "offers", populate: { path: "user" } })
+      .populate("user", "-token")
+      .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("provider")
+      .populate("sub_category_id")
+      .populate("category_id")
+      .populate("address")
       .skip(page * limit)
       .limit(limit)
       .select();
@@ -3009,7 +3027,12 @@ exports.getOrdersMap = async (req, reply) => {
     const item = await Order.find(query)
       .sort({ _id: -1 })
       .populate("user", "-token")
-      .populate({ path: "offers.user", populate: { path: "user" } })
+      .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("provider")
+      .populate("sub_category_id")
+      .populate("category_id")
+      .populate("address")
     // .limit(2000)
     // if (err) return handleError(err);
     const response = {

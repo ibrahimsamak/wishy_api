@@ -119,8 +119,25 @@ const UserAddressSchema = mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "users",
     },
-    isDefault: {
-      type: Boolean,
+    streetName:{
+      type: String,
+      default: "",
+    },
+    floorNo:{
+      type: String,
+      default: "",
+    },
+    buildingNo:{
+      type: String,
+      default: "",
+    },
+    flatNo:{
+      type: String,
+      default: ""
+    },
+    type:{
+      type: String,
+      default: ""
     },
     createAt: {
       type: Date,

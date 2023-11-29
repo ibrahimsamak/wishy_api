@@ -52,6 +52,7 @@ const {
   USER_TYPE,
   VALIDATION_MESSAGE_ARABIC,
   VALIDATION_MESSAGE_ENGLISH,
+  ORDER_STATUS,
 } = require("../utils/constants");
 const { coupon_usage } = require("../models/Coupon");
 
@@ -623,16 +624,10 @@ exports.updateProfile = async (req, reply) => {
           },
           { new: true }
         ).select();
-        const address = await User_Address.find({
-          $and: [{ user_id: _newUser._id }],
-        });
+        const address = await User_Address.find({$and: [{ user_id: _newUser._id }]});
         var newUser = _newUser.toObject();
-        const orders = await Order.find({
-          $and: [{ user_id: _newUser._id }, { StatusId: 4 }],
-        }).countDocuments();
-        // const favorits = await Favorite.find({
-        //   user_id: _newUser._id,
-        // }).countDocuments();
+        const orders = await Order.find({ $and: [{ user_id: _newUser._id }, { status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]} }]}).countDocuments();
+        // const favorits = await Favorite.find({ user_id: _newUser._id}).countDocuments();
         // newUser.favorite = favorits;
         newUser.orders = orders;
         newUser.delivery_address = address;
@@ -1298,7 +1293,6 @@ exports.getUserAddress = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
     const user_id = req.user._id;
-
     var checkUserAddress = await User_Address.find({ user_id: user_id });
 
     reply
@@ -1318,6 +1312,30 @@ exports.getUserAddress = async (req, reply) => {
     return;
   }
 };
+
+exports.getUserAddressType = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const user_id = req.user._id;
+    var checkUserAddress = await User_Address.find({ $and:[{user_id: user_id}, {type:req.params.type}] });
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          checkUserAddress
+        )
+      );
+    return;
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
 
 exports.addUserAddress = async (req, reply) => {
   const language = req.headers["accept-language"];
@@ -1351,6 +1369,12 @@ exports.addUserAddress = async (req, reply) => {
       user_id: user_id,
       isDefault: isDefault,
       discount: 0,
+
+      streetName: req.body.streetName,
+      floorNo: req.body.floorNo,
+      buildingNo: req.body.buildingNo,
+      flatNo: req.body.flatNo,
+      type: req.body.type
     });
 
     let _rs = await rs.save();
@@ -1407,6 +1431,11 @@ exports.updateUserAddress = async (req, reply) => {
       {
         title: req.body.title,
         address: req.body.address,
+        streetName: req.body.streetName,
+        floorNo: req.body.floorNo,
+        buildingNo: req.body.buildingNo,
+        flatNo: req.body.flatNo,
+        type: req.body.type,
         lat: parseFloat(req.body.lat),
         lng: parseFloat(req.body.lng),
       },
@@ -1438,13 +1467,7 @@ exports.deleteUserAddress = async (req, reply) => {
     await User_Address.findByIdAndRemove(req.body.id);
     var checkUserAddress = await User_Address.find({ user_id: user_id });
     if (checkUserAddress.length > 0) {
-      var _rs = await User_Address.findByIdAndUpdate(
-        checkUserAddress[0]._id,
-        {
-          isDefault: true,
-        },
-        { new: true }
-      );
+      var _rs = await User_Address.findByIdAndUpdate(checkUserAddress[0]._id, { isDefault: true}, { new: true });
       reply
         .code(200)
         .send(

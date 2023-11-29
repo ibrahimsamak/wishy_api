@@ -62,6 +62,7 @@ const ORDER_STATUS = Object.freeze({
   accpeted: "accepted",
   started: "started",
   finished: "finished",
+  updated: "updated",
   rated: "rated",
   canceled_by_driver: "canceled_by_driver",
   canceled_by_user: "canceled_by_user",
@@ -150,7 +151,7 @@ exports.MESSAGE_STRING_ENGLISH = {
   NOT_COVERED:
     "Sorry ... your area is not covered. We strive to cover all areas as soon as possible.",
 
-  CANCEL_ORDER_FAILED: "sorry .. you can't cancel order while it delivering ",
+  CANCEL_ORDER_FAILED: "sorry .. you can't cancel order while it under proccessing ",
   USER_NOT_FOUND: "User is not found",
   CHANGE_PLACE_OR_SUPPLIER:
     "some of the products may change, because of changing your current location, or changing by the service provider",
@@ -235,7 +236,7 @@ exports.MESSAGE_STRING_ARABIC = {
   RATE_BEFORE: "عذرا .. تم تقييم الطلب مسبقا",
   NOT_COVERED:
     "عذرا .. منطقتك غير مغطاة نسعى جاهدين لتغطية جميع المناطق في أقرب وقت ممكن",
-  CANCEL_ORDER_FAILED: "عذرا .. لا يمكنك إلغاء الطلب أثناء التوصيل",
+  CANCEL_ORDER_FAILED: "عذرا .. لا يمكنك إلغاء الطلب أثناء التنفيذ",
 
   USER_NOT_FOUND: "المستخدم غير موجود",
   CHANGE_PLACE_OR_SUPPLIER:

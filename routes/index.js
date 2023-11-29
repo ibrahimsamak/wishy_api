@@ -647,6 +647,7 @@ const admin_routes = [
     beforeHandler: [auth.getAdminToken],
     handler: orderController.getOrders,
   },
+  
   {
     method: "POST",
     url: "/api/admin/update_order/:id",
@@ -925,6 +926,13 @@ const mobile_routes = [
     handler: userController.getUserAddress,
   },
   {
+    method: "GET",
+    url: "/api/mobile/user/get_address/:type",
+    beforeHandler: [auth.getToken],
+    handler: userController.getUserAddressType,
+  },
+  
+  {
     method: "POST",
     url: "/api/mobile/user/add_address",
     beforeHandler: [auth.getToken],
@@ -1010,6 +1018,12 @@ const mobile_routes = [
     url: "/api/mobile/order/add",
     beforeHandler: [auth.getToken],
     handler: orderController.addOrder,
+  },
+  {
+    method: "POST",
+    url: "/api/mobile/order/update/confirm/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.updateOrderCode,
   },
   {
     method: "POST",

@@ -22,6 +22,7 @@ const {
   Supplier,
   Product_Price,
   Place_Delivery,
+  SubCategory,
 } = require("../models/Product");
 
 const {
@@ -36,6 +37,7 @@ const {
   CreateNotificationMultiple,
   CreateGeneralNotification,
   handleError,
+  check_coupon,
 } = require("../utils/utils");
 
 // cron job for renting racks
@@ -346,57 +348,10 @@ exports.updatecoupon = async (req, reply) => {
 exports.checkCouponReplacment = async (req, reply) => {
   const language = "ar";
   try {
-    const user_id = req.user._id;
-    var today = moment().tz("Asia/Riyadh");
 
-    const _sp = await coupon_usage.findOne({ $and: [{ user_id: user_id }, { coupon: req.body.coupon }] });
-    const sp = await coupon.findOne({
-      $and: [
-        { dt_from: { $lte: today } },
-        { dt_to: { $gte: today } },
-        { coupon: req.body.coupon }
-      ],
-    });
-
-    if(_sp) {
+    let obj =  await check_coupon(req.user._id,req.body.coupon, req.body.sub_category_id)
+    if(obj){
       reply
-      .code(200)
-      .send(
-        errorAPI(
-          language,
-          400,
-          MESSAGE_STRING_ARABIC.COUPON_ERROR,
-          MESSAGE_STRING_ENGLISH.COUPON_ERROR,
-          {}
-        )
-      );
-      return;
-    }
-
-    if(!sp) {
-      reply
-      .code(200)
-      .send(
-        errorAPI(
-          language,
-          400,
-          MESSAGE_STRING_ARABIC.COUPON_ERROR,
-          MESSAGE_STRING_ENGLISH.COUPON_ERROR,
-          {}
-        )
-      );
-      return;
-    }
-
-    var discount_rate = Number(req.body.amount) * Number(sp.discount_rate);
-    var final_total = Number(req.body.amount) - discount_rate;
-    
-    var returnObject = {
-      final_total: Number(final_total),
-      discount: discount_rate
-    };
-
-    reply
       .code(200)
       .send(
         success(
@@ -404,10 +359,24 @@ exports.checkCouponReplacment = async (req, reply) => {
           200,
           MESSAGE_STRING_ARABIC.SUCCESS,
           MESSAGE_STRING_ENGLISH.SUCCESS,
-          returnObject
+          obj
         )
       );
     return;
+    }else{
+      reply
+      .code(200)
+      .send(
+        errorAPI(
+          language,
+          400,
+          MESSAGE_STRING_ARABIC.COUPON_ERROR,
+          MESSAGE_STRING_ENGLISH.COUPON_ERROR,
+          null
+        )
+      );
+      return;
+    }
   } catch (err) {
     throw boom.boomify(err);
   }

@@ -8,14 +8,17 @@ const cloudinary = require("cloudinary");
 const NodeGeocoder = require("node-geocoder");
 const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 var xhr = new XMLHttpRequest();
+const moment = require("moment");
 
 const { Notifications } = require("../models/Notifications");
 const { Admin } = require("../models/Admin");
-const { getCurrentDateTime } = require("../models/Constant");
+const { getCurrentDateTime, setting } = require("../models/Constant");
 const { getLanguage, Users } = require("../models/User");
 
-const { Transactions } = require("../models/Order");
+const { Transactions, Order } = require("../models/Order");
 const utils = require("../utils/utils");
+const { coupon } = require("../models/Coupon");
+const { SubCategory } = require("../models/Product");
 
 cloudinary.config({
   cloud_name: "dfrogfdqd",
@@ -262,14 +265,14 @@ exports.sendWhatsApp = async function(number, from, to, code){
     "body": code
   }
 
-    axios
-    .post(url, body, _config)
-    .then((response) => {
-      //console.log(response)
-    })
-    .catch((error) => {
-      console.log(error)
-    });
+    // axios
+    // .post(url, body, _config)
+    // .then((response) => {
+    //   //console.log(response)
+    // })
+    // .catch((error) => {
+    //   console.log(error)
+    // });
 }
 
 exports.uploadImages = async function (img) {
@@ -297,7 +300,6 @@ exports.CreateGeneralNotification = function (
   toName
 ) {
   return new Promise(function (resolve, reject) {
-    console.log(msg)
     let _Notification = new Notifications({
       fromId: fromId,
       user_id: to_user_id,
@@ -336,7 +338,7 @@ exports.CreateGeneralNotification = function (
     xhr.open("POST", "https://fcm.googleapis.com/fcm/send");
     xhr.setRequestHeader(
       "Authorization",
-      "key=AAAAZ8ldFPY:APA91bE3eeL5kCX28ZElBjeobvkMORu7Hb7SQjXrZuI_pZMGgPOUOjiQyb1Fskb2BfUln-6bP6cBOsnrGJoybdUlCofzqQjMR4Z-8oBy52xGFXOfLj7-T6vfR9DuZym24OZ4EZ2krBfn"
+      "key=AAAAYpxDq5k:APA91bHDsZ5YPSApBnM_OsD1vmMp8bqiXz2xqNs_iarQju1avpLe5aoQJczhQVYSMlserklVSNs__g9ynx9yleGJmqhF-qp4b_KhFEbrKH8iE1zKPcOiR7icBx0ufXeKJSfgDvgaPqiX"
     );
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.send(data);
@@ -390,7 +392,7 @@ exports.CreateNotificationMultiple = function (deviceId, title, msg, order_id) {
     xhr.open("POST", "https://fcm.googleapis.com/fcm/send");
     xhr.setRequestHeader(
       "Authorization",
-      "key=AAAAZ8ldFPY:APA91bE3eeL5kCX28ZElBjeobvkMORu7Hb7SQjXrZuI_pZMGgPOUOjiQyb1Fskb2BfUln-6bP6cBOsnrGJoybdUlCofzqQjMR4Z-8oBy52xGFXOfLj7-T6vfR9DuZym24OZ4EZ2krBfn"
+      "key=AAAAYpxDq5k:APA91bHDsZ5YPSApBnM_OsD1vmMp8bqiXz2xqNs_iarQju1avpLe5aoQJczhQVYSMlserklVSNs__g9ynx9yleGJmqhF-qp4b_KhFEbrKH8iE1zKPcOiR7icBx0ufXeKJSfgDvgaPqiX"
     );
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.send(data);
@@ -526,3 +528,35 @@ exports.NewPayment = async function (user_id, order_no ,to, sign, amount, paymen
   );
   return _user;
 };
+
+exports.check_coupon = async function check_coupon(user_id, _coupon, sub_category_id){
+  var today = moment().tz("Asia/Riyadh");
+  const tax = await setting.findOne({ code: "TAX" });
+  const _sp = await Order.findOne({$and:[{couponCode: _coupon},{user:user_id}]})
+  const sp = await coupon.findOne({
+    $and: [
+      { dt_from: { $lte: today } },
+      { dt_to: { $gte: today } },
+      { coupon: _coupon }
+    ],
+  });
+
+  if(_sp) {
+    return null;
+  }
+
+  if(!sp) {
+    return null;
+  }
+  
+  const sub_category = await SubCategory.findById(sub_category_id);
+  var discount_rate = Number(sub_category.price) * Number(sp.discount_rate);
+  var final_total = Number(sub_category.price) - discount_rate;
+  var final_total_tax = (Number(final_total) * Number(tax.value)) + Number(final_total)
+
+  var returnObject = {
+    final_total: Number(final_total_tax),
+    discount: discount_rate
+  };
+  return returnObject
+}
