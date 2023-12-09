@@ -518,7 +518,6 @@ const admin_routes = [
     beforeHandler: [auth.getAdminToken],
     handler: providerController.sendSupplierMS,
   },
-
   {
     method: "POST",
     url: "/api/providers/update",
@@ -573,6 +572,69 @@ const admin_routes = [
     beforeHandler: [auth.getAdminToken],
     handler: orderController.getProivdeOrders,
   },
+  //supervisor
+  {
+    method: "GET",
+    url: "/api/users/supervisor/list",
+    beforeHandler: [auth.getAdminToken],
+    handler: providerController.getAllSupervisor,
+  },
+  {
+    method: "POST",
+    url: "/api/users/supervisor",
+    beforeHandler: [auth.getAdminToken],
+    handler: providerController.getSupervisor,
+  },
+  {
+    method: "POST",
+    url: "/api/users/supervisor-excel",
+    beforeHandler: [auth.getAdminToken],
+    handler: providerController.getSupervisorExcel,
+  },
+  {
+    method: "GET",
+    url: "/api/supervisor/details/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: providerController.getSingleSupervisorAdmin,
+  },
+  {
+    method: "POST",
+    url: "/api/supervisor/sms/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: providerController.sendSupervisorSMS,
+  },
+  {
+    method: "POST",
+    url: "/api/supervisor/update",
+    beforeHandler: [auth.getAdminToken],
+    handler: providerController.updateSupervisor,
+  },
+  {
+    method: "POST",
+    url: "/api/supervisor/block",
+    beforeHandler: [auth.getAdminToken],
+    handler: providerController.blockSupervisor,
+  },
+  {
+    method: "POST",
+    url: "/api/supervisor/delete",
+    beforeHandler: [auth.getAdminToken],
+    handler: providerController.deleteSupervisor,
+  },
+  {
+    method: "POST",
+    url: "/api/supervisor/add",
+    beforeHandler: [auth.getAdminToken],
+    handler: providerController.addSupervisor,
+  },
+  {
+    method: "GET",
+    url: "/api/supervisor/employees/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: employeeController.getEmployeesBySupervisor,
+  },
+
+  
   //places
   {
     method: "GET",
@@ -1085,10 +1147,16 @@ const driver_routes = [
     handler: constantController.welcomeDriver,
   },
   {
-    method: "GET",
+    method: "POST",
     url: "/api/driver/order",
     beforeHandler: [auth.getToken],
     handler: orderController.getEmployeeOrder,
+  },
+  {
+    method: "GET",
+    url: "/api/driver/order-count",
+    beforeHandler: [auth.getToken],
+    handler: orderController.getEmployeeCountOrder,
   },
   {
     method: "POST",
@@ -1107,6 +1175,17 @@ const driver_routes = [
     url: "/api/driver/order/search",
     beforeHandler: [auth.getToken],
     handler: orderController.getOrdersSearchFilter,
+  },
+  {
+    method: "POST",
+    url: "/api/driver/login",
+    handler: employeeController.loginEmployee,
+  },
+  {
+    method: "GET",
+    url: "/api/driver/profile",
+    beforeHandler: [auth.getToken],
+    handler: employeeController.getSingleEmployee,
   },
 ];
 

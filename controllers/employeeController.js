@@ -45,6 +45,7 @@ const {
   USER_TYPE,
   VALIDATION_MESSAGE_ARABIC,
   VALIDATION_MESSAGE_ENGLISH,
+  ORDER_STATUS,
 } = require("../utils/constants");
 const { Order } = require("../models/Order");
 const { Place_Delivery } = require("../models/Product");
@@ -829,10 +830,8 @@ exports.updateEmploye = async (req, reply) => {
               email: String(req.raw.body.email).toLowerCase(),
               address: req.raw.body.address,
               full_name: req.raw.body.full_name,
-              supplier_id: req.raw.body.supplier_id,
+              supervisor_id: req.raw.body.supervisor_id,
               password: encryptPassword(req.raw.body.password),
-              place_id: req.raw.body.place_id,
-              city_id: req.raw.body.city_id,
             },
             { new: true, runValidators: true },
             function (err, model) {
@@ -877,10 +876,8 @@ exports.updateEmploye = async (req, reply) => {
               email: String(req.raw.body.email).toLowerCase(),
               address: req.raw.body.address,
               full_name: req.raw.body.full_name,
-              supplier_id: req.raw.body.supplier_id,
+              supervisor_id: req.raw.body.supervisor_id,
               password: encryptPassword(req.raw.body.password),
-              place_id: req.raw.body.place_id,
-              city_id: req.raw.body.city_id,
             },
             { new: true, runValidators: true },
             function (err, model) {
@@ -1039,9 +1036,7 @@ exports.addEmployee = async (req, reply) => {
         phone_number: req.raw.body.phone_number,
         password: encryptPassword(req.raw.body.password),
         full_name: req.raw.body.full_name,
-        supplier_id: req.raw.body.supplier_id,
-        place_id: req.raw.body.place_id,
-        city_id: req.raw.body.city_id,
+        supervisor_id: req.raw.body.supervisor_id,
         address: req.raw.body.address,
         lat: 0.0,
         lng: 0.0,
@@ -1328,6 +1323,32 @@ exports.getSingleSupplierPlace = async (req, reply) => {
         )
       );
     return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getEmployeesBySupervisor = async (req, reply) => {
+  try {
+    const item = await employee
+      .find({supervisor_id:req.params.id, isDeleted:false})
+      .sort({ _id: -1 });
+
+    var newArr = [];
+    for await (const data of item) {
+      var newUser = data.toObject();
+      var _order = await Order.find({$and: [{ employee_id: newUser._id }, { stauts: {$in:[ORDER_STATUS.finished , ORDER_STATUS.rated]} }]}).countDocuments();
+      newUser.orders = _order;
+      newArr.push(newUser);
+    }
+
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      items: newArr
+    };
+    reply.send(response);
   } catch (err) {
     throw boom.boomify(err);
   }

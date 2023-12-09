@@ -117,6 +117,9 @@ const Supplierschema = mongoose.Schema({
   details: {
     type: String,
   },
+  phone_number: {
+    type: String,
+  },
   email: {
     type: String,
     required: [true, "email is required"],
@@ -138,6 +141,38 @@ const Supplierschema = mongoose.Schema({
   },
   orderPercentage: { type: Number },
   cities: [{ type: mongoose.Schema.Types.ObjectId, ref: "city"}],
+});
+
+const SupervisorSchema = mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, "name is required"],
+  },
+  image: {
+    type: String,
+  },
+  phone_number: {
+    type: String,
+  },
+  email: {
+    type: String,
+    required: [true, "email is required"],
+    match: [/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,3}$/, "Invalid email"],
+  },
+  password: {
+    type: String,
+    required: [true, "password is required"],
+  },
+  isDeleted: {
+    type: Boolean,
+    default:false
+  },
+  isBlock: {
+    type: Boolean,
+  },
+  supplier_id: { type: mongoose.Schema.Types.ObjectId, ref: "supplier",required: [true, "supplier is required"]},
+  place_id: { type: mongoose.Schema.Types.ObjectId, ref: "place", required: [true, "place is required"], },
+  city_id: { type: mongoose.Schema.Types.ObjectId, ref: "city", required: [true, "city is required"], }
 });
 
 const ProductPlacePriceSchema = mongoose.Schema({
@@ -220,6 +255,7 @@ ProductPlacePriceSchema.index({ product_id: 1 });
 const Category = mongoose.model("category", schema);
 const SubCategory = mongoose.model("subcategory", subschema);
 const Supplier = mongoose.model("supplier", Supplierschema);
+const Supervisor = mongoose.model("supervisor", SupervisorSchema);
 const Product = mongoose.model("product", Productschema);
 const product_price = mongoose.model("product_price", ProductPlacePriceSchema);
 const Place_Delivery = mongoose.model("place_deliveries", PlaceDeliverySchema);
@@ -230,3 +266,4 @@ exports.Supplier = Supplier;
 exports.Product = Product;
 exports.Product_Price = product_price;
 exports.Place_Delivery = Place_Delivery;
+exports.Supervisor = Supervisor;

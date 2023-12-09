@@ -61,6 +61,8 @@ const ORDER_STATUS = Object.freeze({
   new: "new",
   accpeted: "accepted",
   started: "started",
+  progress: "progress",
+  prefinished: "prefinished",
   finished: "finished",
   updated: "updated",
   rated: "rated",

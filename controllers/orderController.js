@@ -67,12 +67,15 @@ const e = require("cors");
 var database = Firebase.database();
 var geoFire = new GeoFire(database.ref("userLocation"));
 var language = "ar"
-var total = 0
-var total_discount = 0
+
 
 exports.addOrder = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
+      var total = 0
+      var total_discount = 0
+      var total_tax = 0
+      
       var validationArray = [
         { name: "couponCode" },
         { name: "paymentType" },
@@ -143,7 +146,6 @@ exports.addOrder = async (req, reply) => {
 
           if(req.body.couponCode && req.body.couponCode != ""){
             let obj =  await check_coupon(req.user._id, req.body.couponCode, req.body.sub_category_id)
-            console.log(obj)
             if(obj == null){
               reply
               .code(200)
@@ -160,8 +162,10 @@ exports.addOrder = async (req, reply) => {
             }
             total = obj.final_total;
             total_discount = obj.discount;
+            total_tax = obj.total_tax
           }else{
             total = (Number(sub_category.price) * Number(tax.value)) + Number(sub_category.price)
+            total_tax = (Number(sub_category.price) * Number(tax.value))
           }
 
           let Orders = new Order({
@@ -170,7 +174,7 @@ exports.addOrder = async (req, reply) => {
             price: sub_category.price,
             address: req.body.address,
             order_no: orderNo,
-            tax: Number( tax.value ),
+            tax: Number(total_tax),
             total: total,
             totalDiscount: total_discount,
             netTotal: total,
@@ -496,13 +500,20 @@ exports.updateOrder = async (req, reply) => {
       var msg = ""
       let userId = req.user._id
       const check = await Order.findById(req.params.id).populate("user")
-      var msg_started = `تم البدء في تنفيذ الطلب بنجاح`;
+      const tax = await setting.findOne({ code: "TAX" });
+      var msg_started = `الفني في الطريق اليك الطلب بنجاح`;
+      var msg_progress = `تم البدء في تنفيذ الطلب بنجاح`;
       var msg_accpet = `تم قبول طلبكم بنجاح وسوف يتم التنفيذ في اقرب وقت ممكن`;
       var msg_updated = `تم التعديل على الطلب من قبل الفني يرجى تأكيد العملية`;
+      var msg_prefinished = `تم تنفيذ الخدمة من قبل العميل يرجى تأكيد العملية`;
       var msg_finished = `تم الانتهاء من تنفيذ الطلب بنجاح`;
       var msg_canceled_by_driver = `تم الالغاء من قبل السائق`;
       var msg_canceled_by_user = `تم الغاء الطلب من قبل الزبون`;
       
+      if(req.body.status == ORDER_STATUS.progress) {
+        msg = msg_progress;
+        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+      }
       if(req.body.status == ORDER_STATUS.started) {
         msg = msg_started;
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
@@ -512,23 +523,37 @@ exports.updateOrder = async (req, reply) => {
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
       }
       if(req.body.status == ORDER_STATUS.updated) {
-        msg = msg_updated;
+        var code =  makeid(6)
+        msg = msg_updated + " كود العملية هو: " + code;
+        
+        var subs = await SubCategory.find({_id:{$in:req.body.extra}})
+        var price = 0;
+        subs.forEach(element => { price += element.price });
+        var new_total = (Number(price) * Number(tax.value)) + Number(price)
+        var new_tax = (Number(price) * Number(tax.value)) 
+
+        await Order.findByIdAndUpdate( req.params.id, { update_code: code , extra: req.body.extra , tax: Number(new_tax)+Number(check.tax), total: Number(new_total)+Number(check.total), netTotal: Number(new_total)+Number(check.total)},{ new: true })       
+        await sendSMS(check.user.phone_number, "", "", msg)
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
-      }     
+      }
+      if(req.body.status == ORDER_STATUS.prefinished) {
+        var code =  makeid(6)
+        msg = msg_prefinished + " كود العملية هو: " + code;
+
+        await Order.findByIdAndUpdate( req.params.id, { update_code: code},{ new: true })
+        await sendSMS(check.user.phone_number, "", "", msg)
+        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+      }
       if(req.body.status == ORDER_STATUS.finished) {
         msg = msg_finished;
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
-      }
-      
-      if(req.body.status == ORDER_STATUS.canceled_by_driver && check.status != ORDER_STATUS.finished && check.status != ORDER_STATUS.rated){
+      }     
+      if(req.body.status == ORDER_STATUS.canceled_by_driver && check.status != ORDER_STATUS.prefinished && check.status != ORDER_STATUS.finished && check.status != ORDER_STATUS.rated){
         msg = msg_canceled_by_driver;
-        //TODO: transfer from wallet
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
       }
-
       if(req.body.status == ORDER_STATUS.canceled_by_user){
         msg = msg_canceled_by_user;
-
         if(check.status != ORDER_STATUS.new && check.status != ORDER_STATUS.accpeted ){
           reply
           .code(200)
@@ -542,11 +567,9 @@ exports.updateOrder = async (req, reply) => {
           );
         return;
         }
-
         let emplployee = await employee.findById(check.employee)
         await CreateGeneralNotification(emplployee.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.user._id, emplployee._id, "", "");
       }
-  
       const sp = await Order.findByIdAndUpdate(
         req.params.id,
         {
@@ -576,17 +599,12 @@ exports.updateOrder = async (req, reply) => {
 exports.updateOrderCode = async (req, reply) => {
   try {
      let userId = req.user._id
-     const check = await Order.findById(req.params.id)
+     var msg_finished = `تم الانتهاء من تنفيذ الطلب بنجاح`;
+     const check = await Order.findById(req.params.id).populate("user")
       var msg = ""
       if(check.status == ORDER_STATUS.updated) {
         if(String(req.body.update_code) == String(check.update_code)) {
-          const sp = await Order.findByIdAndUpdate(
-            req.params.id,
-            {
-              update_code: req.body.update_code
-            },
-            { new: true }
-          )
+          await Order.findByIdAndUpdate(req.params.id, { status: ORDER_STATUS.started },{ new: true } )
           // send notification to employee 
         }else {
           reply
@@ -601,7 +619,27 @@ exports.updateOrderCode = async (req, reply) => {
           );
         return;
         }
-      }else{
+      }
+      else if(check.status == ORDER_STATUS.prefinished) {
+        if(String(req.body.update_code) == String(check.update_code)) {
+          await Order.findByIdAndUpdate(req.params.id, { status: ORDER_STATUS.finished },{ new: true } )
+          // send notification to employee 
+          await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg_finished, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        }else {
+          reply
+          .code(200)
+          .send(
+            errorAPI(
+              language,
+              400,
+              MESSAGE_STRING_ARABIC.USER_VERIFY_ERROR,
+              MESSAGE_STRING_ENGLISH.USER_VERIFY_ERROR
+            )
+          );
+        return;
+        }
+      }
+      else{
         reply
         .code(200)
         .send(
@@ -647,7 +685,7 @@ exports.getUserOrder = async (req, reply) => {
       query.$and.push({ status: {$in:[ORDER_STATUS.new, ORDER_STATUS.started, ORDER_STATUS.accpeted ]}})
     }
     if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.finished) {
-      query.$and.push({ status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated ]}})
+      query.$and.push({ status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished ]}})
     }
     if (req.query.status && req.query.status != "" && req.query.status.includes(ORDER_STATUS.canceled)) {
       query.$and.push({ status:{$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]} })
@@ -1567,33 +1605,23 @@ exports.getEmployeeOrder = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
     let userId = req.user._id;
-    var result = [];
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
 
-    const place_id = req.headers["place"];
-    const supplier_id = req.headers["supplier"];
-
-    var query = {};
-    if (Number(req.query.StatusId) == 2 || Number(req.query.StatusId) == 3) {
-      query = {
-        $and: [{employee_id:userId},{StatusId: { $in: [2, 3] } }],
-      };
-    } else if (Number(req.query.StatusId) == 5) {
-      query = {
-        $and: [{supplier_id:supplier_id},{place_id:place_id},{ StatusId: { $in: [5, 6, 7] } }],
-      };
-    } else {
-      if (Number(req.query.StatusId) == -1) {
-        query = {
-          $and: [{supplier_id:supplier_id}, {place_id:place_id} , {StatusId: -1}],
-        };
-      }else{
-        query = {
-          $and: [{employee_id:userId}, {StatusId: req.query.StatusId }],
-        };
+    var query = {$and:[{employee: userId}]};
+    if (req.body.status && req.body.status != "") {
+      if(req.body.status == ORDER_STATUS.finished){
+        query.$and.push({status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}})
+      }
+      else if(req.body.status == 'canceled' ){
+        query.$and.push({status: {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}})
+      }
+      else{
+        query.$and.push({status: req.body.status})
       }
     }
+    if (req.body.order_no && req.body.order_no != "")
+      query["order_no"] = req.body.order_no;
 
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
@@ -1601,40 +1629,21 @@ exports.getEmployeeOrder = async (req, reply) => {
       .populate("user", "-token")
       .populate({ path: "extra", populate: { path: "subcategory" } })
       .populate("employee", "-token")
-      .populate("provider")
+      .populate("provider", "-token")
       .populate("sub_category_id")
       .populate("category_id")
       .populate("address")
       .skip(page * limit)
       .limit(limit)
       .select("-couponCode");
-    var arr = [];
-    item.forEach((element) => {
-      let obj = {
-        _id: element._id,
-        Order_no: element.Order_no,
-        Total: element.Total,
-        StatusId: element.StatusId,
-        dt_date: element.dt_date,
-        dt_time: element.dt_time,
-        address: element.address,
-        OrderType: element.OrderType,
-        supplier_id: element.supplier_id,
-        client_name: element.user_id.full_name ? element.user_id.full_name : "",
-        client_phone: element.user_id.phone_number
-          ? element.user_id.phone_number
-          : "",
-        isExpress:element.isExpress
-      };
-      arr.push(obj);
-    });
+
     reply.code(200).send(
       success(
         language,
         200,
         MESSAGE_STRING_ARABIC.SUCCESS,
         MESSAGE_STRING_ENGLISH.SUCCESS,
-        arr,
+        item,
         {
           size: item.length,
           totalElements: total,
@@ -1649,6 +1658,39 @@ exports.getEmployeeOrder = async (req, reply) => {
     return;
   }
 };
+
+exports.getEmployeeCountOrder = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    let userId = req.user._id;
+
+    const accpeted = await Order.countDocuments({$and:[{employee: userId},{status:ORDER_STATUS.accpeted}]});
+    const progress = await Order.find({$and:[{employee: userId},{status:{$in:[ORDER_STATUS.progress, ORDER_STATUS.started, ORDER_STATUS.updated]}}]}).countDocuments();
+    const finished = await Order.find({$and:[{employee: userId},{status:{$in:[ORDER_STATUS.finished, ORDER_STATUS.prefinished, ORDER_STATUS.rated]}}]}).countDocuments();
+    const cancelded = await Order.find({$and:[{employee: userId},{status:{$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}}]}).countDocuments();
+     var obj = {
+        accpeted:accpeted,
+        progress:progress,
+        finished: finished,
+        cancelded: cancelded
+     }
+
+    reply.code(200).send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        obj
+      )
+    );
+    return;
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
 
 exports.getEmployeeOrderCounters = async (req, reply) => {
   try {
@@ -2837,7 +2879,7 @@ exports.getOrders = async (req, reply) => {
 
     if (req.body.status && req.body.status != ""){
       if(req.body.status == ORDER_STATUS.finished){
-        query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]}
+        query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
       }
       else if(req.body.status == 'canceled' ){
         query["status"] = {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}
@@ -2924,16 +2966,8 @@ exports.getOrdersRateList = async (req, reply) => {
     const total = await Rate.find(query).countDocuments();
     const item = await Rate.find(query)
     .populate("order_id")
-    .populate({
-      path: 'order_id',
-      populate: {
-          path: 'offers', 
-          populate: {
-              path: 'user',
-          }
-      }
-     })
     .populate("user_id", ["-password", "-token"])
+    .populate("driver_id", ["-password", "-token"])
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);

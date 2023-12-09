@@ -553,10 +553,12 @@ exports.check_coupon = async function check_coupon(user_id, _coupon, sub_categor
   var discount_rate = Number(sub_category.price) * Number(sp.discount_rate);
   var final_total = Number(sub_category.price) - discount_rate;
   var final_total_tax = (Number(final_total) * Number(tax.value)) + Number(final_total)
+  var total_tax = (Number(final_total) * Number(tax.value)) 
 
   var returnObject = {
     final_total: Number(final_total_tax),
-    discount: discount_rate
+    discount: discount_rate,
+    total_tax: total_tax
   };
   return returnObject
 }
