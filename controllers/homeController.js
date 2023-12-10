@@ -239,7 +239,7 @@ exports.getTopProductsPlace = async (req, reply) => {
     var products = [];
     const item = await Product_Price.find(query)
       .populate("place_id")
-      .populate("product_id");
+      .populate("category_id");
     item.forEach((element) => {
       products.push(element);
     });

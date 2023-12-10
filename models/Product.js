@@ -3,46 +3,8 @@ const { number, date, boolean } = require("@hapi/joi");
 
 const Productschema = mongoose.Schema(
   {
-    arName: {
-      type: String,
-      required: [true, "arabic name is required"],
-    },
-    enName: {
-      type: String,
-      required: [true, "english name is required"],
-    },
-    arDescription: {
-      type: String,
-    },
-    enDescription: {
-      type: String,
-    },
-    rate: {
-      type: Number,
-    },
-    price_for_replacment: {
-      type: Number,
-    },
-    price_for_new: {
-      type: Number,
-    },
-    discountPrice: {
-      type: Number,
-    },
-    image: {
-      type: String,
-    },
     createat: {
       type: Date,
-    },
-    isNewProduct: {
-      type: Boolean,
-    },
-    isReplacement: {
-      type: Boolean,
-    },
-    sort: {
-      type: Number,
     },
     category_id: {
       type: mongoose.Schema.Types.ObjectId,
@@ -176,9 +138,9 @@ const SupervisorSchema = mongoose.Schema({
 });
 
 const ProductPlacePriceSchema = mongoose.Schema({
-  product_id: {
+  category_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "product",
+    ref: "category",
     required: [true, "product is required"],
   },
   place_id: {
@@ -195,28 +157,6 @@ const ProductPlacePriceSchema = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "city",
     required: [true, "city is required"],
-  },
-  price_for_new: {
-    type: Number,
-    required: [true, "price for new is required"],
-  },
-  price_for_replacment: {
-    type: Number,
-    required: [true, "price for replacment is required"],
-  },
-  discountPrice: {
-    type: Number,
-  },
-  discountPriceReplacment: {
-    type: Number,
-  },
-  deliveryCost: {
-    type: Number,
-    required: [true, "delivery cost is required"],
-  },
-  expressCost: {
-    type: Number,
-    required: [true, "Express delivery cost is required"],
   },
   createAt: {
     type: Date,

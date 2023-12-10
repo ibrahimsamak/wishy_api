@@ -9,6 +9,7 @@ const orderController = require("../controllers/orderController");
 const providerController = require("../controllers/providerController");
 const homeController = require("../controllers/homeController");
 const employeeController = require("../controllers/employeeController");
+const productController = require("../controllers/productController");
 
 const fastify = require("fastify")({
   logger: true,
@@ -670,6 +671,44 @@ const admin_routes = [
     handler: constantController.deletePlace,
   },
 
+    //place_Products
+    {
+      method: "POST",
+      url: "/api/products/places/list",
+      beforeHandler: [auth.getAdminToken],
+      handler: productController.getAllProductPlaceByAdmin,
+    },
+    {
+      method: "POST",
+      url: "/api/products/places/list_excel",
+      beforeHandler: [auth.getAdminToken],
+      handler: productController.getAllProductPlaceExcelByAdmin,
+    },
+    {
+      method: "POST",
+      url: "/api/products/places/delete/:id",
+      beforeHandler: [auth.getAdminToken],
+      handler: productController.deleteProductPlace,
+    },
+    {
+      method: "POST",
+      url: "/api/products/places/add",
+      beforeHandler: [auth.getAdminToken],
+      handler: productController.addProductPlace,
+    },
+    {
+      method: "POST",
+      url: "/api/products/places/update/:id",
+      beforeHandler: [auth.getAdminToken],
+      handler: productController.updateProductPlace,
+    },
+    {
+      method: "GET",
+      url: "/api/products/places/details/:id",
+      beforeHandler: [auth.getAdminToken],
+      handler: productController.getSingleProductPlace,
+    },
+
   //coupons
   {
     method: "GET",
@@ -1056,12 +1095,6 @@ const mobile_routes = [
   },
 
   //order
-  {
-    method: "POST",
-    url: "/api/mobile/order/check",
-    beforeHandler: [auth.getToken],
-    handler: orderController.checkDestinationInOrder,
-  },
   {
     method: "POST",
     url: "/api/mobile/order/offer/:id",

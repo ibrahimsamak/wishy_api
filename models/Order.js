@@ -21,6 +21,7 @@ const Orderschema = mongoose.Schema(
     sub_category_id: { type: mongoose.Schema.Types.ObjectId, ref: "subcategory"} ,
     extra:{type:[ {type: mongoose.Schema.Types.ObjectId, ref: "subcategory"} ]},
     user: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
+    supervisor: { type: mongoose.Schema.Types.ObjectId, ref: "supervisor" },
     provider: { type: mongoose.Schema.Types.ObjectId, ref: "supplier" },
     employee: { type: mongoose.Schema.Types.ObjectId, ref: "employees" },
     address: { type: mongoose.Schema.Types.ObjectId, ref: "user_address" },
