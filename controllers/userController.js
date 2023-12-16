@@ -515,7 +515,8 @@ exports.forgetPassword = async (req, reply) => {
 // Update an existing Users
 exports.updateProfile = async (req, reply) => {
   const language = req.headers["accept-language"];
-  try {
+  // try {
+    console.log(req.user._id)
     if (
       !req.raw.body.email ||
       !req.raw.body.full_name ||
@@ -585,10 +586,7 @@ exports.updateProfile = async (req, reply) => {
         });
 
         if (req.raw.body.lat && req.raw.body.lng && req.raw.body.address) {
-          await User_Address.deleteMany(
-            { user_id: req.user._id },
-            function (err, docs) {}
-          );
+          await User_Address.deleteMany({ user_id: req.user._id },function (err, docs) {});
 
           // let rs = new User_Address({
           //   lat: req.raw.body.lat,
@@ -624,9 +622,10 @@ exports.updateProfile = async (req, reply) => {
           },
           { new: true }
         ).select();
+        console.log(_newUser)
         const address = await User_Address.find({$and: [{ user_id: _newUser._id }]});
         var newUser = _newUser.toObject();
-        const orders = await Order.find({ $and: [{ user_id: _newUser._id }, { status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]} }]}).countDocuments();
+        const orders = await Order.find({ $and: [{ user_id: _newUser._id }, { status: {$in:[ORDER_STATUS.prefinished, ORDER_STATUS.finished, ORDER_STATUS.rated]} }]}).countDocuments();
         // const favorits = await Favorite.find({ user_id: _newUser._id}).countDocuments();
         // newUser.favorite = favorits;
         newUser.orders = orders;
@@ -712,10 +711,10 @@ exports.updateProfile = async (req, reply) => {
         return;
       }
     }
-  } catch (err) {
-    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
-    return;
-  }
+  // } catch (err) {
+  //   reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+  //   return;
+  // }
 };
 
 exports.uploadUserPhoto = async (req, reply) => {

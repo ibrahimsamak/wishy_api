@@ -91,6 +91,10 @@ const Supplierschema = mongoose.Schema({
     type: String,
     required: [true, "password is required"],
   },
+  token: {
+    type: String,
+    default:""
+  },
   rate: {
     type: Number,
   },
@@ -131,6 +135,10 @@ const SupervisorSchema = mongoose.Schema({
   },
   isBlock: {
     type: Boolean,
+  },
+  token: {
+    type: String,
+    default:""
   },
   supplier_id: { type: mongoose.Schema.Types.ObjectId, ref: "supplier",required: [true, "supplier is required"]},
   place_id: { type: mongoose.Schema.Types.ObjectId, ref: "place", required: [true, "place is required"], },

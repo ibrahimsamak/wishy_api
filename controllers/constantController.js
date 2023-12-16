@@ -500,6 +500,36 @@ exports.getAllPlacesAdmin = async (req, reply) => {
     throw boom.boomify(err);
   }
 };
+
+exports.getAllPlacesSupplierAdmin = async (req, reply) => {
+  try {
+    var language = "ar";
+    var cities = []
+    if(req.params.id != ""){
+      cities = await Place_Delivery
+        .find({ $and: [{ isDeleted: false }, { supplier_id: req.params.id }] })
+        .populate("city_id")
+        .populate("place_id")
+        .populate("supplier_id")
+        .sort({ _id: -1 });
+    }
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          cities
+        )
+      );
+    return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 exports.getSinglePlace = async (req, reply) => {
   try {
     const language = "ar";
@@ -2383,7 +2413,7 @@ exports.checkCurrentPlace = async (req, reply) => {
             400,
             MESSAGE_STRING_ARABIC.NOT_COVERED,
             MESSAGE_STRING_ENGLISH.NOT_COVERED,
-            []
+            {}
           )
         );
       return;

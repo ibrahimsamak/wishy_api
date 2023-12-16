@@ -46,9 +46,10 @@ const {
   VALIDATION_MESSAGE_ARABIC,
   VALIDATION_MESSAGE_ENGLISH,
   ORDER_STATUS,
+  ACTORS,
 } = require("../utils/constants");
 const { Order } = require("../models/Order");
-const { Place_Delivery } = require("../models/Product");
+const { Place_Delivery, Supervisor } = require("../models/Product");
 
 // Add a new Users
 exports.loginEmployee = async (req, reply) => {
@@ -562,17 +563,35 @@ exports.updateAvailable = async (req, reply) => {
 ///////////Admin////////////
 exports.getStoresEmployees = async (req, reply) => {
   try {
-    const item = await employee
-      .find({ supplier_id: req.params.id })
+    var supplier_id = ""
+    if(req.user.userType == ACTORS.ADMIN || req.user.userType == ACTORS.ADMIN){
+      supplier_id = req.params.id
+      const item = await employee
+        .find({$and:[{supplier_id: supplier_id},{isAvailable:true}] })
+        .sort({ _id: -1 });
+
+      const response = {
+        status_code: 200,
+        status: true,
+        message: "تمت العملية بنجاح",
+        items: item,
+      };
+      reply.send(response);
+    }
+    if(req.user.userType == ACTORS.SUPERVISOR){
+      const item = await employee
+      .find({$and:[{supplier_id: req.user._id},{isAvailable:true}] })
       .sort({ _id: -1 });
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: item,
-    };
-    reply.send(response);
+      const response = {
+        status_code: 200,
+        status: true,
+        message: "تمت العملية بنجاح",
+        items: item,
+      };
+      reply.send(response);
+    }
+
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -588,6 +607,12 @@ exports.getEmployees = async (req, reply) => {
     let query1 = {};
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
     query1["isDeleted"] = false
+    if(req.user.userType == ACTORS.STORE){
+      query1["supplier_id"] = req.user._id
+    }
+    if(req.user.userType == ACTORS.SUPERVISOR){
+      query1["supervisor_id"] = req.user._id
+    }
     const total = await employee.find(query1).countDocuments();
     const item = await employee
       .find(query1)
@@ -629,8 +654,14 @@ exports.getEmployeesExcel = async (req, reply) => {
     let search_value = req.body.search_value;
 
     let query1 = {};
+    query1["isDeleted"] = false
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
-
+    if(req.user.userType == ACTORS.STORE){
+      query1["supplier_id"] = req.user._id
+    }
+    if(req.user.userType == ACTORS.SUPERVISOR){
+      query1["supervisor_id"] = req.user._id
+    }
     const item = await employee
       .find(query1)
       .populate("city_id")
@@ -794,6 +825,8 @@ exports.updateEmploye = async (req, reply) => {
         );
       return;
     } else {
+      let supervisor = await Supervisor.findById(req.raw.body.supervisor_id)
+
       if (req.raw.files) {
         const files = req.raw.files;
         let fileArr = [];
@@ -832,6 +865,7 @@ exports.updateEmploye = async (req, reply) => {
               full_name: req.raw.body.full_name,
               supervisor_id: req.raw.body.supervisor_id,
               password: encryptPassword(req.raw.body.password),
+              supplier_id: supervisor ? supervisor.supplier_id : null
             },
             { new: true, runValidators: true },
             function (err, model) {
@@ -878,6 +912,7 @@ exports.updateEmploye = async (req, reply) => {
               full_name: req.raw.body.full_name,
               supervisor_id: req.raw.body.supervisor_id,
               password: encryptPassword(req.raw.body.password),
+              supplier_id: supervisor ? supervisor.supplier_id : null
             },
             { new: true, runValidators: true },
             function (err, model) {
@@ -1030,6 +1065,7 @@ exports.addEmployee = async (req, reply) => {
         img = x;
       });
 
+      let supervisor = await Supervisor.findById(req.raw.body.supervisor_id)
       const _newUser = new employee({
         image: img,
         email: String(req.raw.body.email).toLowerCase(),
@@ -1038,6 +1074,7 @@ exports.addEmployee = async (req, reply) => {
         full_name: req.raw.body.full_name,
         supervisor_id: req.raw.body.supervisor_id,
         address: req.raw.body.address,
+        supplier_id: supervisor ? supervisor.supplier_id : null,
         lat: 0.0,
         lng: 0.0,
         licenseNo: "",
@@ -1160,7 +1197,7 @@ exports.addSupplierPlace = async (req, reply) => {
       const response = {
         status_code: 400,
         status: false,
-        message: "يوجد مشرف لهذه المنطقة",
+        message: "تم اضافة المزود لهذه المنطقة مسبقا",
         items: [],
       };
       reply.code(200).send(response);

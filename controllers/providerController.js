@@ -33,6 +33,7 @@ const {
   VALIDATION_MESSAGE_ENGLISH,
   CONTROLLER_ENUM,
   getMessageOnLanguage,
+  ACTORS,
 } = require("../utils/constants");
 const { times } = require("../models/Constant");
 
@@ -821,6 +822,10 @@ exports.getSupervisor = async (req, reply) => {
     let query1 = {};
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
     query1["isDeleted"] = false
+    if(req.user.userType == ACTORS.STORE){
+      query1["supplier_id"] = req.user._id
+    }
+
     const total = await Supervisor.find(query1).countDocuments();
     const item = await Supervisor.find(query1)
       .populate("provider")
@@ -864,6 +869,9 @@ exports.getSupervisorExcel = async (req, reply) => {
     let query1 = {};
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
     query1["isDeleted"]=false
+    if(req.user.userType == ACTORS.STORE){
+      query1["supplier_id"] = req.user._id
+    }
     const item = await Supervisor.find(query1)
       .populate("provider")
       .sort({ _id: -1 });

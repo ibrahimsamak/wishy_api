@@ -5,7 +5,7 @@ const { Admin } = require("../models/Admin");
 const { Users } = require("../models/User");
 const { Order } = require("../models/Order");
 const { Supplier, Product, Product_Price } = require("../models/Product");
-const { USER_TYPE, ORDER_STATUS } = require("../utils/constants");
+const { USER_TYPE, ORDER_STATUS, ACTORS } = require("../utils/constants");
 const { employee } = require("../models/Employee");
 
 exports.getTop10NewUsers = async (req, reply) => {
@@ -29,8 +29,12 @@ exports.getTop10NewUsers = async (req, reply) => {
 
 exports.getTop10Orders = async (req, reply) => {
   try {
-    var query = {};
+    var query = {$and:[{status: ORDER_STATUS.new}]};
     query["status"] = ORDER_STATUS.new
+    if(req.user.userType == ACTORS.STORE){
+      query.$and.push({provider: req.user._id}) 
+    }
+    console.log(query)
     const item = await Order.find(query)
       .populate("user", "-token")
       .populate({ path: "offers.user", populate: { path: "user" } })
@@ -50,62 +54,45 @@ exports.getTop10Orders = async (req, reply) => {
 
 exports.getCounterOrdersWithStatus = async (req, reply) => {
   try {
-    // if (req.user.userType == USER_TYPE.ADMIN) {
-    const NewOrder = await Order.find({ status: ORDER_STATUS.new }).countDocuments();
-    const ProccessingOrder = await Order.find({
-      $or: [{ status: ORDER_STATUS.started }, { status: ORDER_STATUS.accpeted }],
-    }).countDocuments();
-    const DoneOrder = await Order.find({ $or:[{status: ORDER_STATUS.finished }, {status: ORDER_STATUS.rated }]}).countDocuments();
-    const CancelOrder = await Order.find({
-      $or: [{ status: ORDER_STATUS.canceled_by_driver }, { status: ORDER_STATUS.canceled_by_admin }, { status: ORDER_STATUS.canceled_by_user }],
-    }).countDocuments();
-    const AllOrder = await Order.find({}).countDocuments();
+    if (req.user.userType == ACTORS.ADMIN) {
+      const NewOrder = await Order.countDocuments({ status: ORDER_STATUS.new })
+      const ProccessingOrder = await Order.countDocuments({$or: [{ status: ORDER_STATUS.started }, { status: ORDER_STATUS.accpeted }, { status: ORDER_STATUS.updated }, { status: ORDER_STATUS.progress }]});
+      const DoneOrder = await Order.countDocuments({ $or:[{status: ORDER_STATUS.prefinished }, {status: ORDER_STATUS.finished }, {status: ORDER_STATUS.rated }]})
+      const CancelOrder = await Order.countDocuments({$or: [{ status: ORDER_STATUS.canceled_by_driver }, { status: ORDER_STATUS.canceled_by_admin }, { status: ORDER_STATUS.canceled_by_user }]})
+      const AllOrder = await Order.countDocuments({});
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      NewOrder: NewOrder,
-      ProccessingOrder: ProccessingOrder,
-      DoneOrder: DoneOrder,
-      CancelOrder: CancelOrder,
-      AllOrder: AllOrder,
-    };
-    reply.send(response);
-    // }
-    // else {
-    //   let provider_id = req.user._id;
-    //   const NewOrder = await Order.find({
-    //     $and: [{ StatusId: 1 }, { provider_id: provider_id }],
-    //   }).countDocuments();
-    //   const ProccessingOrder = await Order.find({
-    //     $and: [
-    //       { $or: [{ StatusId: 2 }, { StatusId: 3 }] },
-    //       { provider_id: provider_id },
-    //     ],
-    //   }).countDocuments();
-    //   const DoneOrder = await Order.find({
-    //     $and: [{ StatusId: 4 }, { provider_id: provider_id }],
-    //   }).countDocuments();
-    //   const CancelOrder = await Order.find({
-    //     $and: [{ StatusId: 5 }, { provider_id: provider_id }],
-    //   }).countDocuments();
-    //   const AllOrder = await Order.find({
-    //     provider_id: provider_id,
-    //   }).countDocuments();
+      const response = {
+        status_code: 200,
+        status: true,
+        message: "تمت العملية بنجاح",
+        NewOrder: NewOrder,
+        ProccessingOrder: ProccessingOrder,
+        DoneOrder: DoneOrder,
+        CancelOrder: CancelOrder,
+        AllOrder: AllOrder,
+      };
+      reply.send(response);
+    }
+    else if (req.user.userType == ACTORS.STORE){
+      let provider_id = req.user._id;
+      const NewOrder = await Order.countDocuments({ $and: [{ status: ORDER_STATUS.new }, { provider: provider_id }],});
+      const ProccessingOrder = await Order.countDocuments({ $or:[{status: ORDER_STATUS.accpeted }, {status: ORDER_STATUS.progress }, {status: ORDER_STATUS.updated }, {status: ORDER_STATUS.started }]});
+      const DoneOrder = await Order.countDocuments({$and: [{$or: [{status: ORDER_STATUS.prefinished }, {status: ORDER_STATUS.finished }, {status: ORDER_STATUS.rated }]}, { provider: provider_id }]});
+      const CancelOrder = await Order.countDocuments({$and: [{$or: [{status: ORDER_STATUS.canceled_by_admin }, {status: ORDER_STATUS.canceled_by_driver }, {status: ORDER_STATUS.canceled_by_user }]}, { provider: provider_id }]});
+      const AllOrder = await Order.countDocuments({provider: provider_id});
 
-    //   const response = {
-    //     status_code: 200,
-    //     status: true,
-    //     message: "تمت العملية بنجاح",
-    //     NewOrder: NewOrder,
-    //     ProccessingOrder: ProccessingOrder,
-    //     DoneOrder: DoneOrder,
-    //     CancelOrder: CancelOrder,
-    //     AllOrder: AllOrder,
-    //   };
-    //   reply.send(response);
-    // }
+      const response = {
+        status_code: 200,
+        status: true,
+        message: "تمت العملية بنجاح",
+        NewOrder: NewOrder,
+        ProccessingOrder: ProccessingOrder,
+        DoneOrder: DoneOrder,
+        CancelOrder: CancelOrder,
+        AllOrder: AllOrder,
+      };
+      reply.send(response);
+    }
   } catch (err) {
     throw boom.boomify(err);
   }

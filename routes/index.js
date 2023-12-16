@@ -636,11 +636,17 @@ const admin_routes = [
   },
 
   
+  
   //places
   {
     method: "GET",
     url: "/api/constant/place/:id",
     handler: constantController.getPlacesAdmin,
+  },
+  {
+    method: "GET",
+    url: "/api/constant/all-place-delivery/:id",
+    handler: constantController.getAllPlacesSupplierAdmin,
   },
   {
     method: "GET",
@@ -849,6 +855,12 @@ const admin_routes = [
 
 //mobile client
 const mobile_routes = [
+  {
+    method: "GET",
+    url: "/api/mobile/rates/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getSupplierRateList,
+  },
   {
     method: "GET",
     url: "/api/getPlaces",
@@ -1095,6 +1107,13 @@ const mobile_routes = [
   },
 
   //order
+  
+  {
+    method: "POST",
+    url: "/api/mobile/order/totals",
+    beforeHandler: [auth.getToken],
+    handler: orderController.getOrderTotal,
+  },
   {
     method: "POST",
     url: "/api/mobile/order/offer/:id",
@@ -1174,6 +1193,12 @@ const mobile_routes = [
 
 //mobile driver
 const driver_routes = [
+  {
+    method: "POST",
+    url: "/api/driver/employee/available",
+    beforeHandler: [auth.getAdminToken],
+    handler: employeeController.updateAvailable,
+  },
   {
     method: "GET",
     url: "/api/driver/constant/welcome",

@@ -71,7 +71,12 @@ const employeeSchema = mongoose.Schema(
     isAvailable: {
       type: Boolean,
     },
-    supervisor_id: { type: mongoose.Schema.Types.ObjectId, ref: "supervisor", required: [true, "supervisor is required"], }
+    rate: {
+      type: Number,
+      default: 0
+    },
+    supervisor_id: { type: mongoose.Schema.Types.ObjectId, ref: "supervisor", required: [true, "supervisor is required"], },
+    supplier_id: { type: mongoose.Schema.Types.ObjectId, ref: "supplier"}
   },
   { versionKey: false }
 );

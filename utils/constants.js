@@ -51,10 +51,9 @@ const NOTIFICATION_TITILES = Object.freeze({
 });
 
 const ACTORS = Object.freeze({
-  DESIGNER: "DESIGNER",
-  IMPLEMENTER: "IMPLEMENTER",
   ADMIN: "ADMIN",
   STORE: "STORE",
+  SUPERVISOR: "SUPERVISOR",
 });
 
 const ORDER_STATUS = Object.freeze({

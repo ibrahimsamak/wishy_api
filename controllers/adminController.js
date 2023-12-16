@@ -7,7 +7,7 @@ const moment = require("moment");
 
 // Get Data Models
 const { Admin } = require("../models/Admin");
-const { Supplier } = require("../models/Product");
+const { Supplier, Supervisor } = require("../models/Product");
 const {
   encryptPassword,
   decryptPasswordfunction,
@@ -221,12 +221,20 @@ exports.login = async (req, reply) => {
       ],
     });
 
+    const _supervisor = await Supervisor.findOne({
+      $and: [
+        { email: String(req.body.email).toLowerCase() },
+        { password: pass },
+        {isDeleted:false}
+      ],
+    });
+
     if (Admins) {
       const ـuser = await Admin.findByIdAndUpdate(
         Admins._id,
         {
           token: jwt.sign(
-            { _id: Admins._id, userType: USER_TYPE.ADMIN },
+            { _id: Admins._id, userType: ACTORS.ADMIN },
             config.get("jwtPrivateKey"),
             {
               expiresIn: "30d",
@@ -237,8 +245,9 @@ exports.login = async (req, reply) => {
       );
 
       let newUser = ـuser.toObject();
-      newUser.expire = moment(new Date()).add(30, "days").toDate();
+      newUser.expire = moment(new Date()).add(120, "days").toDate();
       newUser.type = ACTORS.ADMIN;
+
       reply
         .code(200)
         .send(
@@ -267,11 +276,11 @@ exports.login = async (req, reply) => {
 
         return;
       } else {
-        const ـuser = await providers.findByIdAndUpdate(
+        const ـuser = await Supplier.findByIdAndUpdate(
           _providers._id,
           {
             token: jwt.sign(
-              { _id: _providers._id, userType: USER_TYPE.PROVIDER },
+              { _id: _providers._id, userType: ACTORS.STORE },
               config.get("jwtPrivateKey"),
               {
                 expiresIn: "30d",
@@ -282,8 +291,56 @@ exports.login = async (req, reply) => {
         );
 
         let newUser = ـuser.toObject();
-        newUser.expire = moment(new Date()).add(30, "days").toDate();
+        newUser.expire = moment(new Date()).add(120, "days").toDate();
         newUser.type = ACTORS.STORE;
+        newUser.full_name = ـuser.name
+        reply
+          .code(200)
+          .send(
+            success(
+              language,
+              200,
+              MESSAGE_STRING_ARABIC.SUCCESS,
+              MESSAGE_STRING_ENGLISH.SUCCESS,
+              newUser
+            )
+          );
+        return;
+      }
+    } else if (_supervisor) {
+      if (_supervisor.isBlock == true) {
+        reply
+          .code(200)
+          .send(
+            errorAPI(
+              language,
+              400,
+              MESSAGE_STRING_ARABIC.USER_BLOCK,
+              MESSAGE_STRING_ENGLISH.USER_BLOCK
+            )
+          );
+        return;
+
+        return;
+      } else {
+        const ـuser = await Supervisor.findByIdAndUpdate(
+          _supervisor._id,
+          {
+            token: jwt.sign(
+              { _id: _supervisor._id, userType: ACTORS.SUPERVISOR },
+              config.get("jwtPrivateKey"),
+              {
+                expiresIn: "30d",
+              }
+            ),
+          },
+          { new: true }
+        );
+
+        let newUser = ـuser.toObject();
+        newUser.expire = moment(new Date()).add(120, "days").toDate();
+        newUser.type = ACTORS.SUPERVISOR;
+        newUser.full_name = ـuser.name
 
         reply
           .code(200)
@@ -298,7 +355,8 @@ exports.login = async (req, reply) => {
           );
         return;
       }
-    } else {
+    }  
+    else {
       reply
         .code(200)
         .send(

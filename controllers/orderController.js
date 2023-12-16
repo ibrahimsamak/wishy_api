@@ -26,6 +26,7 @@ const {
   Product_Price,
   Place_Delivery,
   SubCategory,
+  Supervisor,
 } = require("../models/Product");
 const { getCurrentDateTime } = require("../models/Constant");
 const { coupon } = require("../models/Coupon");
@@ -44,6 +45,7 @@ const {
   VALIDATION_MESSAGE_ENGLISH,
   ORDER_STATUS,
   PASSENGER_STATUS,
+  ACTORS,
 } = require("../utils/constants");
 const {
   encryptPassword,
@@ -131,7 +133,7 @@ exports.addOrder = async (req, reply) => {
                   400,
                   MESSAGE_STRING_ARABIC.NOT_COVERED,
                   MESSAGE_STRING_ENGLISH.NOT_COVERED,
-                  []
+                  {}
                 )
               );
             return;
@@ -157,7 +159,7 @@ exports.addOrder = async (req, reply) => {
                   400,
                   MESSAGE_STRING_ARABIC.NOT_COVERED,
                   MESSAGE_STRING_ENGLISH.NOT_COVERED,
-                  []
+                  {}
                 )
               );
             return;
@@ -214,6 +216,7 @@ exports.addOrder = async (req, reply) => {
             employee: null,
             provider: _supplier,
             supervisor: null,
+            place: PoinInPolygon[0]._id,
             extra: [],
             loc: {
               type: "Point",
@@ -537,11 +540,22 @@ exports.updateOrder = async (req, reply) => {
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
       }
       if(req.body.status == ORDER_STATUS.started) {
-        msg = msg_started;
+        msg = msg_started; 
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
       }
       if(req.body.status == ORDER_STATUS.accpeted) {
         msg = msg_accpet;
+        var emp = await employee.findById(req.body.employee);
+        await Order.findByIdAndUpdate(
+          req.params.id,
+          {
+            status: req.body.status,
+            employee: req.body.employee,
+            supervisor: emp ? emp.supervisor_id : null,
+            canceled_note: req.body.canceled_note
+          },
+          { new: true }
+        )
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
       }
       if(req.body.status == ORDER_STATUS.updated) {
@@ -554,7 +568,8 @@ exports.updateOrder = async (req, reply) => {
         var new_total = (Number(price) * Number(tax.value)) + Number(price)
         var new_tax = (Number(price) * Number(tax.value)) 
 
-        await Order.findByIdAndUpdate( req.params.id, { update_code: code , extra: req.body.extra , tax: Number(new_tax)+Number(check.tax), total: Number(new_total)+Number(check.total), netTotal: Number(new_total)+Number(check.total)},{ new: true })       
+        await Order.findByIdAndUpdate( req.params.id, { update_code: code , extra: req.body.extra , tax: Number(new_tax)+Number(check.tax), new_total: new_total, new_tax: new_tax, total: Number(/* The above code is declaring a variable called "new_total" in JavaScript. However, the code is incomplete and does not provide any further information about what the variable is intended to be used for or how it is being assigned a value. */
+        new_total)+Number(check.total), netTotal: Number(new_total)+Number(check.total)},{ new: true })       
         await sendSMS(check.user.phone_number, "", "", msg)
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
       }
@@ -700,11 +715,14 @@ exports.getUserOrder = async (req, reply) => {
     var limit = parseFloat(req.query.limit, 10);
     
     var query = {
-      $and: [ ]
+      $and: [ {user: userId}]
     };
 
     if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.new) {
-      query.$and.push({ status: {$in:[ORDER_STATUS.new, ORDER_STATUS.started, ORDER_STATUS.accpeted ]}})
+      query.$and.push({ status: {$in:[ORDER_STATUS.new ]}})
+    }
+    if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.started) {
+      query.$and.push({ status: {$in:[ORDER_STATUS.progress, ORDER_STATUS.started, ORDER_STATUS.accpeted, ORDER_STATUS.updated ]}})
     }
     if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.finished) {
       query.$and.push({ status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished ]}})
@@ -740,6 +758,47 @@ exports.getUserOrder = async (req, reply) => {
       },
     };
     reply.send(response);
+  } catch {
+    throw boom.boomify();
+  }
+};
+
+exports.getOrderTotal = async (req, reply) => {
+  try {
+    const tax = await setting.findOne({ code: "TAX" });
+    const userId = req.user._id;
+    var total = 0;
+    var _coupon = req.body.coupon;
+    const sp = await coupon.findOne({$and: [{ coupon: _coupon }]});
+    const sub_category = await SubCategory.findById(req.body.sub_category_id);
+    var total = Number(sub_category.price);
+    for await(var i of req.body.extra){
+      const _sub_category = await SubCategory.findById(req.body.sub_category_id);
+      total += Number(_sub_category.price)
+    }
+
+    var discount_rate = Number(total) * Number(sp ? sp.discount_rate : 0);
+    var final_total = Number(total) - discount_rate;
+    var final_total_tax = (Number(final_total) * Number(tax.value)) + Number(final_total)
+    var total_tax = (Number(final_total) * Number(tax.value)) 
+    var obj = {
+      final_total: Number(final_total_tax),
+      total_before_tax: Number(total),
+      discount: discount_rate,
+      total_tax: total_tax
+    }
+
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        obj
+      )
+    );
   } catch {
     throw boom.boomify();
   }
@@ -838,9 +897,7 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       return;
     }
     if (ord.status == ORDER_STATUS.finished) {
-  
       var checkBefore = await Rate.findOne({ $and: [{ order_id: ord._id }, { driver_id: driver_id }, { type: 1 }] });
-
       if (checkBefore) {
         reply
           .code(200)
@@ -880,25 +937,34 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       });
 
       let rs = await Rates.save();
-      var totalRates = await Rate.find({$and: [{ driver_id: driver_id }, { type: 1 }] }).countDocuments();
+      var totalRates = await Rate.countDocuments({$and: [{ driver_id: driver_id }, { type: 1 }] });
       var summation = await Rate.find({ $and: [{ driver_id: driver_id }, { type: 1 }] });
       let sum = lodash.sumBy(summation, function (o) { return o.rate_from_user; });
+      let driver = await employee.findByIdAndUpdate(driver_id, { rate: Number(sum / totalRates).toFixed(1)},{new:true});
+      let all_supplier_employees_count = await employee.countDocuments({supplier_id: driver.supplier_id});
+      let all_supplier_employees = await employee.find({supplier_id: driver.supplier_id});
+      let all_supplier_employees_summation = lodash.sumBy(all_supplier_employees, function (o) { return o.rate; });
+      
+      let supp = await Supplier.findByIdAndUpdate(driver.supplier_id, { rate: Number(all_supplier_employees_summation / all_supplier_employees_count).toFixed(1)},{new:true});
+      
+      console.log(all_supplier_employees_count)
+      console.log(all_supplier_employees)
+      console.log(all_supplier_employees_summation)
+      console.log(supp)
 
-      let driver = await Users.findByIdAndUpdate(driver_id, { rate: Number(sum / totalRates).toFixed(1)},{new:true});
       await Order.findByIdAndUpdate(ord._id, { status: ORDER_STATUS.rated });
-
-      // var msg = `تمت اضافة تقييم جديد على طلب رقم: ${ord.title}`;
-      // await CreateGeneralNotification(
-      //   driver.fcmToken,
-      //   NOTIFICATION_TITILES.ORDERS,
-      //   msg,
-      //   NOTIFICATION_TYPE.ORDERS,
-      //   ord._id,
-      //   userId,
-      //   driver_id,
-      //   "",
-      //   ""
-      // );
+      var msg = `تمت اضافة تقييم جديد على طلب رقم: ${ord.title}`;
+      await CreateGeneralNotification(
+        driver.fcmToken,
+        NOTIFICATION_TITILES.ORDERS,
+        msg,
+        NOTIFICATION_TYPE.ORDERS,
+        ord._id,
+        userId,
+        driver_id,
+        "",
+        ""
+      );
 
       reply
         .code(200)
@@ -1632,7 +1698,7 @@ exports.getEmployeeOrder = async (req, reply) => {
 
     var query = {$and:[{employee: userId}]};
     if (req.body.status && req.body.status != "") {
-      if(req.body.status == ORDER_STATUS.finished){
+      if(req.body.status == ORDER_STATUS.finished) {
         query.$and.push({status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}})
       }
       else if(req.body.status == 'canceled' ){
@@ -2153,7 +2219,7 @@ exports.getNearstSupplierByPlace = async (req, reply) => {
                   400,
                   MESSAGE_STRING_ARABIC.NOT_COVERED,
                   MESSAGE_STRING_ENGLISH.NOT_COVERED,
-                  ""
+                  {}
                 )
               );
             return;
@@ -2332,12 +2398,20 @@ exports.getOrders = async (req, reply) => {
     if (req.body.order_no && req.body.order_no != "")
       query["order_no"] = req.body.order_no;
 
+    if (req.body.supplier_id && req.body.supplier_id != "")
+      query["provider"] = req.body.supplier_id;
+
+    if (req.body.place_id && req.body.supplier_id != "")
+      query["place"] = req.body.place_id;
+
+
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
       .sort({ _id: -1 })
       .populate("user", "-token")
       .populate({ path: "extra", populate: { path: "subcategory" } })
       .populate("employee", "-token")
+      .populate("supervisor", "-token")
       .populate("provider")
       .populate("sub_category_id")
       .populate("category_id")
@@ -2387,28 +2461,132 @@ exports.getOrdersRateList = async (req, reply) => {
   try {
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
-
-    var query = {};
-    var newItens = [];
-    if (
-      req.body.dt_from &&
-      req.body.dt_from != "" &&
-      req.body.dt_to &&
-      req.body.dt_to != ""
-    ) {
-      query = {
-        createAt: {
-          $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)),
-          $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)),
-        },
-      };
+    if(req.user.userType == ACTORS.STORE || req.user.userType == ACTORS.SUPERVISOR){
+      var supplier_id = ""
+      if(req.user.userType == ACTORS.STORE ){
+        supplier_id = req.user._id
+      }
+      if(req.user.userType == ACTORS.SUPERVISOR ){
+        let s = await Supervisor.findById(req.user._id)
+        supplier_id = s.supplier_id
+      }
+      let emps = await employee.find({supplier_id: supplier_id})
+      let emps_id  = emps.map(x=>x._id)
+      var query = {$and:[{driver_id:{$in:emps_id}}]};
+      if (
+        req.body.dt_from &&
+        req.body.dt_from != "" &&
+        req.body.dt_to &&
+        req.body.dt_to != ""
+      ) {
+        query = {
+          createAt: {
+            $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)),
+            $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)),
+          },
+        };
+      }
+      const total = await Rate.find(query).countDocuments();
+      const item = await Rate.find(query)
+      .populate("order_id")
+      .populate("user_id", ["-password", "-token"])
+      .populate("driver_id", ["-password", "-token"])
+        .sort({ _id: -1 })
+        .skip(page * limit)
+        .limit(limit);
+      var rateArray = [];
+      for await (const data of item) {
+        var newObject = data.toObject();
+        const ord = await Order.findById(data.destination_id);
+        if (ord) newObject.order_no = ord.Order_no;
+        rateArray.push(newObject);
+      }
+  
+      reply
+        .code(200)
+        .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          rateArray,
+          {
+            size: rateArray.length,
+            totalElements: total,
+            totalPages: Math.floor(total / limit),
+            pageNumber: page,
+          }
+        )
+      );
+    }else{
+      var query = {};
+      if (
+        req.body.dt_from &&
+        req.body.dt_from != "" &&
+        req.body.dt_to &&
+        req.body.dt_to != ""
+      ) {
+        query = {
+          createAt: {
+            $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)),
+            $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)),
+          },
+        };
+      }
+      const total = await Rate.find(query).countDocuments();
+      const item = await Rate.find(query)
+      .populate("order_id")
+      .populate("user_id", ["-password", "-token"])
+      .populate("driver_id", ["-password", "-token"])
+        .sort({ _id: -1 })
+        .skip(page * limit)
+        .limit(limit);
+      var rateArray = [];
+      for await (const data of item) {
+        var newObject = data.toObject();
+        const ord = await Order.findById(data.destination_id);
+        if (ord) newObject.order_no = ord.Order_no;
+        rateArray.push(newObject);
+      }
+  
+      reply
+        .code(200)
+        .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          rateArray,
+          {
+            size: rateArray.length,
+            totalElements: total,
+            totalPages: Math.floor(total / limit),
+            pageNumber: page,
+          }
+        )
+      );
     }
 
-    const total = await Rate.find(query).countDocuments();
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+exports.getSupplierRateList = async (req, reply) => {
+  const language = "ar";
+  try {
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+    let emps = await employee.find({supplier_id: req.params.id})
+    let emps_id  = emps.map(x=>x._id)
+    var query = {$and:[{driver_id:{$in:emps_id}}]};
+    
+    const total = await Rate.countDocuments(query);
     const item = await Rate.find(query)
-    .populate("order_id")
-    .populate("user_id", ["-password", "-token"])
-    .populate("driver_id", ["-password", "-token"])
+      .populate("user_id", ["-password", "-token"])
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -2419,7 +2597,7 @@ exports.getOrdersRateList = async (req, reply) => {
       if (ord) newObject.order_no = ord.Order_no;
       rateArray.push(newObject);
     }
-
+  
     reply
       .code(200)
       .send(
@@ -2442,6 +2620,7 @@ exports.getOrdersRateList = async (req, reply) => {
     return;
   }
 };
+
 
 exports.getProivderRate = async (req, reply) => {
   const language = "ar";
