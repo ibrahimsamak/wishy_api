@@ -487,6 +487,12 @@ const admin_routes = [
     beforeHandler: [auth.getAdminToken],
     handler: orderController.getEmployeesOrder,
   },
+  {
+    method: "GET",
+    url: "/api/supervisor/orders/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getSupervisorOrders,
+  },
 
   //providers
   {
@@ -754,7 +760,18 @@ const admin_routes = [
     beforeHandler: [auth.getAdminToken],
     handler: orderController.getOrders,
   },
-  
+  {
+    method: "POST",
+    url: "/api/admin/orders-excel",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getOrdersExcel,
+  },
+  {
+    method: "POST",
+    url: "/api/admin/orders-earning",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getOrdersEarnings,
+  },
   {
     method: "POST",
     url: "/api/admin/update_order/:id",
@@ -832,6 +849,12 @@ const admin_routes = [
     method: "GET",
     url: "/api/home/UsersproviderPerYear",
     handler: homeController.UsersproviderPerYear,
+  },
+  {
+    method: "GET",
+    url: "/api/home/getProviderTarget",
+    beforeHandler: [auth.getAdminToken],
+    handler: homeController.getProviderTarget,
   },
   {
     method: "GET",

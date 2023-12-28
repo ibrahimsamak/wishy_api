@@ -106,6 +106,7 @@ const Supplierschema = mongoose.Schema({
     type: Boolean,
   },
   orderPercentage: { type: Number },
+  target : {type: Number},
   cities: [{ type: mongoose.Schema.Types.ObjectId, ref: "city"}],
 });
 
@@ -139,6 +140,10 @@ const SupervisorSchema = mongoose.Schema({
   token: {
     type: String,
     default:""
+  },
+  rate: {
+    type: Number,
+    default:0
   },
   supplier_id: { type: mongoose.Schema.Types.ObjectId, ref: "supplier",required: [true, "supplier is required"]},
   place_id: { type: mongoose.Schema.Types.ObjectId, ref: "place", required: [true, "place is required"], },

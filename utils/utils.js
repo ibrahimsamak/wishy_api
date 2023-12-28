@@ -232,23 +232,23 @@ exports.sendSMS = async function(number, from, to, code){
   let _config = {
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Bearer " + "8xjeMpt-PBVa_e7SBVS4"
+      Authorization: "Bearer " + "aS1v2wbaF43MMY1txF5i"
     },
   };
   let body = {
-    "src": "faz3h-sa",
+    "src": "JAZKSA",
     "body": code,
     "dests": [number]
   }
 
-  // axios
-  // .post(url,body, _config)
-  // .then((response) => {
-  //   console.log(response)
-  // })
-  // .catch((error) => {
-  //   console.log(error)
-  // });
+  axios
+  .post(url,body, _config)
+  .then((response) => {
+    console.log(response)
+  })
+  .catch((error) => {
+    console.log(error)
+  });
 }
 
 exports.sendWhatsApp = async function(number, from, to, code){
@@ -338,7 +338,7 @@ exports.CreateGeneralNotification = function (
     xhr.open("POST", "https://fcm.googleapis.com/fcm/send");
     xhr.setRequestHeader(
       "Authorization",
-      "key=AAAAYpxDq5k:APA91bHDsZ5YPSApBnM_OsD1vmMp8bqiXz2xqNs_iarQju1avpLe5aoQJczhQVYSMlserklVSNs__g9ynx9yleGJmqhF-qp4b_KhFEbrKH8iE1zKPcOiR7icBx0ufXeKJSfgDvgaPqiX"
+      "key=AAAALj3M_AA:APA91bHkzRCHZ4duGpT9hCn0L0MvyvDJN6XD5FgMYvJN0WRjHqY9Lj2IaiUkY4p3J6pI9SLxGWlR8bU478xr1Y7YnY1lnw11JOW-Hj8srllLFdvlmDqzIHljKRXRP42Mt65saXA0umFv"
     );
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.send(data);
@@ -392,7 +392,7 @@ exports.CreateNotificationMultiple = function (deviceId, title, msg, order_id) {
     xhr.open("POST", "https://fcm.googleapis.com/fcm/send");
     xhr.setRequestHeader(
       "Authorization",
-      "key=AAAAYpxDq5k:APA91bHDsZ5YPSApBnM_OsD1vmMp8bqiXz2xqNs_iarQju1avpLe5aoQJczhQVYSMlserklVSNs__g9ynx9yleGJmqhF-qp4b_KhFEbrKH8iE1zKPcOiR7icBx0ufXeKJSfgDvgaPqiX"
+      "key=AAAALj3M_AA:APA91bHkzRCHZ4duGpT9hCn0L0MvyvDJN6XD5FgMYvJN0WRjHqY9Lj2IaiUkY4p3J6pI9SLxGWlR8bU478xr1Y7YnY1lnw11JOW-Hj8srllLFdvlmDqzIHljKRXRP42Mt65saXA0umFv"
     );
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.send(data);

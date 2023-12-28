@@ -34,6 +34,7 @@ const {
   CONTROLLER_ENUM,
   getMessageOnLanguage,
   ACTORS,
+  ORDER_STATUS,
 } = require("../utils/constants");
 const { times } = require("../models/Constant");
 
@@ -186,9 +187,7 @@ exports.getSupplier = async (req, reply) => {
     var newArr = [];
     for await (const data of item) {
       var newUser = data.toObject();
-      var _order = await Order.find({
-        $and: [{ supplier_id: newUser._id }, { StatusId: 4 }],
-      }).countDocuments();
+      var _order = await Order.countDocuments({$and: [{ provider: newUser._id }]});
       newUser.orders = _order;
       newArr.push(newUser);
     }
@@ -435,6 +434,7 @@ exports.updateProvider = async (req, reply) => {
             details: req.raw.body.details,
             orderPercentage: req.raw.body.orderPercentage,
             roles: JSON.parse(req.raw.body.roles),
+            target: req.raw.body.target
           },
           { new: true, runValidators: true },
           function (err, model) {
@@ -481,6 +481,7 @@ exports.updateProvider = async (req, reply) => {
             details: req.raw.body.details,
             orderPercentage: req.raw.body.orderPercentage,
             roles: JSON.parse(req.raw.body.roles),
+            target: req.raw.body.target
           },
           { new: true, runValidators: true },
           function (err, model) {
@@ -627,6 +628,7 @@ exports.addProvider = async (req, reply) => {
         rate: 0,
         details: req.raw.body.details,
         roles: JSON.parse(req.raw.body.roles),
+        target: req.raw.body.target
       });
       var _return = handleError(_newUser.validateSync());
       if (_return.length > 0) {
@@ -836,9 +838,8 @@ exports.getSupervisor = async (req, reply) => {
     var newArr = [];
     for await (const data of item) {
       var newUser = data.toObject();
-      var _order = await Order.find({
-        $and: [{ supplier_id: newUser._id }, { StatusId: 4 }],
-      }).countDocuments();
+      var _order = await Order.countDocuments({$and: [{ supervisor: newUser._id }]
+});
       newUser.orders = _order;
       newArr.push(newUser);
     }

@@ -59,7 +59,6 @@ const { coupon_usage } = require("../models/Coupon");
 // Get all Users
 exports.getUsers = async (req, reply) => {
   // try {
-    console.log('xxxxxxxx')
 
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
@@ -1608,9 +1607,7 @@ exports.getUsers = async (req, reply) => {
     var newArr = [];
     for await (const data of item) {
       var newUser = data.toObject();
-      var _order = await Order.countDocuments({
-        $and: [{ user_id: newUser._id }, { StatusId: 4 }],
-      });
+      var _order = await Order.countDocuments({$and: [{ user: newUser._id }]});
       var referal = await Users.countDocuments({by:data._id})
       newUser.favorites = referal
       newUser.orders = _order;

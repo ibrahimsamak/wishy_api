@@ -217,6 +217,34 @@ exports.getTopProductsCategory = async (req, reply) => {
   }
 };
 
+exports.getProviderTarget = async (req, reply) => {
+  try {
+    const item = await Order.find({status:{$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]}})
+    .populate("provider");
+
+    var _result = lodash(item)
+      .groupBy("provider._id")
+      .map(function (items, _name) {
+        if (items.length > 0)
+          return { name: `${items[0].provider.name} (${items[0].provider.target})`, value: items.length };
+      })
+      .value();
+
+    var orderedResult = lodash.orderBy(_result, ["count"], ["desc"]);
+
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      items: orderedResult,
+    };
+    reply.send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+
 exports.getTopProductsPlace = async (req, reply) => {
   try {
     var query = {};

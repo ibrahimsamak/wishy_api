@@ -556,10 +556,13 @@ exports.updateOrder = async (req, reply) => {
           },
           { new: true }
         )
+        if(emp){
+          await CreateGeneralNotification(emp.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.user.fcmToken, check.user._id, "", "");
+        }
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
       }
       if(req.body.status == ORDER_STATUS.updated) {
-        var code =  makeid(6)
+        var code =  "1234";//makeid(6)
         msg = msg_updated + " كود العملية هو: " + code;
         
         var subs = await SubCategory.find({_id:{$in:req.body.extra}})
@@ -574,7 +577,7 @@ exports.updateOrder = async (req, reply) => {
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
       }
       if(req.body.status == ORDER_STATUS.prefinished) {
-        var code =  makeid(6)
+        var code = "1234"; //makeid(6)
         msg = msg_prefinished + " كود العملية هو: " + code;
 
         await Order.findByIdAndUpdate( req.params.id, { update_code: code},{ new: true })
@@ -605,17 +608,10 @@ exports.updateOrder = async (req, reply) => {
         return;
         }
         let emplployee = await employee.findById(check.employee)
-        await CreateGeneralNotification(emplployee.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.user._id, emplployee._id, "", "");
+        if(emplployee)
+          await CreateGeneralNotification(emplployee.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.user._id, emplployee._id, "", "");
       }
-      const sp = await Order.findByIdAndUpdate(
-        req.params.id,
-        {
-          status: req.body.status,
-          canceled_note: req.body.canceled_note
-        },
-        { new: true }
-      )
-
+  
       reply
       .code(200)
       .send(
@@ -709,6 +705,7 @@ exports.updateOrderCode = async (req, reply) => {
 
 exports.getUserOrder = async (req, reply) => {
   try {
+    let language = "ar";
     const userId = req.user._id;
 
     var page = parseFloat(req.query.page, 10);
@@ -731,21 +728,51 @@ exports.getUserOrder = async (req, reply) => {
       query.$and.push({ status:{$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]} })
     }
     
+    var arr = []
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("provider")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
+    .populate("user", "-token")
+    .populate({ path: "extra", populate: { path: "subcategory" } })
+    .populate("employee", "-token")
+    .populate("supervisor", "-token")
+    .populate("provider")
+    .populate("sub_category_id")
+    .populate("category_id")
+    .populate("address")
       .skip(page * limit)
       .limit(limit)
       .sort({ createAt: -1 });
 
+      var items = []
+    item.forEach(element => {
+      var arr = []
+      var obj = element.toObject();
+      delete obj.sub_category_id;
+      delete obj.category_id;
+      delete obj.extra;
+      obj.sub_category_id = {
+        _id: element.sub_category_id._id,
+        title: element.sub_category_id[`${language}Name`],
+        price: element.price
+      }
+      obj.category_id = {
+        _id: element.category_id._id,
+        title: element.category_id[`${language}Name`],
+      }
+      element.extra.forEach(_element => {
+        var _obj = {
+          _id: _element._id,
+          title: _element[`${language}Name`],
+          price: _element.price
+        }
+        arr.push(_obj)
+      });
+      obj.extra = arr;
+      items.push(obj);
+    });
+    
     const response = {
-      items: item,
+      items: items,
       status_code: 200,
       message: "تمت العملية بنجاح",
       messageAr: "تمت العملية بنجاح",
@@ -814,7 +841,7 @@ exports.getOrderDetails = async (req, reply) => {
     if (rate) {
       isRate = true;
     }
-
+      
     var item = await Order.findById(req.params.id)
     .populate("user", "-token")
     .populate({ path: "extra", populate: { path: "subcategory" } })
@@ -941,19 +968,20 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       var summation = await Rate.find({ $and: [{ driver_id: driver_id }, { type: 1 }] });
       let sum = lodash.sumBy(summation, function (o) { return o.rate_from_user; });
       let driver = await employee.findByIdAndUpdate(driver_id, { rate: Number(sum / totalRates).toFixed(1)},{new:true});
+      
       let all_supplier_employees_count = await employee.countDocuments({supplier_id: driver.supplier_id});
       let all_supplier_employees = await employee.find({supplier_id: driver.supplier_id});
-      let all_supplier_employees_summation = lodash.sumBy(all_supplier_employees, function (o) { return o.rate; });
-      
+      let all_supplier_employees_summation = lodash.sumBy(all_supplier_employees, function (o) { return o.rate; });   
       let supp = await Supplier.findByIdAndUpdate(driver.supplier_id, { rate: Number(all_supplier_employees_summation / all_supplier_employees_count).toFixed(1)},{new:true});
       
-      console.log(all_supplier_employees_count)
-      console.log(all_supplier_employees)
-      console.log(all_supplier_employees_summation)
-      console.log(supp)
+      let all_supervisor_employees_count = await employee.countDocuments({supervisor_id: driver.supervisor_id});
+      let all_supervisor_employees = await employee.find({supervisor_id: driver.supervisor_id});
+      let all_supervisor_employees_summation = lodash.sumBy(all_supervisor_employees, function (o) { return o.rate; });   
+      let _supervisor = await Supervisor.findByIdAndUpdate(driver.supervisor_id, { rate: Number(all_supervisor_employees_summation / all_supervisor_employees_count).toFixed(1)},{new:true});
+      
 
       await Order.findByIdAndUpdate(ord._id, { status: ORDER_STATUS.rated });
-      var msg = `تمت اضافة تقييم جديد على طلب رقم: ${ord.title}`;
+      var msg = `تمت اضافة تقييم جديد على طلب رقم: ${ord.order_no}`;
       await CreateGeneralNotification(
         driver.fcmToken,
         NOTIFICATION_TITILES.ORDERS,
@@ -1591,6 +1619,7 @@ exports.getOrdersSeacrhExcel = async (req, reply) => {
       .populate("user", "-token")
       .populate({ path: "extra", populate: { path: "subcategory" } })
       .populate("employee", "-token")
+      .populate("supervisor", "-token")
       .populate("provider")
       .populate("sub_category_id")
       .populate("category_id")
@@ -1664,6 +1693,7 @@ exports.getOrdersSeacrh = async (req, reply) => {
       .populate("user", "-token")
       .populate({ path: "extra", populate: { path: "subcategory" } })
       .populate("employee", "-token")
+      .populate("supervisor", "-token")
       .populate("provider")
       .populate("sub_category_id")
       .populate("category_id")
@@ -1717,7 +1747,8 @@ exports.getEmployeeOrder = async (req, reply) => {
       .populate("user", "-token")
       .populate({ path: "extra", populate: { path: "subcategory" } })
       .populate("employee", "-token")
-      .populate("provider", "-token")
+      .populate("supervisor", "-token")
+      .populate("provider")
       .populate("sub_category_id")
       .populate("category_id")
       .populate("address")
@@ -1725,13 +1756,42 @@ exports.getEmployeeOrder = async (req, reply) => {
       .limit(limit)
       .select("-couponCode");
 
+
+      var items = []
+    item.forEach(element => {
+      var arr = []
+      var obj = element.toObject();
+      delete obj.sub_category_id;
+      delete obj.category_id;
+      delete obj.extra;
+      obj.sub_category_id = {
+        _id: element.sub_category_id._id,
+        title: element.sub_category_id[`${language}Name`],
+        price: element.price
+      }
+      obj.category_id = {
+        _id: element.category_id._id,
+        title: element.category_id[`${language}Name`],
+      }
+      element.extra.forEach(_element => {
+        var _obj = {
+          _id: _element._id,
+          title: _element[`${language}Name`],
+          price: _element.price
+        }
+        arr.push(_obj)
+      });
+      obj.extra = arr;
+      items.push(obj);
+    });
+
     reply.code(200).send(
       success(
         language,
         200,
         MESSAGE_STRING_ARABIC.SUCCESS,
         MESSAGE_STRING_ENGLISH.SUCCESS,
-        item,
+        items,
         {
           size: item.length,
           totalElements: total,
@@ -2246,13 +2306,14 @@ exports.getUserOrders = async (req, reply) => {
     const total = await Order.find({ user: userId }).countDocuments();
     const item = await Order.find({ user: userId })
       .sort({ _id: -1 })
-      .populate("place_id")
-      .populate("provider", "-token")
       .populate("user", "-token")
+      .populate({ path: "extra", populate: { path: "subcategory" } })
       .populate("employee", "-token")
+      .populate("provider")
+      .populate("supervisor")
       .populate("sub_category_id")
       .populate("category_id")
-
+      .populate("address")
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -2285,13 +2346,14 @@ exports.getProivdeOrders = async (req, reply) => {
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
 
-    const total = await Order.find({ supplier_id: userId }).countDocuments();
-    const item = await Order.find({ supplier_id: userId })
+    const total = await Order.find({ provider: userId }).countDocuments();
+    const item = await Order.find({ provider: userId })
       .sort({ _id: -1 })
       .populate("user", "-token")
       .populate({ path: "extra", populate: { path: "subcategory" } })
       .populate("employee", "-token")
       .populate("provider")
+      .populate("supervisor")
       .populate("sub_category_id")
       .populate("category_id")
       .populate("address")
@@ -2320,6 +2382,50 @@ exports.getProivdeOrders = async (req, reply) => {
   }
 };
 
+exports.getSupervisorOrders = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    let userId = req.params.id;
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+
+    const total = await Order.find({ supervisor: userId }).countDocuments();
+    const item = await Order.find({ supervisor: userId })
+      .sort({ _id: -1 })
+      .populate("user", "-token")
+      .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("provider")
+      .populate("supervisor")
+      .populate("sub_category_id")
+      .populate("category_id")
+      .populate("address")
+      .sort({ _id: -1 })
+      .skip(page * limit)
+      .limit(limit);
+    reply.code(200).send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        item,
+        {
+          size: item.length,
+          totalElements: total,
+          totalPages: Math.floor(total / limit),
+          pageNumber: page,
+        }
+      )
+    );
+    return;
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+
 exports.getEmployeesOrder = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
@@ -2329,12 +2435,13 @@ exports.getEmployeesOrder = async (req, reply) => {
     var limit = parseFloat(req.query.limit, 10);
 
 
-    const total = await Order.find({ employee_id: userId }).countDocuments();
-    const item = await Order.find({ employee_id: userId })
+    const total = await Order.find({ employee: userId }).countDocuments();
+    const item = await Order.find({ employee: userId })
       .populate("user", "-token")
       .populate({ path: "extra", populate: { path: "subcategory" } })
       .populate("employee", "-token")
       .populate("provider")
+      .populate("supervisor")
       .populate("sub_category_id")
       .populate("category_id")
       .populate("address")
@@ -2378,12 +2485,11 @@ exports.getOrders = async (req, reply) => {
     ) {
       query = {
         createAt: {
-          $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)),
-          $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)),
+          $gte: moment(req.body.dt_from).tz("Asia/Riyadh").startOf("day"),
+          $lt: moment(req.body.dt_to).tz("Asia/Riyadh").endOf("day"),
         },
       };
     }
-
     if (req.body.status && req.body.status != ""){
       if(req.body.status == ORDER_STATUS.finished){
         query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
@@ -2405,6 +2511,7 @@ exports.getOrders = async (req, reply) => {
       query["place"] = req.body.place_id;
 
 
+      console.log(query)
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
       .sort({ _id: -1 })
@@ -2438,6 +2545,179 @@ exports.getOrders = async (req, reply) => {
     return;
   }
 };
+
+exports.getOrdersExcel = async (req, reply) => {
+  const language = "ar";
+  try {
+    var query = {};
+    if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query = {
+        createAt: {
+          $gte: moment(req.body.dt_from).tz("Asia/Riyadh").startOf("day"),
+          $lt: moment(req.body.dt_to).tz("Asia/Riyadh").endOf("day"),
+        },
+      };
+    }
+
+    if (req.body.status && req.body.status != ""){
+      if(req.body.status == ORDER_STATUS.finished){
+        query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
+      }
+      else if(req.body.status == 'canceled' ){
+        query["status"] = {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}
+      }
+      else{
+        query["status"] = req.body.status;
+      }
+    }
+    if (req.body.order_no && req.body.order_no != "")
+      query["order_no"] = req.body.order_no;
+
+    if (req.body.supplier_id && req.body.supplier_id != "")
+      query["provider"] = req.body.supplier_id;
+
+    if (req.body.place_id && req.body.supplier_id != "")
+      query["place"] = req.body.place_id;
+
+
+    const item = await Order.find(query)
+      .sort({ _id: -1 })
+      .populate("user", "-token")
+      .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("supervisor", "-token")
+      .populate("provider")
+      .populate("sub_category_id")
+      .populate("category_id")
+      .populate("address")
+      .select();
+
+    const response = {
+      status: true,
+      code: 200,
+      message: "تمت العملية بنجاح",
+      items: item,
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+
+exports.getOrdersEarnings = async (req, reply) => {
+  const language = "ar";
+  try {
+    var _result  = []
+    var query = {};
+    if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query = {
+        createAt: {
+          $gte: moment(req.body.dt_from).tz("Asia/Riyadh").startOf("day"),
+          $lt: moment(req.body.dt_to).tz("Asia/Riyadh").endOf("day"),
+        },
+      };
+    }
+
+    if (req.body.status && req.body.status != ""){
+      if(req.body.status == ORDER_STATUS.finished){
+        query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
+      }
+      else if(req.body.status == 'canceled' ){
+        query["status"] = {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}
+      }
+      else{
+        query["status"] = req.body.status;
+      }
+    }
+
+    if (req.body.order_no && req.body.order_no != "")
+      query["order_no"] = req.body.order_no;
+
+    if (req.body.supplier_id && req.body.supplier_id != "")
+      query["provider"] = req.body.supplier_id;
+
+    if (req.body.place_id && req.body.supplier_id != "")
+      query["place"] = req.body.place_id;
+
+
+    const item = await Order.find(query)
+      .sort({ _id: -1 })
+      // .populate("user", "-token")
+      // .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("supervisor", "-token")
+      // .populate("provider")
+      .populate("place")
+      // .populate("category_id")
+      // .populate("address")
+      .select();
+
+    if(req.body.supplier_id && req.body.supplier_id != ""){
+        _result = lodash(item)
+        .groupBy('employee')
+        .map(function (platform, id) {
+          if (platform.length > 0) {
+            if(platform[0].employee){
+              return {
+                id: platform[0].employee._id,
+                title: platform[0].employee ? platform[0].employee.full_name : "",
+                place: platform[0].place ? platform[0].place.arName : "",
+                supervisor: platform[0].supervisor ? platform[0].supervisor.name : "",
+                totalTaxs: lodash.sumBy(platform, 'tax'),
+                totalDiscounts: lodash.sumBy(platform, 'totalDiscount'),
+                totals: lodash.sumBy(platform, 'total')
+              }
+            }
+          }
+        })
+        .value()
+    }
+    // if(req.body.place_id && req.body.place_id != ""){
+    //   _result = lodash(item)
+    //   .groupBy('place')
+    //   .map(function (platform, id) {
+    //     if (platform.length > 0) {
+    //       if(platform[0].place){
+    //         return {
+    //           id: platform[0].place._id,
+    //           title: platform[0].employee ? platform[0].employee.full_name : "",
+    //           place: platform[0].place ? platform[0].place.arName : "",
+    //           supervisor: platform[0].supervisor ? platform[0].supervisor.name : "",
+    //           totalTaxs: lodash.sumBy(platform, 'tax'),
+    //           totalDiscounts: lodash.sumBy(platform, 'totalDiscount'),
+    //           totals: lodash.sumBy(platform, 'total')
+    //         }
+    //       }
+    //     }
+    //   })
+    //   .value()
+    //   console.log(_result)
+    // }
+    const response = {
+      status: true,
+      code: 200,
+      message: "تمت العملية بنجاح",
+      items: _result
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
 
 exports.deleteRate = async (req, reply) => {
   const language = "ar";
@@ -2622,48 +2902,6 @@ exports.getSupplierRateList = async (req, reply) => {
 };
 
 
-exports.getProivderRate = async (req, reply) => {
-  const language = "ar";
-  try {
-    var page = parseFloat(req.query.page, 10);
-    var limit = parseFloat(req.query.limit, 10);
-    var query = {};
-
-    query["destination_id"] = String(req.query.destination_id);
-    query["type"] = 2;
-    const total = await Rate.find(query).countDocuments();
-    const item = await Rate.find(query)
-      .populate("user_id", ["-password", "-token"])
-      .sort({ _id: -1 })
-      .skip(page * limit)
-      .limit(limit);
-    var rateArray = [];
-    item.forEach((element) => {
-      var obj = customRate(element);
-      rateArray.push(obj);
-    });
-
-    reply.code(200).send(
-      success(
-        language,
-        200,
-        MESSAGE_STRING_ARABIC.SUCCESS,
-        MESSAGE_STRING_ENGLISH.SUCCESS,
-        rateArray,
-        {
-          size: rateArray.length,
-          totalElements: total,
-          totalPages: Math.floor(total / limit),
-          pageNumber: page,
-        }
-      )
-    );
-  } catch (err) {
-    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
-    return;
-  }
-};
-
 exports.getOrdersMap = async (req, reply) => {
   try {
     let searchDate = moment()
@@ -2683,6 +2921,7 @@ exports.getOrdersMap = async (req, reply) => {
       .populate("user", "-token")
       .populate({ path: "extra", populate: { path: "subcategory" } })
       .populate("employee", "-token")
+      .populate("supervisor", "-token")
       .populate("provider")
       .populate("sub_category_id")
       .populate("category_id")

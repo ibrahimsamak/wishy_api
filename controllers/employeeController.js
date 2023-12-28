@@ -608,10 +608,10 @@ exports.getEmployees = async (req, reply) => {
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
     query1["isDeleted"] = false
     if(req.user.userType == ACTORS.STORE){
-      query1["supplier_id"] = req.user._id
+      query1["provider"] = req.user._id
     }
     if(req.user.userType == ACTORS.SUPERVISOR){
-      query1["supervisor_id"] = req.user._id
+      query1["supervisor"] = req.user._id
     }
     const total = await employee.find(query1).countDocuments();
     const item = await employee
@@ -623,9 +623,8 @@ exports.getEmployees = async (req, reply) => {
     var newArr = [];
     for await (const data of item) {
       var newUser = data.toObject();
-      var _order = await Order.find({
-        $and: [{ employee_id: newUser._id }, { StatusId: 4 }],
-      }).countDocuments();
+      var _order = await Order.countDocuments({$and: [{ employee: newUser._id }]});
+      
       newUser.orders = _order;
       newArr.push(newUser);
     }
