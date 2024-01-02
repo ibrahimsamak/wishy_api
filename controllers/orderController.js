@@ -562,7 +562,7 @@ exports.updateOrder = async (req, reply) => {
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
       }
       if(req.body.status == ORDER_STATUS.updated) {
-        var code =  "1234";//makeid(6)
+        var code =  makeid(6)
         msg = msg_updated + " كود العملية هو: " + code;
         
         var subs = await SubCategory.find({_id:{$in:req.body.extra}})
@@ -577,7 +577,7 @@ exports.updateOrder = async (req, reply) => {
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
       }
       if(req.body.status == ORDER_STATUS.prefinished) {
-        var code = "1234"; //makeid(6)
+        var code = makeid(6)
         msg = msg_prefinished + " كود العملية هو: " + code;
 
         await Order.findByIdAndUpdate( req.params.id, { update_code: code},{ new: true })

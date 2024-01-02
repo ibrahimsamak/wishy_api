@@ -236,7 +236,7 @@ exports.sendSMS = async function(number, from, to, code){
     },
   };
   let body = {
-    "src": "JAZKSA",
+    "src": "JAZCOM",
     "body": code,
     "dests": [number]
   }
