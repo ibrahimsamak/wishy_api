@@ -241,14 +241,14 @@ exports.sendSMS = async function(number, from, to, code){
     "dests": [number]
   }
 
-  axios
-  .post(url,body, _config)
-  .then((response) => {
-    console.log(response)
-  })
-  .catch((error) => {
-    console.log(error)
-  });
+  // axios
+  // .post(url,body, _config)
+  // .then((response) => {
+  //   console.log(response)
+  // })
+  // .catch((error) => {
+  //   console.log(error)
+  // });
 }
 
 exports.sendWhatsApp = async function(number, from, to, code){
