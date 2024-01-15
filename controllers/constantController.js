@@ -46,10 +46,10 @@ const {
 const { emailRegex, handleError } = require("../utils/utils");
 const { Adv } = require("../models/adv");
 
-exports.getAllCategoryAndSubCategory = async (req, reply) => {
+exports.getHomeRequest = async (req, reply) => {
   try {
-    const language = "ar"; //req.headers["accept-language"];
-    const cats = await Category.find({isDeleted: false}).sort({ _id: -1 });
+    const language = req.headers["accept-language"];
+    const cats = await Category.find({isDeleted: false}).sort({ sort: 1 });
     var arr = [];
     for await(const element of cats){
       var newObject = element.toObject();
@@ -61,12 +61,102 @@ exports.getAllCategoryAndSubCategory = async (req, reply) => {
           _id: _newObject._id,
           price: _newObject.price,
           title: _newObject[`${language}Name`],
+          description: _newObject[`${language}Description`],
+          image: _newObject.image,
         };
         subs.push(obj)
       }
       var obj = {
         _id: newObject._id,
         title: newObject[`${language}Name`],
+        description: newObject[`${language}Description`],
+        image: newObject.image,
+        sub:subs
+      };
+      arr.push(obj);
+    }
+    var arr2 = [];
+    const slider = await Adv.find({}).sort({ _id: -1 });
+    for await(const element of slider){
+      var newObject = element.toObject();
+      var obj = {
+        _id: newObject._id,
+        title: newObject[`${language}Title`],
+        description: newObject[`${language}Description`],
+        image:newObject.image
+      };
+      arr2.push(obj);
+    }
+
+    var res_obj = {
+      category: arr,
+      slider: arr2
+    }
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          res_obj
+        )
+      );
+
+    return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getAllCategoryAndSubCategory = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    var query1 = {}
+ 
+
+    const cats = await Category.find({isDeleted: false}).sort({ sort: 1 });
+    var arr = [];
+    for await(const element of cats){
+      var newObject = element.toObject();
+      var subs = []
+      if(req.query.q && req.query.q != ""){
+        query1 = {
+          $and:[
+            {isDeleted: false},
+            {category_id: newObject._id },
+            {$or:[
+              {arName: { $regex: new RegExp(req.query.q, "i") }},
+              {enName: { $regex: new RegExp(req.query.q, "i") }},
+              {arDescription: { $regex: new RegExp(req.query.q, "i") }},
+              {enDescription: { $regex: new RegExp(req.query.q, "i") }},
+            ]}
+          ]
+        }
+      }else{
+        query1 = {
+          $and:[{isDeleted: false},{category_id:newObject._id }]
+        }
+      }
+      console.log(query1)
+      var _subs = await SubCategory.find(query1).sort({ _id: -1 });
+      for await(const i of _subs){
+        var _newObject = i.toObject();
+        var obj = {
+          _id: _newObject._id,
+          price: _newObject.price,
+          image: _newObject.image,
+          title: _newObject[`${language}Name`],
+          description: _newObject[`${language}Description`],
+        };
+        subs.push(obj)
+      }
+      var obj = {
+        _id: newObject._id,
+        title: newObject[`${language}Name`],
+        description: newObject[`${language}Description`],
+        image: newObject.image,
         sub:subs
       };
       arr.push(obj);
@@ -2735,7 +2825,6 @@ exports.addAdvs = async (req, reply) => {
         enTitle: req.raw.body.enTitle,
         arDescription: req.raw.body.arDescription,
         enDescription: req.raw.body.enDescription,
-
         product_id: req.raw.body.product_id,
         store_id: req.raw.body.store_id,
         url: req.raw.body.url,
@@ -2745,7 +2834,6 @@ exports.addAdvs = async (req, reply) => {
           .endOf("day"),
         ads_for: req.raw.body.ads_for,
         image: img,
-
         is_ads_redirect_to_store: true,
         is_ads_have_expiry_date: true,
         isApprove: approve,
@@ -2916,12 +3004,42 @@ exports.deleteAdvs = async (req, reply) => {
 
 exports.addCategory = async (req, reply) => {
   try {
+    if (req.raw.files) {
+      const files = req.raw.files;
+      let fileArr = [];
+      for (let key in files) {
+        fileArr.push({
+          name: files[key].name,
+          mimetype: files[key].mimetype,
+        });
+      }
+      var data = Buffer.from(files.image.data);
+      fs.writeFile(
+        "./uploads/" + files.image.name,
+        data,
+        "binary",
+        function (err) {
+          if (err) {
+            console.log("There was an error writing the image");
+          } else {
+            console.log("The sheel file was written");
+          }
+        }
+      );
+
+      let img = "";
+      await uploadImages(files.image.name).then((x) => {
+        img = x;
+      });
+
     let _Category = new Category({
-      arName: req.body.arName,
-      enName: req.body.enName,
-      image: "",
+      arName: req.raw.body.arName,
+      enName: req.raw.body.enName,
+      enDescription: req.raw.body.enDescription,
+      arDescription: req.raw.body.arDescription,  
+      image: img,
       isDeleted: false,
-      sort: req.body.sort,
+      sort: req.raw.body.sort,
     });
     var _return = handleError(_Category.validateSync());
     if (_return.length > 0) {
@@ -2941,19 +3059,82 @@ exports.addCategory = async (req, reply) => {
       items: rs,
     };
     reply.code(200).send(response);
-  } catch (err) {
+    } 
+  }catch (err) {
     throw boom.boomify(err);
   }
 };
 
 exports.updateCategory = async (req, reply) => {
   try {
+    if (req.raw.files) {
+      const files = req.raw.files;
+      let fileArr = [];
+      for (let key in files) {
+        fileArr.push({
+          name: files[key].name,
+          mimetype: files[key].mimetype,
+        });
+      }
+      var data = Buffer.from(files.image.data);
+      fs.writeFile(
+        "./uploads/" + files.image.name,
+        data,
+        "binary",
+        function (err) {
+          if (err) {
+            console.log("There was an error writing the image");
+          } else {
+            console.log("The sheel file was written");
+          }
+        }
+      );
+
+      let img = "";
+      await uploadImages(files.image.name).then((x) => {
+        img = x;
+      });
+      const _Category = await Category.findByIdAndUpdate(
+        req.params.id,
+        {
+          arName: req.raw.body.arName,
+          enName: req.raw.body.enName,
+          image: img,
+          enDescription: req.raw.body.enDescription,
+          arDescription: req.raw.body.arDescription,
+          sort: req.raw.body.sort,
+        },
+        { new: true, runValidators: true },
+        function (err, model) {
+          var _return = handleError(err);
+          if (_return.length > 0) {
+            reply.code(200).send({
+              status_code: 400,
+              status: false,
+              message: _return[0],
+              items: _return,
+            });
+            return;
+          }
+        }
+      );
+
+      const response = {
+        status_code: 200,
+        status: true,
+        message: "تمت العملية بنجاح",
+        items: Category,
+      };
+      reply.code(200).send(response);
+   }else{
     const _Category = await Category.findByIdAndUpdate(
       req.params.id,
       {
-        arName: req.body.arName,
-        enName: req.body.enName,
-        sort: req.body.sort,
+        arName: req.raw.body.arName,
+        enName: req.raw.body.enName,
+        enDescription: req.raw.body.enDescription,
+        arDescription: req.raw.body.arDescription,
+        sort: req.raw.body.sort,
       },
       { new: true, runValidators: true },
       function (err, model) {
@@ -2977,6 +3158,7 @@ exports.updateCategory = async (req, reply) => {
       items: Category,
     };
     reply.code(200).send(response);
+   }
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -3058,31 +3240,62 @@ exports.getSingleCategory = async (req, reply) => {
 
 exports.addSubCategory = async (req, reply) => {
   try {
-    let _Category = new SubCategory({
-      arName: req.body.arName,
-      enName: req.body.enName,
-      category_id: req.body.category_id,
-      price: req.body.price,
-      isDeleted: false,
-    });
-    var _return = handleError(_Category.validateSync());
-    if (_return.length > 0) {
-      reply.code(200).send({
-        status_code: 400,
-        status: false,
-        message: _return[0],
-        items: _return,
+    if (req.raw.files) {
+        const files = req.raw.files;
+        let fileArr = [];
+        for (let key in files) {
+          fileArr.push({
+            name: files[key].name,
+            mimetype: files[key].mimetype,
+          });
+        }
+        var data = Buffer.from(files.image.data);
+        fs.writeFile(
+          "./uploads/" + files.image.name,
+          data,
+          "binary",
+          function (err) {
+            if (err) {
+              console.log("There was an error writing the image");
+            } else {
+              console.log("The sheel file was written");
+            }
+          }
+        );
+
+        let img = "";
+        await uploadImages(files.image.name).then((x) => {
+          img = x;
+        });
+      let _Category = new SubCategory({
+        arName: req.raw.body.arName,
+        enName: req.raw.body.enName,
+        enDescription: req.raw.body.enDescription,
+        arDescription: req.raw.body.arDescription,
+        image: img,
+        category_id: req.raw.body.category_id,
+        price: req.raw.body.price,
+        isDeleted: false,
       });
-      return;
+      var _return = handleError(_Category.validateSync());
+      if (_return.length > 0) {
+        reply.code(200).send({
+          status_code: 400,
+          status: false,
+          message: _return[0],
+          items: _return,
+        });
+        return;
+      }
+      let rs = await _Category.save();
+      const response = {
+        status_code: 200,
+        status: true,
+        message: "تمت العملية بنجاح",
+        items: rs,
+      };
+      reply.code(200).send(response);
     }
-    let rs = await _Category.save();
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-    reply.code(200).send(response);
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -3090,36 +3303,100 @@ exports.addSubCategory = async (req, reply) => {
 
 exports.updateSubCategory = async (req, reply) => {
   try {
-    const _Category = await SubCategory.findByIdAndUpdate(
-      req.params.id,
-      {
-        arName: req.body.arName,
-        enName: req.body.enName,
-        category_id: req.body.category_id,
-        price: req.body.price,
-      },
-      { new: true, runValidators: true },
-      function (err, model) {
-        var _return = handleError(err);
-        if (_return.length > 0) {
-          reply.code(200).send({
-            status_code: 400,
-            status: false,
-            message: _return[0],
-            items: _return,
+    if (req.raw.files) {
+        const files = req.raw.files;
+        let fileArr = [];
+        for (let key in files) {
+          fileArr.push({
+            name: files[key].name,
+            mimetype: files[key].mimetype,
           });
-          return;
         }
-      }
-    );
+        var data = Buffer.from(files.image.data);
+        fs.writeFile(
+          "./uploads/" + files.image.name,
+          data,
+          "binary",
+          function (err) {
+            if (err) {
+              console.log("There was an error writing the image");
+            } else {
+              console.log("The sheel file was written");
+            }
+          }
+        );
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: Category,
-    };
-    reply.code(200).send(response);
+        let img = "";
+        await uploadImages(files.image.name).then((x) => {
+          img = x;
+        });
+      const _Category = await SubCategory.findByIdAndUpdate(
+        req.params.id,
+        {
+          arName: req.raw.body.arName,
+          enName: req.raw.body.enName,
+          category_id: req.raw.body.category_id,
+          enDescription: req.raw.body.enDescription,
+          arDescription: req.raw.body.arDescription,
+          image: img,
+          price: req.raw.body.price,
+        },
+        { new: true, runValidators: true },
+        function (err, model) {
+          var _return = handleError(err);
+          if (_return.length > 0) {
+            reply.code(200).send({
+              status_code: 400,
+              status: false,
+              message: _return[0],
+              items: _return,
+            });
+            return;
+          }
+        }
+      );
+
+      const response = {
+        status_code: 200,
+        status: true,
+        message: "تمت العملية بنجاح",
+        items: Category,
+      };
+      reply.code(200).send(response);
+    }else{
+      const _Category = await SubCategory.findByIdAndUpdate(
+        req.params.id,
+        {
+          arName: req.raw.body.arName,
+          enName: req.raw.body.enName,
+          category_id: req.raw.body.category_id,
+          enDescription: req.raw.body.enDescription,
+          arDescription: req.raw.body.arDescription,
+          price: req.raw.body.price,
+        },
+        { new: true, runValidators: true },
+        function (err, model) {
+          var _return = handleError(err);
+          if (_return.length > 0) {
+            reply.code(200).send({
+              status_code: 400,
+              status: false,
+              message: _return[0],
+              items: _return,
+            });
+            return;
+          }
+        }
+      );
+
+      const response = {
+        status_code: 200,
+        status: true,
+        message: "تمت العملية بنجاح",
+        items: Category,
+      };
+      reply.code(200).send(response);
+    }
   } catch (err) {
     throw boom.boomify(err);
   }

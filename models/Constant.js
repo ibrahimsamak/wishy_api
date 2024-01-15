@@ -202,14 +202,14 @@ const welcomeSchema = mongoose.Schema(
     },
     enTitle: {
       type: String,
-      required: [true, "englush name is required"],
-    },
-    enDescription: {
-      type: String,
+      required: [true, "english name is required"],
     },
     arTitle: {
       type: String,
       required: [true, "arabic name is required"],
+    },
+    enDescription: {
+      type: String,
     },
     arDescription: {
       type: String,

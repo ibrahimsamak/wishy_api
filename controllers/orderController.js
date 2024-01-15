@@ -114,7 +114,6 @@ exports.addOrder = async (req, reply) => {
               { isDeleted: false },
             ],
           });
-          console.log(PoinInPolygon)
           if (PoinInPolygon.length == 0) {
             let rs = new User_Uncovered({
               user_id: userId,
@@ -190,12 +189,31 @@ exports.addOrder = async (req, reply) => {
             total = (Number(sub_category.price) * Number(tax.value)) + Number(sub_category.price)
             total_tax = (Number(sub_category.price) * Number(tax.value))
           }
-
+          var address = req.body.address;
+          if(!req.body.address || req.body.address == ""){
+            let rs = new User_Address({
+              title: req.body.title,
+              lat: req.body.lat,
+              lng: req.body.lng,
+              address: req.body.address,
+              user_id: userId,
+              isDefault: false,
+              discount: 0,
+              streetName: req.body.streetName,
+              floorNo: req.body.floorNo,
+              buildingNo: req.body.buildingNo,
+              flatNo: req.body.flatNo,
+              type: 'home'
+            });
+        
+            let _rs = await rs.save();
+            address = _rs._id;
+          }
           let Orders = new Order({
             lat: req.body.lat,
             lng: req.body.lng,           
             price: sub_category.price,
-            address: req.body.address,
+            address: address,
             order_no: orderNo,
             tax: Number(total_tax),
             total: total,
@@ -753,11 +771,15 @@ exports.getUserOrder = async (req, reply) => {
       obj.sub_category_id = {
         _id: element.sub_category_id._id,
         title: element.sub_category_id[`${language}Name`],
-        price: element.price
+        description: element.sub_category_id[`${language}Description`],
+        price: element.sub_category_id.price,
+        image: element.sub_category_id.image
       }
       obj.category_id = {
         _id: element.category_id._id,
         title: element.category_id[`${language}Name`],
+        description: element.category_id[`${language}Description`],
+        image: element.category_id.image
       }
       element.extra.forEach(_element => {
         var _obj = {
@@ -1767,11 +1789,15 @@ exports.getEmployeeOrder = async (req, reply) => {
       obj.sub_category_id = {
         _id: element.sub_category_id._id,
         title: element.sub_category_id[`${language}Name`],
-        price: element.price
+        description: element.sub_category_id[`${language}Description`],
+        price: element.sub_category_id.price,
+        image: element.sub_category_id.image
       }
       obj.category_id = {
         _id: element.category_id._id,
         title: element.category_id[`${language}Name`],
+        description: element.category_id[`${language}Description`],
+        image: element.category_id.image
       }
       element.extra.forEach(_element => {
         var _obj = {

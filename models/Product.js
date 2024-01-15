@@ -35,6 +35,12 @@ const schema = mongoose.Schema({
     type: String,
     required: [true, "english name is required"],
   },
+  enDescription: {
+    type: String,
+  },
+  arDescription: {
+    type: String,
+  },
   image: {
     type: String,
   },
@@ -54,6 +60,15 @@ const subschema = mongoose.Schema({
   enName: {
     type: String,
     required: [true, "english name is required"],
+  },
+  enDescription: {
+    type: String,
+  },
+  arDescription: {
+    type: String,
+  },
+  image: {
+    type: String,
   },
   category_id: {
     type: mongoose.Schema.Types.ObjectId,

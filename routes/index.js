@@ -955,6 +955,12 @@ const mobile_routes = [
   },
   {
     method: "GET",
+    url: "/api/mobile/home/get",
+    handler: constantController.getHomeRequest,
+  },
+  
+  {
+    method: "GET",
     url: "/api/mobile/constant/static",
     handler: constantController.getStaticPage,
   },
