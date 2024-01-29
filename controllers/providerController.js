@@ -309,7 +309,7 @@ exports.getSingleProviderAdmin = async (req, reply) => {
 };
 
 exports.updateProvider = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     var newUser = new Supplier({
       phone_number: req.raw.body.phone_number,
@@ -526,7 +526,7 @@ exports.updateProvider = async (req, reply) => {
 };
 
 exports.addProvider = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     var newUser = new Supplier({
       phone_number: req.raw.body.phone_number,
@@ -964,7 +964,7 @@ exports.getSingleSupervisorAdmin = async (req, reply) => {
 };
 
 exports.updateSupervisor = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     var newUser = new Supervisor({
       phone_number: req.raw.body.phone_number,
@@ -1177,7 +1177,7 @@ exports.updateSupervisor = async (req, reply) => {
 };
 
 exports.addSupervisor = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     var newUser = new Supervisor({
       phone_number: req.raw.body.phone_number,

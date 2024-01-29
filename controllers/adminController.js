@@ -203,7 +203,7 @@ exports.updateMyProfile = async (req, reply) => {
 
 //login
 exports.login = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     const pass = encryptPassword(req.body.password);
     const Admins = await Admin.findOne({

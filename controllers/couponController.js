@@ -346,7 +346,7 @@ exports.updatecoupon = async (req, reply) => {
 
 // Check Coupon
 exports.checkCouponReplacment = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
 
     let obj =  await check_coupon(req.user._id,req.body.coupon, req.body.sub_category_id)

@@ -629,7 +629,8 @@ exports.updateOrder = async (req, reply) => {
         if(emplployee)
           await CreateGeneralNotification(emplployee.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.user._id, emplployee._id, "", "");
       }
-  
+      await Order.findByIdAndUpdate( req.params.id, { status: req.body.status },{ new: true })
+
       reply
       .code(200)
       .send(
@@ -723,7 +724,7 @@ exports.updateOrderCode = async (req, reply) => {
 
 exports.getUserOrder = async (req, reply) => {
   try {
-    let language = "ar";
+    const language = req.headers["accept-language"];
     const userId = req.user._id;
 
     var page = parseFloat(req.query.page, 10);
@@ -2497,7 +2498,7 @@ exports.getEmployeesOrder = async (req, reply) => {
 };
 
 exports.getOrders = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
@@ -2573,7 +2574,7 @@ exports.getOrders = async (req, reply) => {
 };
 
 exports.getOrdersExcel = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     var query = {};
     if (
@@ -2638,7 +2639,7 @@ exports.getOrdersExcel = async (req, reply) => {
 
 
 exports.getOrdersEarnings = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     var _result  = []
     var query = {};
@@ -2746,7 +2747,7 @@ exports.getOrdersEarnings = async (req, reply) => {
 
 
 exports.deleteRate = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     const rate = await Rate.findByIdAndRemove(req.params.id);
 
@@ -2763,7 +2764,7 @@ exports.deleteRate = async (req, reply) => {
 };
 
 exports.getOrdersRateList = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
@@ -2882,7 +2883,7 @@ exports.getOrdersRateList = async (req, reply) => {
 };
 
 exports.getSupplierRateList = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);

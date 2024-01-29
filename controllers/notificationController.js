@@ -135,7 +135,7 @@ exports.deleteNotifications = async (req, reply) => {
 ///////////Admin///////////
 exports.getAdminNotification = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
 
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
@@ -184,7 +184,7 @@ exports.getAdminNotification = async (req, reply) => {
 
 exports.getTop10AdminNotification = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     query = {};
     if (req.user.userType == USER_TYPE.ADMIN)
       query["user_id"] = USER_TYPE.PANEL;

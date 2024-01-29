@@ -702,7 +702,7 @@ exports.sendEmployeeSMS = async (req, reply) => {
 };
 
 exports.getSingleEmployeesAdmin = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     const user_id = req.params.id;
     const _Users = await employee.findById(user_id).select();
@@ -755,7 +755,7 @@ exports.getSingleEmployeesAdmin = async (req, reply) => {
 };
 
 exports.updateEmploye = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     var newUser = new employee({
       phone_number: req.raw.body.phone_number,
@@ -957,7 +957,7 @@ exports.updateEmploye = async (req, reply) => {
 };
 
 exports.addEmployee = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     var newUser = new employee({
       phone_number: req.raw.body.phone_number,
@@ -1301,7 +1301,7 @@ exports.getSupplierPlaceAdmin = async (req, reply) => {
     var limit = parseFloat(req.query.limit, 10);
 
     var arr = [];
-    const language = "ar";
+    const language = req.headers["accept-language"];
     const total = await Place_Delivery.find({
       $and: [{ place_id: req.body.place_id }, { city_id: req.body.city_id },{isDeleted:false}],
     }).countDocuments();
@@ -1338,7 +1338,7 @@ exports.getSupplierPlaceAdmin = async (req, reply) => {
 
 exports.getSingleSupplierPlace = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     const _place = await Place_Delivery.findById(req.params.id)
       .populate("supplier_id")
       .populate({

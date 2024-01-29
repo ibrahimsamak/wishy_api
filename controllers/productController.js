@@ -421,7 +421,7 @@ exports.getSuppliers = async (req, reply) => {
 ////////////admin///////////
 exports.getAllProductsList = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
     // var query = {};
@@ -447,7 +447,7 @@ exports.getAllProductsList = async (req, reply) => {
 
 exports.getAllProductsByAdmin = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
     // var query = {};
@@ -495,7 +495,7 @@ exports.getAllProductsByAdmin = async (req, reply) => {
 
 exports.getAllProductsExcelByAdmin = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     var query = { $and: [] };
     if (String(req.body.name) != "") {
       query.$and.push({
@@ -728,7 +728,7 @@ exports.getSingleProduct = async (req, reply) => {
 
 exports.getAllProductPlaceByAdmin = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
     // var query = {};
@@ -778,7 +778,7 @@ exports.getAllProductPlaceByAdmin = async (req, reply) => {
 
 exports.getAllProductPlaceExcelByAdmin = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     var query = { $and: [] };
     if (String(req.body.name) != "") {
       query.$and.push({
@@ -1065,7 +1065,7 @@ exports.getSupplierPlaceAdmin = async (req, reply) => {
     var limit = parseFloat(req.query.limit, 10);
 
     var arr = [];
-    const language = "ar";
+    const language = req.headers["accept-language"];
     const total = await Place_Delivery.find({
       $and: [{ place_id: req.body.place_id }, { city_id: req.body.city_id },{isDeleted:false}],
     }).countDocuments();
@@ -1102,7 +1102,7 @@ exports.getSupplierPlaceAdmin = async (req, reply) => {
 
 exports.getSingleSupplierPlace = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     const _place = await Place_Delivery.findById(req.params.id)
       .populate("supplier_id")
       .populate({

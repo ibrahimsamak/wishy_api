@@ -1765,7 +1765,7 @@ exports.getSingleUsersAdmin = async (req, reply) => {
 };
 
 exports.updateUser = async (req, reply) => {
-  const language = "ar";
+  const language = req.headers["accept-language"];
   try {
     setLanguage(language);
     var newUser = new Users({
@@ -1995,7 +1995,7 @@ exports.updateWallet = async (req, reply) => {
 
 exports.referalDeepLink = async (req, reply) => {
   // let msg = req.body.msg;
-  const language = "ar";
+  const language = req.headers["accept-language"];
   const user = await Users.findById(req.user._id);
   var body = {
       "dynamicLinkInfo": {

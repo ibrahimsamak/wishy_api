@@ -197,7 +197,7 @@ exports.getUpdates = async (req, reply) => {
 
 exports.addReplyComplains = async (req, reply) => {
   try {
-    let language = "ar";
+    const language = req.headers["accept-language"];
     const complaintsData = await complains.findById(req.body._id);
     let data = {
       full_name: complaintsData.full_name,
@@ -299,7 +299,7 @@ exports.getContactOption = async (req, reply) => {
 
 exports.getContactOptionAdmin = async (req, reply) => {
   try {
-    let language = "ar";
+    const language = req.headers["accept-language"];
     const ContactOptions = await ContactOption.find().sort({ _id: -1 });
 
     reply
@@ -534,7 +534,7 @@ exports.getPlacesAdmin = async (req, reply) => {
     var limit = parseFloat(req.query.limit, 10);
 
     var arr = [];
-    const language = "ar";
+    const language = req.headers["accept-language"];
     const total = await place
       .find({ $and: [{ isDeleted: false }, { city_id: req.params.id }] })
       .countDocuments();
@@ -568,7 +568,7 @@ exports.getPlacesAdmin = async (req, reply) => {
 
 exports.getAllPlacesAdmin = async (req, reply) => {
   try {
-    var language = "ar";
+    const language = req.headers["accept-language"];
     const cities = await place
       .find({ $and: [{ isDeleted: false }, { city_id: req.params.id }] })
       .populate("city_id")
@@ -593,7 +593,7 @@ exports.getAllPlacesAdmin = async (req, reply) => {
 
 exports.getAllPlacesSupplierAdmin = async (req, reply) => {
   try {
-    var language = "ar";
+    const language = req.headers["accept-language"];
     var cities = []
     if(req.params.id != ""){
       cities = await Place_Delivery
@@ -622,7 +622,7 @@ exports.getAllPlacesSupplierAdmin = async (req, reply) => {
 
 exports.getSinglePlace = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     const _place = await place.findById(req.params.id).populate("city_id");
     reply
       .code(200)
@@ -643,7 +643,7 @@ exports.getSinglePlace = async (req, reply) => {
 
 exports.getCityAdmins = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
 
@@ -681,7 +681,7 @@ exports.getCityAdmins = async (req, reply) => {
 
 exports.getAlCityAdmins = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
 
     const cities = await city
       .find({ isDeleted: false })
@@ -1730,7 +1730,7 @@ exports.addStatic = async (req, reply) => {
 
 exports.getStaticPages = async (req, reply) => {
   try {
-    var language = "ar";
+    const language = req.headers["accept-language"];
     const staticpages = await StaticPage.find().sort({ _id: -1 });
     reply
       .code(200)
@@ -1751,7 +1751,7 @@ exports.getStaticPages = async (req, reply) => {
 
 exports.getSingleStaticAdmin = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     const StaticPages = await StaticPage.findById(req.params.id);
 
     reply.code(200).send(
@@ -2039,7 +2039,7 @@ exports.getSingleWelcome = async (req, reply) => {
 
 exports.getWelcomeAdmin = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     const _welcome = await welcome.find().sort({ _id: -1 });
     reply.code(200).send(
       success(
@@ -2060,7 +2060,7 @@ exports.getWelcomeAdmin = async (req, reply) => {
 
 exports.getSingleWelcomeAdmin = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     const _welcome = await welcome.findById(req.params.id).sort({ _id: -1 });
     reply
       .code(200)
@@ -2082,7 +2082,7 @@ exports.getSingleWelcomeAdmin = async (req, reply) => {
 
 exports.getAdvsAdmin = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     const _Adv = await Adv.find().sort({ _id: -1 });
     reply
       .code(200)
@@ -2104,7 +2104,7 @@ exports.getAdvsAdmin = async (req, reply) => {
 
 exports.getSingleAdvsAdmin = async (req, reply) => {
   try {
-    const language = "ar";
+    const language = req.headers["accept-language"];
     const _Adv = await Adv.findById(req.params.id).sort({ _id: -1 });
     reply
       .code(200)
