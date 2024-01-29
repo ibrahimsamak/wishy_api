@@ -1224,6 +1224,12 @@ const mobile_routes = [
 const driver_routes = [
   {
     method: "POST",
+    url: "/api/mobile/employee/logout/:id",
+    // beforeHandler: [auth.getToken],
+    handler: employeeController.logout,
+  },
+  {
+    method: "POST",
     url: "/api/driver/employee/available",
     beforeHandler: [auth.getAdminToken],
     handler: employeeController.updateAvailable,
