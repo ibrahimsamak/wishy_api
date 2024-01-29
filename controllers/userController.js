@@ -964,34 +964,7 @@ exports.logout = async (req, reply) => {
       },
       { new: true }
     );
-    if (!user) {
-      reply
-        .code(200)
-        .send(
-          errorAPI(
-            language,
-            400,
-            MESSAGE_STRING_ARABIC.ERROR,
-            MESSAGE_STRING_ENGLISH.ERROR
-          )
-        );
-      return;
-    } else {
-      const address = await User_Address.find({
-        $and: [{ user_id: user._id }],
-      });
-      var newUser = user.toObject();
-      const orders = await Order.find({
-        $and: [{ user_id: user._id }, { StatusId: 4 }],
-      }).countDocuments();
-      // const favorits = await Favorite.find({
-      //   user_id: user._id,
-      // }).countDocuments();
-      // newUser.favorite = favorits;
-      newUser.orders = orders;
-      newUser.delivery_address = address;
-
-      reply
+    reply
         .code(200)
         .send(
           success(
@@ -999,11 +972,10 @@ exports.logout = async (req, reply) => {
             200,
             MESSAGE_STRING_ARABIC.USER_LOGOUT,
             MESSAGE_STRING_ENGLISH.USER_LOGOUT,
-            newUser
+            {}
           )
         );
       return;
-    }
   } catch (err) {
     reply.code(200).send(errorAPI(language, 400, err.message, err.message));
     return;
