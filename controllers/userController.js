@@ -942,7 +942,9 @@ exports.logout = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
     const User_id = req.params.id;
-    const checkUser = await Users.findById(req.params.id);
+    console.log(User_id)
+    const checkUser = await Users.findById(User_id);
+    console.log(checkUser)
     if (!checkUser) {
       reply
         .code(200)

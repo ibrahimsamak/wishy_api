@@ -463,19 +463,6 @@ exports.logout = async (req, reply) => {
   try {
     const User_id = req.params.id;
     const checkUser = await employee.findById(req.params.id);
-    if (!checkUser) {
-      reply
-        .code(200)
-        .send(
-          errorAPI(
-            language,
-            400,
-            MESSAGE_STRING_ARABIC.ERROR,
-            MESSAGE_STRING_ENGLISH.ERROR
-          )
-        );
-      return;
-    }
     const user = await employee.findByIdAndUpdate(
       User_id,
       {
@@ -484,20 +471,7 @@ exports.logout = async (req, reply) => {
       },
       { new: true }
     );
-    if (!user) {
-      reply
-        .code(200)
-        .send(
-          errorAPI(
-            language,
-            400,
-            MESSAGE_STRING_ARABIC.ERROR,
-            MESSAGE_STRING_ENGLISH.ERROR
-          )
-        );
-      return;
-    } else {
-      reply
+    reply
         .code(200)
         .send(
           success(
@@ -509,7 +483,6 @@ exports.logout = async (req, reply) => {
           )
         );
       return;
-    }
   } catch (err) {
     reply.code(200).send(errorAPI(language, 400, err.message, err.message));
     return;
