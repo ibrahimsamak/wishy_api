@@ -182,14 +182,19 @@ exports.getAllCategoryAndSubCategory = async (req, reply) => {
 
 exports.getUpdates = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const updates = await update.find().sort({ _id: -1 });
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: updates,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        updates
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -253,14 +258,18 @@ exports.getComplains = async (req, reply) => {
 
 exports.deleteComplains = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     await complains.findByIdAndRemove(req.params.id);
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: null,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -736,15 +745,20 @@ exports.getSingleCountry = async (req, reply) => {
 };
 
 exports.getSettings = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const settings = await setting.find().sort({ _id: -1 });
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: settings,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        settings
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -877,6 +891,7 @@ exports.adddelivery_time = async (req, reply) => {
 
 exports.updatedelivery_time = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const _city = await delivery_time.findByIdAndUpdate(
       req.params.id,
       {
@@ -912,6 +927,7 @@ exports.updatedelivery_time = async (req, reply) => {
 
 exports.deletedelivery_time = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const _city = await delivery_time.findByIdAndRemove(req.params.id);
 
     const response = {
@@ -928,6 +944,7 @@ exports.deletedelivery_time = async (req, reply) => {
 
 exports.addSetting = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     let _setting = new setting({
       name: req.body.name,
       value: req.body.value,
@@ -946,13 +963,17 @@ exports.addSetting = async (req, reply) => {
       return;
     }
     let rs = await _setting.save();
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -960,6 +981,7 @@ exports.addSetting = async (req, reply) => {
 
 exports.addWalletSetting = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     let _setting = new walletsettings({
       type: req.body.type,
       value: req.body.value,
@@ -980,14 +1002,17 @@ exports.addWalletSetting = async (req, reply) => {
     }
 
     let rs = await _setting.save();
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -995,6 +1020,7 @@ exports.addWalletSetting = async (req, reply) => {
 
 exports.addMySetting = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     let _setting = new ProviderSetting({
       name: req.body.name,
       value: req.body.value,
@@ -1013,19 +1039,24 @@ exports.addMySetting = async (req, reply) => {
       return;
     }
     let rs = await _setting.save();
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
 };
 
 exports.updateSetting = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const _setting = await setting.findByIdAndUpdate(
       req.params.id,
@@ -1051,13 +1082,17 @@ exports.updateSetting = async (req, reply) => {
       }
     );
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: _setting,
-    };
-    reply.code(200).send(response);
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          _setting
+        )
+      );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1065,6 +1100,7 @@ exports.updateSetting = async (req, reply) => {
 
 exports.updateWalletSetting = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const _setting = await walletsettings.findByIdAndUpdate(
       req.params.id,
       {
@@ -1088,14 +1124,17 @@ exports.updateWalletSetting = async (req, reply) => {
         }
       }
     );
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: _setting,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1103,6 +1142,7 @@ exports.updateWalletSetting = async (req, reply) => {
 
 exports.updateMySetting = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const _setting = await ProviderSetting.findByIdAndUpdate(
       req.params.id,
       {
@@ -1126,14 +1166,17 @@ exports.updateMySetting = async (req, reply) => {
         }
       }
     );
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: _setting,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _setting
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1141,15 +1184,18 @@ exports.updateMySetting = async (req, reply) => {
 
 exports.deleteSetting = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     await setting.findByIdAndRemove(req.params.id);
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1157,15 +1203,18 @@ exports.deleteSetting = async (req, reply) => {
 
 exports.deleteWalletSetting = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     await walletsettings.findByIdAndRemove(req.params.id);
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1173,15 +1222,18 @@ exports.deleteWalletSetting = async (req, reply) => {
 
 exports.deleteMySetting = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     await ProviderSetting.findByIdAndRemove(req.params.id);
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1189,6 +1241,7 @@ exports.deleteMySetting = async (req, reply) => {
 
 exports.addCountry = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     let _country = new country({
       arName: req.body.arName,
       enName: req.body.enName,
@@ -1205,13 +1258,17 @@ exports.addCountry = async (req, reply) => {
       return;
     }
     let rs = await _country.save();
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1219,6 +1276,7 @@ exports.addCountry = async (req, reply) => {
 
 exports.addCity = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     let _city = new city({
       arName: req.body.arName,
       enName: req.body.enName,
@@ -1236,13 +1294,17 @@ exports.addCity = async (req, reply) => {
       return;
     }
     let rs = await _city.save();
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1250,6 +1312,7 @@ exports.addCity = async (req, reply) => {
 
 exports.addPlace = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     // let cord = req.body.coordinates;
     // let cord = [
     //   [40.654826, 29.219786],
@@ -1289,13 +1352,17 @@ exports.addPlace = async (req, reply) => {
     }
 
     let rs = await _place.save();
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1303,6 +1370,7 @@ exports.addPlace = async (req, reply) => {
 
 exports.updatePlace = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     let cord = req.body.cord;
     var cordinations = [];
     cord.forEach((element, index) => {
@@ -1336,14 +1404,17 @@ exports.updatePlace = async (req, reply) => {
         }
       }
     );
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: _place,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _place
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1351,6 +1422,7 @@ exports.updatePlace = async (req, reply) => {
 
 exports.updateCountry = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const _country = await country.findByIdAndUpdate(
       req.params.id,
       {
@@ -1371,14 +1443,17 @@ exports.updateCountry = async (req, reply) => {
         }
       }
     );
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: country,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        country
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1386,6 +1461,7 @@ exports.updateCountry = async (req, reply) => {
 
 exports.updateCity = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const _city = await city.findByIdAndUpdate(
       req.params.id,
       {
@@ -1408,13 +1484,18 @@ exports.updateCity = async (req, reply) => {
       }
     );
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: _city,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _city
+      )
+    );
+
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1422,6 +1503,7 @@ exports.updateCity = async (req, reply) => {
 
 exports.deleteCountry = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const previousCountry = await country.findById(req.params.id);
     const _country = await country.findByIdAndUpdate(
       req.params.id,
@@ -1440,14 +1522,16 @@ exports.deleteCountry = async (req, reply) => {
         }
       }
     );
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1455,18 +1539,22 @@ exports.deleteCountry = async (req, reply) => {
 
 exports.deleteCity = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const _city = await city.findByIdAndUpdate(req.params.id,
       { isDeleted: true },
       {new: true}
     );
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: _city,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _city
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1474,6 +1562,7 @@ exports.deleteCity = async (req, reply) => {
 
 exports.deletePlace = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const _place = await place.findByIdAndUpdate(
       req.params.id,
       { isDeleted: true },
@@ -1491,14 +1580,16 @@ exports.deletePlace = async (req, reply) => {
         }
       }
     );
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1506,6 +1597,7 @@ exports.deletePlace = async (req, reply) => {
 
 exports.addContract = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     let _city = new contract({
       name: req.body.name,
       numberOfMonths: req.body.numberOfMonths,
@@ -1522,13 +1614,17 @@ exports.addContract = async (req, reply) => {
       return;
     }
     let rs = await _city.save();
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1536,6 +1632,7 @@ exports.addContract = async (req, reply) => {
 
 exports.updateContract = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const _city = await contract.findByIdAndUpdate(
       req.params.id,
       {
@@ -1557,14 +1654,17 @@ exports.updateContract = async (req, reply) => {
         }
       }
     );
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: _city,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _city
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1572,15 +1672,18 @@ exports.updateContract = async (req, reply) => {
 
 exports.deleteContract = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const _city = await contract.findByIdAndRemove(req.params.id);
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1588,6 +1691,7 @@ exports.deleteContract = async (req, reply) => {
 
 exports.addSocial = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     let SocialOptions = new SocialOption({
       name: req.body.name,
       data: req.body.data,
@@ -1604,13 +1708,17 @@ exports.addSocial = async (req, reply) => {
       return;
     }
     let rs = await SocialOptions.save();
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1618,6 +1726,7 @@ exports.addSocial = async (req, reply) => {
 
 exports.updateSocial = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const SocialOptions = await SocialOption.findByIdAndUpdate(
       req.params.id,
       {
@@ -1638,14 +1747,17 @@ exports.updateSocial = async (req, reply) => {
         }
       }
     );
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: SocialOptions,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        SocialOptions
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1653,15 +1765,19 @@ exports.updateSocial = async (req, reply) => {
 
 exports.deleteSocial = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const SocialOptions = await SocialOption.findByIdAndRemove(req.params.id);
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        SocialOptions
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1698,6 +1814,7 @@ exports.getSingleStatic = async (req, reply) => {
 
 exports.addStatic = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     let staticpages = new StaticPage({
       Type: req.body.Type,
       arTitle: req.body.arTitle,
@@ -1716,13 +1833,17 @@ exports.addStatic = async (req, reply) => {
       return;
     }
     let rs = await staticpages.save();
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1772,6 +1893,7 @@ exports.getSingleStaticAdmin = async (req, reply) => {
 
 exports.updateStatic = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const staticpages = await StaticPage.findByIdAndUpdate(
       req.params.id,
       {
@@ -1795,13 +1917,17 @@ exports.updateStatic = async (req, reply) => {
         }
       }
     );
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: staticpages,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        staticpages
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1809,32 +1935,41 @@ exports.updateStatic = async (req, reply) => {
 
 exports.deleteStatic = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const staticpages = await StaticPage.findByIdAndRemove(req.params.id);
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          []
+        )
+      );
   } catch (err) {
     throw boom.boomify(err);
   }
 };
 
 exports.getSingleContract = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const ContactOptions = await ContactOption.findById(req.params.id).sort({
       _id: -1,
     });
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: ContactOptions,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        ContactOptions
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1842,6 +1977,7 @@ exports.getSingleContract = async (req, reply) => {
 
 exports.addContact = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     let ContactOptions = new ContactOption({
       arName: req.body.arName,
       enName: req.body.enName,
@@ -1859,13 +1995,17 @@ exports.addContact = async (req, reply) => {
       return;
     }
     let rs = await ContactOptions.save();
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1873,6 +2013,7 @@ exports.addContact = async (req, reply) => {
 
 exports.updateContact = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const ContactOptions = await ContactOption.findByIdAndUpdate(
       req.params.id,
       {
@@ -1894,13 +2035,17 @@ exports.updateContact = async (req, reply) => {
         }
       }
     );
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: ContactOptions,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        ContactOptions
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1908,14 +2053,19 @@ exports.updateContact = async (req, reply) => {
 
 exports.deleteContact = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const ContactOptions = await ContactOption.findByIdAndRemove(req.params.id);
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        ContactOptions
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1925,7 +2075,6 @@ exports.welcomeList = async (req, reply) => {
   try {
     const language = req.headers["accept-language"];
     var welcomes = await welcome.find({ isDriver: false }).select();
-
     var arr = [];
     welcomes.forEach((element) => {
       var newObject = element.toObject();
@@ -2025,13 +2174,17 @@ exports.packageList = async (req, reply) => {
 exports.getSingleWelcome = async (req, reply) => {
   try {
     const welcomes = await welcome.findById(req.params.id).sort({ _id: -1 });
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: welcomes,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        welcomes
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -2045,7 +2198,6 @@ exports.getWelcomeAdmin = async (req, reply) => {
       success(
         language,
         200,
-
         MESSAGE_STRING_ARABIC.SUCCESS,
         MESSAGE_STRING_ENGLISH.SUCCESS,
         _welcome
@@ -2126,6 +2278,7 @@ exports.getSingleAdvsAdmin = async (req, reply) => {
 
 // Add a new advs
 exports.addWelcome = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     var approve = false;
     if (req.raw.body.by == 1) {
@@ -2178,14 +2331,17 @@ exports.addWelcome = async (req, reply) => {
         return;
       }
       let rs = await Advs.save();
-      const response = {
-        status_code: 200,
-        status: true,
-        message: "تمت العملية بنجاح",
-        items: rs,
-      };
-
-      reply.send(response);
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          rs
+        )
+      );
     }
   } catch (err) {
     throw boom.boomify(err);
@@ -2195,6 +2351,7 @@ exports.addWelcome = async (req, reply) => {
 // Update an existing adv
 exports.updateWelcome = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     if (req.raw.files) {
       const files = req.raw.files;
       let fileArr = [];
@@ -2248,14 +2405,17 @@ exports.updateWelcome = async (req, reply) => {
         }
       );
       // await updateCacheWithUpdate('Advs', Advs, req.params.id)
-
-      const response = {
-        status_code: 200,
-        status: true,
-        message: "تمت العملية بنجاح",
-        items: Advs,
-      };
-      reply.code(200).send(response);
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          Advs
+        )
+      );
     } else {
       const Advs = await welcome.findByIdAndUpdate(
         req.params.id,
@@ -2281,14 +2441,17 @@ exports.updateWelcome = async (req, reply) => {
         }
       );
       // await updateCacheWithUpdate('Advs', Advs, req.params.id)
-
-      const response = {
-        status_code: 200,
-        status: true,
-        message: "تمت العملية بنجاح",
-        items: Advs,
-      };
-      reply.code(200).send(response);
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          Advs
+        )
+      );
     }
   } catch (err) {
     throw boom.boomify(err);
@@ -2297,14 +2460,19 @@ exports.updateWelcome = async (req, reply) => {
 
 exports.deleteWelcome = async (req, reply) => {
   try {
+    const language = req.headers["accept-language"];
     const welcomes = await welcome.findByIdAndRemove(req.params.id);
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        welcomes
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -2790,6 +2958,8 @@ exports.getTimesByDate = async (req, reply) => {
 
 // Add a new advs
 exports.addAdvs = async (req, reply) => {
+  const language = req.headers["accept-language"];
+
   try {
     var approve = true;
     if (req.raw.files) {
@@ -2828,7 +2998,7 @@ exports.addAdvs = async (req, reply) => {
         product_id: req.raw.body.product_id,
         store_id: req.raw.body.store_id,
         url: req.raw.body.url,
-        expiry_date: moment(req.raw.body.expiry_date)
+        expiry_date: moment()
           .utc()
           .tz("Asia/Riyadh")
           .endOf("day"),
@@ -2850,14 +3020,17 @@ exports.addAdvs = async (req, reply) => {
         return;
       }
       let rs = await Advs.save();
-      const response = {
-        status_code: 200,
-        status: true,
-        message: "تمت العملية بنجاح",
-        items: rs,
-      };
-
-      reply.send(response);
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          rs
+        )
+      );
     }
   } catch (err) {
     throw boom.boomify(err);
@@ -2866,6 +3039,7 @@ exports.addAdvs = async (req, reply) => {
 
 // Update an existing adv
 exports.updateAdvs = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     var approve = true;
 
@@ -2931,14 +3105,17 @@ exports.updateAdvs = async (req, reply) => {
         }
       );
       // await updateCacheWithUpdate('Advs', Advs, req.params.id)
-
-      const response = {
-        status_code: 200,
-        status: true,
-        message: "تمت العملية بنجاح",
-        items: Advs,
-      };
-      reply.code(200).send(response);
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          Advs
+        )
+      );
     } else {
       const Advs = await Adv.findByIdAndUpdate(
         req.params.id,
@@ -2973,14 +3150,17 @@ exports.updateAdvs = async (req, reply) => {
         }
       );
       // await updateCacheWithUpdate('Advs', Advs, req.params.id)
-
-      const response = {
-        status_code: 200,
-        status: true,
-        message: "تمت العملية بنجاح",
-        items: Advs,
-      };
-      reply.code(200).send(response);
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          Advs
+        )
+      );
     }
   } catch (err) {
     throw boom.boomify(err);
@@ -2988,21 +3168,27 @@ exports.updateAdvs = async (req, reply) => {
 };
 
 exports.deleteAdvs = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const welcomes = await Adv.findByIdAndRemove(req.params.id);
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        {}
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
 };
 
 exports.addCategory = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     if (req.raw.files) {
       const files = req.raw.files;
@@ -3052,13 +3238,17 @@ exports.addCategory = async (req, reply) => {
       return;
     }
     let rs = await _Category.save();
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
     } 
   }catch (err) {
     throw boom.boomify(err);
@@ -3066,6 +3256,7 @@ exports.addCategory = async (req, reply) => {
 };
 
 exports.updateCategory = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     if (req.raw.files) {
       const files = req.raw.files;
@@ -3119,13 +3310,17 @@ exports.updateCategory = async (req, reply) => {
         }
       );
 
-      const response = {
-        status_code: 200,
-        status: true,
-        message: "تمت العملية بنجاح",
-        items: Category,
-      };
-      reply.code(200).send(response);
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          Category
+        )
+      );
    }else{
     const _Category = await Category.findByIdAndUpdate(
       req.params.id,
@@ -3150,14 +3345,17 @@ exports.updateCategory = async (req, reply) => {
         }
       }
     );
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: Category,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        Category
+      )
+    );
    }
   } catch (err) {
     throw boom.boomify(err);
@@ -3165,6 +3363,7 @@ exports.updateCategory = async (req, reply) => {
 };
 
 exports.deleteCategory = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const previousCategory = await Category.findById(req.params.id);
     const _Category = await Category.findByIdAndUpdate(
@@ -3185,13 +3384,16 @@ exports.deleteCategory = async (req, reply) => {
       }
     );
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -3223,6 +3425,7 @@ exports.getCategory = async (req, reply) => {
 };
 
 exports.getSingleCategory = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const _Category = await Category.findById(req.params.id).sort({ _id: -1 });
     const response = {
@@ -3239,6 +3442,7 @@ exports.getSingleCategory = async (req, reply) => {
 
 
 exports.addSubCategory = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     if (req.raw.files) {
         const files = req.raw.files;
@@ -3288,13 +3492,17 @@ exports.addSubCategory = async (req, reply) => {
         return;
       }
       let rs = await _Category.save();
-      const response = {
-        status_code: 200,
-        status: true,
-        message: "تمت العملية بنجاح",
-        items: rs,
-      };
-      reply.code(200).send(response);
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          rs
+        )
+      );
     }
   } catch (err) {
     throw boom.boomify(err);
@@ -3302,6 +3510,7 @@ exports.addSubCategory = async (req, reply) => {
 };
 
 exports.updateSubCategory = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     if (req.raw.files) {
         const files = req.raw.files;
@@ -3355,14 +3564,17 @@ exports.updateSubCategory = async (req, reply) => {
           }
         }
       );
-
-      const response = {
-        status_code: 200,
-        status: true,
-        message: "تمت العملية بنجاح",
-        items: Category,
-      };
-      reply.code(200).send(response);
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          Category
+        )
+      );
     }else{
       const _Category = await SubCategory.findByIdAndUpdate(
         req.params.id,
@@ -3388,14 +3600,17 @@ exports.updateSubCategory = async (req, reply) => {
           }
         }
       );
-
-      const response = {
-        status_code: 200,
-        status: true,
-        message: "تمت العملية بنجاح",
-        items: Category,
-      };
-      reply.code(200).send(response);
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          Category
+        )
+      );
     }
   } catch (err) {
     throw boom.boomify(err);
@@ -3403,6 +3618,7 @@ exports.updateSubCategory = async (req, reply) => {
 };
 
 exports.deleteSubCategory = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const previousCategory = await SubCategory.findById(req.params.id);
     const _Category = await SubCategory.findByIdAndUpdate(
@@ -3423,19 +3639,23 @@ exports.deleteSubCategory = async (req, reply) => {
       }
     );
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
 };
 
 exports.getSubCategory = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     var arr = [];
     const language = req.headers["accept-language"];
@@ -3461,15 +3681,20 @@ exports.getSubCategory = async (req, reply) => {
 };
 
 exports.getSingleSubCategory = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const _Category = await SubCategory.findById(req.params.id).sort({ _id: -1 });
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: _Category,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _Category
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }

@@ -652,6 +652,7 @@ exports.getEmployeesExcel = async (req, reply) => {
 };
 
 exports.sendEmployeeSMS = async (req, reply) => {
+  const language = req.headers["accept-language"];
   let user = await employee.findById(req.params.id);
   if (!user) {
     const response = {
@@ -665,13 +666,17 @@ exports.sendEmployeeSMS = async (req, reply) => {
   let msg = req.body.msg;
 
   sendSMS(user.phone_number, "", "", msg);
-  const response = {
-    status_code: 200,
-    status: true,
-    message: "تم ارسال الرسالة بنجاح",
-    items: {},
-  };
-  reply.code(200).send(response);
+  reply
+  .code(200)
+  .send(
+    success(
+      language,
+      200,
+      MESSAGE_STRING_ARABIC.SUCCESS,
+      MESSAGE_STRING_ENGLISH.SUCCESS,
+      newUser
+    )
+  );
 };
 
 exports.getSingleEmployeesAdmin = async (req, reply) => {
@@ -1104,6 +1109,7 @@ exports.addEmployee = async (req, reply) => {
 };
 
 exports.block = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const user = await employee.findByIdAndUpdate(
       req.body._id,
@@ -1114,13 +1120,16 @@ exports.block = async (req, reply) => {
       { new: true }
     );
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: user,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1156,6 +1165,7 @@ exports.testsend = async (req, reply) => {
 
 
 exports.addSupplierPlace = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const checkBefore = await Place_Delivery.findOne({
       $and: [
@@ -1166,13 +1176,16 @@ exports.addSupplierPlace = async (req, reply) => {
       ],
     });
     if (checkBefore) {
-      const response = {
-        status_code: 400,
-        status: false,
-        message: "تم اضافة المزود لهذه المنطقة مسبقا",
-        items: [],
-      };
-      reply.code(200).send(response);
+      reply
+      .code(200)
+      .send(
+        errorAPI(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.EXIT,
+          MESSAGE_STRING_ENGLISH.EXIT
+        )
+      );
       return
     }
     let _place = new Place_Delivery({
@@ -1193,13 +1206,17 @@ exports.addSupplierPlace = async (req, reply) => {
     }
 
     let rs = await _place.save();
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-    reply.code(200).send(response);
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          rs
+        )
+      );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1249,6 +1266,7 @@ exports.updateSupplierPlace = async (req, reply) => {
 };
 
 exports.deleteSupplierPlace = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const _place = await Place_Delivery.findByIdAndUpdate(
       req.params.id,
@@ -1256,13 +1274,16 @@ exports.deleteSupplierPlace = async (req, reply) => {
       { new: true }
     );
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: [],
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }

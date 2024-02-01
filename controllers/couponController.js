@@ -191,6 +191,7 @@ exports.getSinglecoupon = async (req, reply) => {
 
 // Add a new coupon
 exports.addcoupon = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const prevCoupon = await coupon.findOne({ coupon: req.body.coupon });
     if (prevCoupon) {
@@ -277,14 +278,17 @@ exports.addcoupon = async (req, reply) => {
       );
     }
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: rs,
-    };
-
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -292,18 +296,24 @@ exports.addcoupon = async (req, reply) => {
 
 // delete coupon
 exports.deletecoupon = async (req, reply) => {
+  const language = req.headers["accept-language"];
   const _coupon = await coupon.findByIdAndRemove(req.params.id);
-  const response = {
-    status_code: 200,
-    status: true,
-    message: "تمت العملية بنجاح",
-    items: [],
-  };
-  reply.code(200).send(response);
-};
+ 
+  reply
+  .code(200)
+  .send(
+    success(
+      language,
+      200,
+      MESSAGE_STRING_ARABIC.SUCCESS,
+      MESSAGE_STRING_ENGLISH.SUCCESS,
+      _coupon
+    )
+  );};
 
 // Update an existing adv
 exports.updatecoupon = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     var a = moment(req.body.dt_to);
     var b = moment(req.body.dt_from);
@@ -332,13 +342,17 @@ exports.updatecoupon = async (req, reply) => {
         }
       }
     );
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: _coupon,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _coupon
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }

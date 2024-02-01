@@ -843,17 +843,21 @@ exports.deleteProductPlace = async (req, reply) => {
 };
 
 exports.addProductPlace = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     var check = await Product_Price.findOne({$and:[{category_id: req.body.category_id}, {place_id: req.body.place_id}]})
     if(check){
-        const response = {
-                status_code: 400,
-                status: false,
-                message: "تمت اضافة الخدمة في هذا المربع مسبقا",
-                items: {},
-        };
-        reply.send(response);
-        return
+      reply
+      .code(200)
+      .send(
+        errorAPI(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.EXIT,
+          MESSAGE_STRING_ENGLISH.EXIT
+        )
+      );
+      return
     }
     let rs = new Product_Price({
       category_id: req.body.category_id,
@@ -875,13 +879,17 @@ exports.addProductPlace = async (req, reply) => {
     }
     let saved = await rs.save();
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت اضافة الخدمة بنجاح",
-      items: saved,
-    };
-    reply.send(response);
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          saved
+        )
+      );
   } catch (err) {
     throw boom.boomify(err);
   }

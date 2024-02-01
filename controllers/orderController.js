@@ -539,6 +539,7 @@ exports.updateOffer = async (req, reply) => {
 };
 
 exports.updateOrder = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
       var msg = ""
       let userId = req.user._id
@@ -2750,14 +2751,17 @@ exports.deleteRate = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
     const rate = await Rate.findByIdAndRemove(req.params.id);
-
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: null,
-    };
-    reply.code(200).send(response);
+  
+    reply
+      .code(200)
+      .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }

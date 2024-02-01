@@ -234,6 +234,7 @@ exports.getProviderExcel = async (req, reply) => {
 };
 
 exports.sendSupplierMS = async (req, reply) => {
+  const language = req.headers["accept-language"];
   let user = await Supplier.findById(req.params.id);
   if (!user) {
     const response = {
@@ -247,13 +248,17 @@ exports.sendSupplierMS = async (req, reply) => {
   let msg = req.body.msg;
 
   sendSMS(user.phone_number, "", "", msg);
-  const response = {
-    status_code: 200,
-    status: true,
-    message: "تم ارسال الرسالة بنجاح",
-    items: null,
-  };
-  reply.code(200).send(response);
+  reply
+  .code(200)
+  .send(
+    success(
+      language,
+      200,
+      MESSAGE_STRING_ARABIC.SUCCESS,
+      MESSAGE_STRING_ENGLISH.SUCCESS,
+      {}
+    )
+  );
 };
 
 exports.getSingleProviderAdmin = async (req, reply) => {
@@ -729,6 +734,7 @@ exports.block = async (req, reply) => {
 };
 
 exports.delete = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const user = await Supplier.findByIdAndUpdate(
       req.body._id,
@@ -738,13 +744,17 @@ exports.delete = async (req, reply) => {
       { new: true }
     );
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: user,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        user
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -889,6 +899,7 @@ exports.getSupervisorExcel = async (req, reply) => {
 };
 
 exports.sendSupervisorSMS = async (req, reply) => {
+  const language = req.headers["accept-language"];
   let user = await Supervisor.findById(req.params.id);
   if (!user) {
     const response = {
@@ -902,13 +913,17 @@ exports.sendSupervisorSMS = async (req, reply) => {
   let msg = req.body.msg;
 
   sendSMS(user.phone_number, "", "", msg);
-  const response = {
-    status_code: 200,
-    status: true,
-    message: "تم ارسال الرسالة بنجاح",
-    items: null,
-  };
-  reply.code(200).send(response);
+  reply
+  .code(200)
+  .send(
+    success(
+      language,
+      200,
+      MESSAGE_STRING_ARABIC.SUCCESS,
+      MESSAGE_STRING_ENGLISH.SUCCESS,
+      {}
+    )
+  );
 };
 
 exports.getSingleSupervisorAdmin = async (req, reply) => {
@@ -1323,6 +1338,7 @@ exports.addSupervisor = async (req, reply) => {
 };
 
 exports.blockSupervisor = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const user = await Supervisor.findByIdAndUpdate(
       req.body._id,
@@ -1364,19 +1380,23 @@ exports.blockSupervisor = async (req, reply) => {
     //   }
     // }
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: user,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
 };
 
 exports.deleteSupervisor = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const user = await Supervisor.findByIdAndUpdate(
       req.body._id,
@@ -1386,13 +1406,17 @@ exports.deleteSupervisor = async (req, reply) => {
       { new: true }
     );
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: user,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        user
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }

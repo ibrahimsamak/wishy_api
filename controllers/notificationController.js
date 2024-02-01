@@ -210,6 +210,7 @@ exports.getTop10AdminNotification = async (req, reply) => {
 };
 
 exports.addMassNotification = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     var arr = [];
     if (String(req.body.type) == "1") {
@@ -292,20 +293,24 @@ exports.addMassNotification = async (req, reply) => {
       CreateNotificationMultiple(arr, req.body.title, req.body.msg, "");
     }
 
-    const response = {
-      items: null,
-      status: true,
-      status_code: 200,
-      message: "تم ارسال التنبيه بنجاح",
-    };
-
-    reply.send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
 };
 
 exports.addSingleNotification = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     var doc = {};
     if (req.body.type == 1) {
@@ -329,14 +334,16 @@ exports.addSingleNotification = async (req, reply) => {
     );
     // await sendWhatsApp(doc.phone_number,"","",req.body.msg)
 
-    const response = {
-      items: null,
-      status: true,
-      status_code: 200,
-      message: "تم ارسال التنبيه بنجاح",
-    };
-
-    reply.send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,  
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }

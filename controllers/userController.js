@@ -1106,6 +1106,7 @@ exports.userslist = async (req, reply) => {
 };
 
 exports.block = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     const user = await Users.findByIdAndUpdate(
       req.body._id,
@@ -1115,13 +1116,17 @@ exports.block = async (req, reply) => {
       { new: true }
     );
 
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: user,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        {}
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1144,15 +1149,20 @@ exports.getAllUsers = async (req, reply) => {
 };
 
 exports.deleteUser = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
     await Users.findByIdAndRemove(req.params.id);
-    const response = {
-      status_code: 200,
-      status: true,
-      message: "تمت العملية بنجاح",
-      items: null,
-    };
-    reply.code(200).send(response);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        {}
+      )
+    );
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1660,6 +1670,7 @@ exports.getUserAddressAdmin = async (req, reply) => {
 };
 
 exports.sendUserSMS = async (req, reply) => {
+  const language = req.headers["accept-language"];
   let user = await Users.findById(req.params.id);
   if (!user) {
     const response = {
@@ -1673,13 +1684,17 @@ exports.sendUserSMS = async (req, reply) => {
   let msg = req.body.msg;
 
   sendSMS(user.phone_number, "", "", msg);
-  const response = {
-    status_code: 200,
-    status: true,
-    message: "تم ارسال الرسالة بنجاح",
-    items: null,
-  };
-  reply.code(200).send(response);
+  reply
+  .code(200)
+  .send(
+    success(
+      language,
+      200,
+      MESSAGE_STRING_ARABIC.SUCCESS,
+      MESSAGE_STRING_ENGLISH.SUCCESS,
+      {}
+    )
+  );
 };
 
 exports.getSingleUsersAdmin = async (req, reply) => {
