@@ -29,7 +29,7 @@ const {
 } = require("../models/Constant");
 const { Users } = require("../models/User");
 const { employee } = require("../models/Employee");
-const { Place_Delivery, Supplier, Category, SubCategory } = require("../models/Product");
+const { Place_Delivery, Supplier, Category, SubCategory, Product_Price } = require("../models/Product");
 const { mail_general } = require("../utils/utils");
 
 const { success, errorAPI } = require("../utils/responseApi");
@@ -544,11 +544,13 @@ exports.getPlacesAdmin = async (req, reply) => {
 
     var arr = [];
     const language = req.headers["accept-language"];
-    const total = await place
-      .find({ $and: [{ isDeleted: false }, { city_id: req.params.id }] })
-      .countDocuments();
+    var q = { $and: [{ isDeleted: false }] }
+    if(req.params.id && req.params.id != ""){
+      q.$and.push({ city_id: req.params.id })
+    }
+    const total = await place.countDocuments(q)
     const cities = await place
-      .find({ $and: [{ isDeleted: false }, { city_id: req.params.id }] })
+      .find(q)
       .populate("city_id")
       .sort({ _id: -1 })
       .skip(page * limit)
@@ -1580,6 +1582,35 @@ exports.deletePlace = async (req, reply) => {
         }
       }
     );
+    const _place_delivery = await Place_Delivery.findOneAndUpdate({place_id: req.params.id},{ isDeleted: true },{ new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+    const _product_price = await Product_Price.findOneAndUpdate({place_id: req.params.id},{ isDeleted: true },{ new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+    
     reply
     .code(200)
     .send(
@@ -3659,7 +3690,11 @@ exports.getSubCategory = async (req, reply) => {
   try {
     var arr = [];
     const language = req.headers["accept-language"];
-    const _Category = await SubCategory.find({ $and:[{isDeleted: false}, {category_id: req.params.id}] })
+    var q = {$and:[{isDeleted: false}] }
+    if(req.params.id && req.params.id != ""){
+      q.$and.push({category_id: req.params.id})
+    }
+    const _Category = await SubCategory.find(q)
     .populate("category_id")
     .sort({_id: -1});
 

@@ -1296,12 +1296,15 @@ exports.getSupplierPlaceAdmin = async (req, reply) => {
 
     var arr = [];
     const language = req.headers["accept-language"];
-    const total = await Place_Delivery.find({
-      $and: [{ place_id: req.body.place_id }, { city_id: req.body.city_id },{isDeleted:false}],
-    }).countDocuments();
-    const cities = await Place_Delivery.find({
-      $and: [{ place_id: req.body.place_id }, { city_id: req.body.city_id },{isDeleted:false}],
-    })
+    var q = {$and: [{isDeleted:false}]}
+    if(req.body.place_id && req.body.place_id != ""){
+      q.$and.push({ place_id: req.body.place_id })
+    }
+    if(req.body.city_id && req.body.city_id != ""){
+      q.$and.push({ city_id: req.body.city_id })
+    }
+    const total = await Place_Delivery.countDocuments(q);
+    const cities = await Place_Delivery.find(q)
       .populate("supplier_id")
       .populate("place_id")
       .populate("city_id")

@@ -542,17 +542,20 @@ exports.updateOrder = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
       var msg = ""
+      var msg2= ""
       let userId = req.user._id
       const check = await Order.findById(req.params.id).populate("user")
       const tax = await setting.findOne({ code: "TAX" });
       var msg_started = `الفني في الطريق اليك الطلب بنجاح`;
       var msg_progress = `تم البدء في تنفيذ الطلب بنجاح`;
       var msg_accpet = `تم قبول طلبكم بنجاح وسوف يتم التنفيذ في اقرب وقت ممكن`;
+      var msg_accpet2 = `تم تعينك لتقديم خدمة`;
       var msg_updated = `تم التعديل على الطلب من قبل الفني يرجى تأكيد العملية`;
       var msg_prefinished = `تم تنفيذ الخدمة من قبل العميل يرجى تأكيد العملية`;
       var msg_finished = `تم الانتهاء من تنفيذ الطلب بنجاح`;
-      var msg_canceled_by_driver = `تم الالغاء من قبل السائق`;
+      var msg_canceled_by_driver = `تم الالغاء من قبل الفني`;
       var msg_canceled_by_user = `تم الغاء الطلب من قبل الزبون`;
+      var msg_canceled_by_admin = `تم الغاء الطلب من قبل الادارة`;
       
       if(req.body.status == ORDER_STATUS.progress) {
         msg = msg_progress;
@@ -564,6 +567,7 @@ exports.updateOrder = async (req, reply) => {
       }
       if(req.body.status == ORDER_STATUS.accpeted) {
         msg = msg_accpet;
+        msg2 = msg_accpet2;
         var emp = await employee.findById(req.body.employee);
         await Order.findByIdAndUpdate(
           req.params.id,
@@ -576,7 +580,7 @@ exports.updateOrder = async (req, reply) => {
           { new: true }
         )
         if(emp){
-          await CreateGeneralNotification(emp.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.user.fcmToken, check.user._id, "", "");
+          await CreateGeneralNotification(emp.fcmToken, NOTIFICATION_TITILES.ORDERS, msg2, NOTIFICATION_TYPE.ORDERS, check._id, check.user.fcmToken, check.user._id, "", "");
         }
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
       }
@@ -609,6 +613,10 @@ exports.updateOrder = async (req, reply) => {
       }     
       if(req.body.status == ORDER_STATUS.canceled_by_driver && check.status != ORDER_STATUS.prefinished && check.status != ORDER_STATUS.finished && check.status != ORDER_STATUS.rated){
         msg = msg_canceled_by_driver;
+        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+      }
+      if(req.body.status == ORDER_STATUS.canceled_by_admin && check.status != ORDER_STATUS.prefinished && check.status != ORDER_STATUS.finished && check.status != ORDER_STATUS.rated){
+        msg = msg_canceled_by_admin;
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
       }
       if(req.body.status == ORDER_STATUS.canceled_by_user){
