@@ -61,14 +61,14 @@ exports.decryptPasswordfunction = function (password) {
 
 exports.mail_reset_password = function (req, to, sub, text, data) {
   try {
-    email = "info@khawi.app";
+    email = "info@jazapp.online";
     psw = "Ha@1020300";
     var transporter = nodemailer.createTransport({
-      host: "khawi.app",
+      host: "",
       port: 465,
       secure: true,
       auth: {
-        user: "info@khawi.app",
+        user: "info@jazapp.online",
         pass: "Ha@1020300",
       },
     });
@@ -91,7 +91,7 @@ exports.mail_reset_password = function (req, to, sub, text, data) {
         htmls = htmls.replace(/&#34;/g, '"');
 
         var mailOptions = {
-          from: '"خوي" <' + email + ">",
+          from: '"منصة جاز" <' + email + ">",
           to: to,
           subject: sub,
           text: text,
@@ -116,14 +116,14 @@ exports.mail_reset_password = function (req, to, sub, text, data) {
 
 exports.mail_welcome = function (req, to, sub, text, data) {
   try {
-    email = "info@khawi.app";
+    email = "info@jazapp.online";
     psw = "Ha@1020300";
     var transporter = nodemailer.createTransport({
-      host: "khawi.app",
+      host: "",
       port: 465,
       secure: true,
       auth: {
-        user: "info@khawi.app",
+        user: "info@jazapp.online",
         pass: "Ha@1020300",
       },
     });
@@ -147,7 +147,7 @@ exports.mail_welcome = function (req, to, sub, text, data) {
         htmls = htmls.replace(/&#34;/g, '"');
 
         var mailOptions = {
-          from: '"خوي" <' + email + ">",
+          from: '"منصة جاز" <' + email + ">",
           to: to,
           subject: sub,
           text: text,
@@ -175,7 +175,7 @@ exports.mail_general = function (req, to, sub, text, data) {
     email = "info@jazapp.online";
     psw = "Ha@1020300";
     var transporter = nodemailer.createTransport({
-      host: "jazapp.online",
+      host: "smtp.hostinger.com",
       port: 465,
       secure: true,
       auth: {
@@ -202,7 +202,7 @@ exports.mail_general = function (req, to, sub, text, data) {
         htmls = htmls.replace(/&#34;/g, '"');
 
         var mailOptions = {
-          from: '"خوي" <' + email + ">",
+          from: '"منصة جاز" <' + email + ">",
           to: to,
           subject: sub,
           text: text,

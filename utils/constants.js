@@ -97,7 +97,7 @@ exports.MESSAGE_STRING_ENGLISH = {
   WALLET: "There is no enough balance in your wallet",
   NOCAR: "Sorry...please add a car so you can add an offer.",
   
-  WELCOME: "Welcome to Khawi your verification code is: ",
+  WELCOME: "Welcome to Jaz App your verification code is: ",
   INVALID_TOKEN: "Invalid token",
   INVALID_TOKEN2: "Invalid token",
   ACCESS_DENIED: "Access denied. No token provided.",
@@ -172,7 +172,7 @@ exports.MESSAGE_STRING_ENGLISH = {
 exports.MESSAGE_STRING_ARABIC = {
   DELETED: "تم الحذف بنجاح",
   SUCCESS: "تمت العملية بنجاح",
-  SUCCESSNEW: "شكرا لكم لاستخدام تطبيق خوي \n تم استقبال طلبكم بنجاح",
+  SUCCESSNEW: "شكرا لكم لاستخدام تطبيق منصة جاز \n تم استقبال طلبكم بنجاح",
   ERROR: "عذرا .. حدث خطأ ما الرجاء المحاولة في وقت لاحق",
   WARNING: "عذرا .. موقعك الحالي غير مغظى",
   EXIT: " هذا العنصر موجود لدينا مسبقا",

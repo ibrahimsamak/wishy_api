@@ -232,7 +232,7 @@ exports.addUsers = async (req, reply) => {
           },
           { new: true }
         );
-        let msg = "مرحبا بكم في تطبيق خوي رمز التفعيل هو: " + verify_code;
+        let msg = "مرحبا بكم في تطبيق منصة جاز رمز التفعيل هو: " + verify_code;
         console.log(req.body.phone_number)
         sendSMS(req.body.phone_number, "", "", msg);
 
@@ -288,7 +288,7 @@ exports.addUsers = async (req, reply) => {
         address: req.body.address,
       });
       let rs = await user.save();
-      let msg = "مرحبا بكم في تطبيق خوي رمز التفعيل هو: " + verify_code;
+      let msg = "مرحبا بكم في تطبيق منصة جاز رمز التفعيل هو: " + verify_code;
       console.log(req.body.phone_number)
       sendSMS(req.body.phone_number, "", "", msg);
       
