@@ -217,6 +217,7 @@ exports.addcoupon = async (req, reply) => {
       days: days,
       discount_rate: req.body.discount_rate,
       isActive: true,
+      description: req.body.description
     });
     var _return = handleError(_coupon.validateSync());
     if (_return.length > 0) {
@@ -327,6 +328,7 @@ exports.updatecoupon = async (req, reply) => {
         dt_to: moment(req.body.dt_to).tz("Asia/Riyadh").endOf("day"),
         discount_rate: req.body.discount_rate,
         days: days,
+        description: req.body.description
       },
       { new: true, runValidators: true },
       function (err, model) {

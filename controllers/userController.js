@@ -64,11 +64,17 @@ exports.getUsers = async (req, reply) => {
     var limit = parseFloat(req.query.limit, 10);
     let search_field = req.body.search_field;
     let search_value = req.body.search_value;
+    let user_type = req.body.user_type;
 
-    let query1 = {};
-    query1[search_field] = { $regex: new RegExp(search_value, "i") };
-
-    console.log('xxxxxxxx')
+    let query1 = {$and:[{search_field: { $regex: new RegExp(search_value, "i") }}]};
+    if(user_type == "delete"){
+      query1.$and.push({isBlock:true})
+    }
+    if(user_type == "active"){
+      query1.$and.push({isBlock:false})
+    }
+    // query1[search_field] = { $regex: new RegExp(search_value, "i") };
+    console.log(query1)
     const total = await Users.find(query1).countDocuments();
     const item = await Users.find(query1)
       .populate("city_id")
@@ -105,10 +111,19 @@ exports.getUsersExcel = async (req, reply) => {
 
     let search_field = req.body.search_field;
     let search_value = req.body.search_value;
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+    let user_type = req.body.user_type;
 
     let query1 = {};
+    if(user_type == "delete"){
+      query1['isBlock'] = true
+    }
+    if(user_type == "active"){
+      query1['isBlock'] = false
+    }
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
-
+    console.log(query1)
     const total = await Users.find(query1).countDocuments();
     const item = await Users.find(query1).populate("city_id");
     console.log(item);
@@ -1578,9 +1593,17 @@ exports.getUsers = async (req, reply) => {
     var limit = parseFloat(req.query.limit, 10);
     let search_field = req.body.search_field;
     let search_value = req.body.search_value;
+    let user_type = req.body.user_type;
 
     let query1 = {};
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
+
+    if(user_type == "delete"){
+      query1['isBlock'] = true
+    }
+    if(user_type == "active"){
+      query1['isBlock'] = false
+    }
 
     const total = await Users.find(query1).countDocuments();
     const item = await Users.find(query1)
@@ -1621,9 +1644,17 @@ exports.getUsersExcel = async (req, reply) => {
     let search_field = req.body.search_field;
     let search_value = req.body.search_value;
 
+    let user_type = req.body.user_type;
+
     let query1 = {};
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
 
+    if(user_type == "delete"){
+      query1['isBlock'] = true
+    }
+    if(user_type == "active"){
+      query1['isBlock'] = false
+    }
     const item = await Users.find(query1)
       .populate("city_id")
       .populate("country_id")

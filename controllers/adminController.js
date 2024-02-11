@@ -245,7 +245,7 @@ exports.login = async (req, reply) => {
       );
 
       let newUser = ـuser.toObject();
-      newUser.expire = moment(new Date()).add(120, "days").toDate();
+      newUser.expire = moment(new Date()).add(1, "hours").toDate();
       newUser.type = ACTORS.ADMIN;
 
       reply

@@ -2,6 +2,9 @@ const mongoose = require("mongoose");
 
 const Couponchema = mongoose.Schema(
   {
+    description: {
+      type: String,
+    },
     coupon: {
       type: String,
       required: [true, "Coupon is required"],

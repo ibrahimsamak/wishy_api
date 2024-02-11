@@ -139,23 +139,24 @@ exports.getAdminNotification = async (req, reply) => {
 
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
-    var query = {};
+    var query = {$and:[{fromName: USER_TYPE.PANEL}]};
     if (
       req.body.dt_from &&
       req.body.dt_from != "" &&
       req.body.dt_to &&
       req.body.dt_to != ""
     ) {
-      query = {
+      query.$and.push({
         dt_date: {
           $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)),
           $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)),
         },
-      };
+      });
     }
-    if (req.user.userType == USER_TYPE.ADMIN)
-      query["user_id"] = USER_TYPE.PANEL;
-    if (req.user.userType != USER_TYPE.ADMIN) query["user_id"] = req.user._id;
+    // if (req.user.userType == USER_TYPE.ADMIN)
+    //   query["user_id"] = USER_TYPE.PANEL;
+    // if (req.user.userType != USER_TYPE.ADMIN) query["user_id"] = req.user._id;
+    console.log(query)
     const total = await Notifications.find(query).countDocuments();
     const _Notification = await Notifications.find(query)
       .sort({ dt_date: -1 })
@@ -175,6 +176,40 @@ exports.getAdminNotification = async (req, reply) => {
           totalPages: Math.floor(total / limit),
           pageNumber: page,
         }
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getAdminExcelNotification = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+
+    var query = {$and:[{fromName: USER_TYPE.PANEL}]};
+    if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query.$and.push({
+        dt_date: {
+          $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)),
+          $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)),
+        },
+      });
+    }
+    const _Notification = await Notifications.find(query).sort({ dt_date: -1 })
+
+    reply.code(200).send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _Notification
       )
     );
   } catch (err) {

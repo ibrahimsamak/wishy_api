@@ -2377,13 +2377,26 @@ exports.getUserOrders = async (req, reply) => {
 
 exports.getProivdeOrders = async (req, reply) => {
   const language = req.headers["accept-language"];
-  try {
+  // try {
     let userId = req.params.id;
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
 
-    const total = await Order.find({ provider: userId }).countDocuments();
-    const item = await Order.find({ provider: userId })
+    var q = {$and:[{provider: userId}]}
+    console.log(req.query.status)
+    if(req.query.status && req.query.status != ""){
+      if(req.query.status == ORDER_STATUS.finished){
+        q.$and.push({status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}})
+      }
+      else if(req.query.status == 'canceled' ){
+        q.$and.push({status: {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}})
+      }
+      else{
+        q.$and.push({status:req.query.status})
+      }
+    }
+    const total = await Order.find(q).countDocuments();
+    const item = await Order.find(q)
       .sort({ _id: -1 })
       .populate("user", "-token")
       .populate({ path: "extra", populate: { path: "subcategory" } })
@@ -2412,10 +2425,10 @@ exports.getProivdeOrders = async (req, reply) => {
       )
     );
     return;
-  } catch (err) {
-    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
-    return;
-  }
+  // } catch (err) {
+  //   reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+  //   return;
+  // }
 };
 
 exports.getSupervisorOrders = async (req, reply) => {

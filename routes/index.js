@@ -338,6 +338,12 @@ const admin_routes = [
     handler: notificationController.getAdminNotification,
   },
   {
+    method: "POST",
+    url: "/api/admin/excel-notification",
+    beforeHandler: [auth.getAdminToken],
+    handler: notificationController.getAdminExcelNotification,
+  },
+  {
     method: "GET",
     url: "/api/admin/top_notification",
     beforeHandler: [auth.getAdminToken],
