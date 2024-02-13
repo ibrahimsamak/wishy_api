@@ -576,8 +576,15 @@ exports.getEmployees = async (req, reply) => {
     var limit = parseFloat(req.query.limit, 10);
     let search_field = req.body.search_field;
     let search_value = req.body.search_value;
+    let user_type = req.body.user_type;
 
     let query1 = {};
+    if(user_type == "delete"){
+      query1['isDeleted'] = true
+    }
+    if(user_type == "active"){
+      query1['isDeleted'] = false
+    }
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
     query1["isDeleted"] = false
     if(req.user.userType == ACTORS.STORE){
@@ -624,9 +631,15 @@ exports.getEmployeesExcel = async (req, reply) => {
   try {
     let search_field = req.body.search_field;
     let search_value = req.body.search_value;
-
+    let user_type = req.body.user_type;
     let query1 = {};
-    query1["isDeleted"] = false
+    if(user_type == "delete"){
+      query1['isDeleted'] = true
+    }
+    if(user_type == "active"){
+      query1['isDeleted'] = false
+    }
+    // query1["isDeleted"] = false
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
     if(req.user.userType == ACTORS.STORE){
       query1["supplier_id"] = req.user._id

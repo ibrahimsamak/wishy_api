@@ -37,7 +37,13 @@ exports.getTop10Orders = async (req, reply) => {
     console.log(query)
     const item = await Order.find(query)
       .populate("user", "-token")
-      .populate({ path: "offers.user", populate: { path: "user" } })
+      .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("supervisor", "-token")
+      .populate("provider")
+      .populate("sub_category_id")
+      .populate("category_id")
+      .populate("address")
       .limit(10)
       .sort({ _id: -1 });
     const response = {
@@ -60,6 +66,8 @@ exports.getCounterOrdersWithStatus = async (req, reply) => {
       const DoneOrder = await Order.countDocuments({ $or:[{status: ORDER_STATUS.prefinished }, {status: ORDER_STATUS.finished }, {status: ORDER_STATUS.rated }]})
       const CancelOrder = await Order.countDocuments({$or: [{ status: ORDER_STATUS.canceled_by_driver }, { status: ORDER_STATUS.canceled_by_admin }, { status: ORDER_STATUS.canceled_by_user }]})
       const AllOrder = await Order.countDocuments({});
+      const Accepted = await Order.countDocuments({ $and: [{ status: ORDER_STATUS.accpeted }],});
+      const Updated = await Order.countDocuments({ $and: [{ status: ORDER_STATUS.updated }],});
 
       const response = {
         status_code: 200,
@@ -70,6 +78,8 @@ exports.getCounterOrdersWithStatus = async (req, reply) => {
         DoneOrder: DoneOrder,
         CancelOrder: CancelOrder,
         AllOrder: AllOrder,
+        Accepted: Accepted,
+        Updated: Updated,
       };
       reply.send(response);
     }
@@ -80,6 +90,8 @@ exports.getCounterOrdersWithStatus = async (req, reply) => {
       const DoneOrder = await Order.countDocuments({$and: [{$or: [{status: ORDER_STATUS.prefinished }, {status: ORDER_STATUS.finished }, {status: ORDER_STATUS.rated }]}, { provider: provider_id }]});
       const CancelOrder = await Order.countDocuments({$and: [{$or: [{status: ORDER_STATUS.canceled_by_admin }, {status: ORDER_STATUS.canceled_by_driver }, {status: ORDER_STATUS.canceled_by_user }]}, { provider: provider_id }]});
       const AllOrder = await Order.countDocuments({provider: provider_id});
+      const Accepted = await Order.countDocuments({ $and: [{ status: ORDER_STATUS.accpeted }, { provider: provider_id }],});
+      const Updated = await Order.countDocuments({ $and: [{ status: ORDER_STATUS.updated }, { provider: provider_id }],});
 
       const response = {
         status_code: 200,
@@ -90,6 +102,8 @@ exports.getCounterOrdersWithStatus = async (req, reply) => {
         DoneOrder: DoneOrder,
         CancelOrder: CancelOrder,
         AllOrder: AllOrder,
+        Accepted: Accepted,
+        Updated: Updated,
       };
       reply.send(response);
     }

@@ -884,8 +884,10 @@ exports.getSupervisorExcel = async (req, reply) => {
       query1["supplier_id"] = req.user._id
     }
     const item = await Supervisor.find(query1)
-      .populate("provider")
-      .sort({ _id: -1 });
+    .populate("city_id")
+    .populate("place_id")
+    .populate("supplier_id")
+    .sort({ _id: -1 });
     const response = {
       status_code: 200,
       status: true,
