@@ -36,7 +36,7 @@ const {
   ACTORS,
   ORDER_STATUS,
 } = require("../utils/constants");
-const { times } = require("../models/Constant");
+const { times, getCurrentDateTime } = require("../models/Constant");
 
 ///////////Admin//////////
 exports.addTime = async (req, reply) => {
@@ -177,6 +177,15 @@ exports.getSupplier = async (req, reply) => {
     let query1 = {};
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
     query1["isDeleted"] = false
+    if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query1["createAt"]= { $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)), $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)) }
+    }
+
     const total = await Supplier.find(query1).countDocuments();
     const item = await Supplier.find(query1)
       .populate("cities")
@@ -218,6 +227,15 @@ exports.getProviderExcel = async (req, reply) => {
     let query1 = {};
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
     query1["isDeleted"]=false
+    if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query1["createAt"]= { $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)), $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)) }
+    }
+    
     const item = await Supplier.find(query1)
       .populate("cities")
       .sort({ _id: -1 });
@@ -633,7 +651,9 @@ exports.addProvider = async (req, reply) => {
         rate: 0,
         details: req.raw.body.details,
         roles: JSON.parse(req.raw.body.roles),
-        target: req.raw.body.target
+        target: req.raw.body.target,
+        createAt: getCurrentDateTime(),
+
       });
       var _return = handleError(_newUser.validateSync());
       if (_return.length > 0) {
@@ -837,7 +857,14 @@ exports.getSupervisor = async (req, reply) => {
     if(req.user.userType == ACTORS.STORE){
       query1["supplier_id"] = req.user._id
     }
-
+    if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query1["createAt"]= { $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)), $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)) }
+    }
     const total = await Supervisor.find(query1).countDocuments();
     const item = await Supervisor.find(query1)
       .populate("provider")
@@ -882,6 +909,14 @@ exports.getSupervisorExcel = async (req, reply) => {
     query1["isDeleted"]=false
     if(req.user.userType == ACTORS.STORE){
       query1["supplier_id"] = req.user._id
+    }
+    if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query1["createAt"]= { $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)), $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)) }
     }
     const item = await Supervisor.find(query1)
     .populate("city_id")
@@ -1105,6 +1140,7 @@ exports.updateSupervisor = async (req, reply) => {
             supplier_id: req.raw.body.supplier_id,
             place_id: req.raw.body.place_id,
             city_id: req.raw.body.city_id,
+            createAt: getCurrentDateTime(),
           },
           { new: true, runValidators: true },
           function (err, model) {

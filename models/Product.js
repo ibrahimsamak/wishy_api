@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { number, date, boolean } = require("@hapi/joi");
+const { getCurrentDateTime } = require("../models/Constant");
 
 const Productschema = mongoose.Schema(
   {
@@ -120,6 +121,9 @@ const Supplierschema = mongoose.Schema({
   isBlock: {
     type: Boolean,
   },
+  createAt:{
+    type: Date
+  },
   orderPercentage: { type: Number },
   target : {type: Number},
   cities: [{ type: mongoose.Schema.Types.ObjectId, ref: "city"}],
@@ -159,6 +163,10 @@ const SupervisorSchema = mongoose.Schema({
   rate: {
     type: Number,
     default:0
+  },
+  createAt: {
+    type: Date,
+    default: getCurrentDateTime(),
   },
   supplier_id: { type: mongoose.Schema.Types.ObjectId, ref: "supplier",required: [true, "supplier is required"]},
   place_id: { type: mongoose.Schema.Types.ObjectId, ref: "place", required: [true, "place is required"], },

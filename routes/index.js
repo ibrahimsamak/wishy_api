@@ -437,6 +437,12 @@ const admin_routes = [
     beforeHandler: [auth.getAdminToken],
     handler: orderController.getUserOrders,
   },
+  {
+    method: "GET",
+    url: "/api/users/orders-excel/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getUserOrdersExcel,
+  },
   //employee
   {
     method: "GET",
@@ -495,11 +501,22 @@ const admin_routes = [
   },
   {
     method: "GET",
+    url: "/api/employee/orders-excel/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getEmployeesOrderExcel,
+  },
+  {
+    method: "GET",
     url: "/api/supervisor/orders/:id",
     beforeHandler: [auth.getAdminToken],
     handler: orderController.getSupervisorOrders,
   },
-
+  {
+    method: "GET",
+    url: "/api/supervisor/orders-excel/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getSupervisorOrdersExcel,
+  },
   //providers
   {
     method: "GET",
@@ -584,6 +601,12 @@ const admin_routes = [
     url: "/api/providers/orders/:id",
     beforeHandler: [auth.getAdminToken],
     handler: orderController.getProivdeOrders,
+  },
+  {
+    method: "GET",
+    url: "/api/providers/orders-excel/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getProivdeOrdersExcel,
   },
   //supervisor
   {

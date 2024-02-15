@@ -74,7 +74,16 @@ exports.getUsers = async (req, reply) => {
       query1.$and.push({isBlock:false})
     }
     // query1[search_field] = { $regex: new RegExp(search_value, "i") };
-    console.log(query1)
+
+    if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query1["createAt"]= { $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)), $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)) }
+    }
+
     const total = await Users.find(query1).countDocuments();
     const item = await Users.find(query1)
       .populate("city_id")
@@ -123,7 +132,14 @@ exports.getUsersExcel = async (req, reply) => {
       query1['isBlock'] = false
     }
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
-    console.log(query1)
+    if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query1["createAt"]= { $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)), $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)) }
+    }
     const total = await Users.find(query1).countDocuments();
     const item = await Users.find(query1).populate("city_id");
     console.log(item);
@@ -1604,7 +1620,14 @@ exports.getUsers = async (req, reply) => {
     if(user_type == "active"){
       query1['isBlock'] = false
     }
-
+  if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query1["createAt"]= { $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)), $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)) }
+    }
     const total = await Users.find(query1).countDocuments();
     const item = await Users.find(query1)
       .skip(page * limit)
@@ -1654,6 +1677,14 @@ exports.getUsersExcel = async (req, reply) => {
     }
     if(user_type == "active"){
       query1['isBlock'] = false
+    }
+    if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query1["createAt"]= { $gte: new Date(new Date(req.body.dt_from).setHours(0, 0, 0)), $lt: new Date(new Date(req.body.dt_to).setHours(23, 59, 59)) }
     }
     const item = await Users.find(query1)
       .populate("city_id")

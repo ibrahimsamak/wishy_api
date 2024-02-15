@@ -580,10 +580,10 @@ exports.getEmployees = async (req, reply) => {
 
     let query1 = {};
     if(user_type == "delete"){
-      query1['isDeleted'] = true
+      query1['isBlock'] = true
     }
     if(user_type == "active"){
-      query1['isDeleted'] = false
+      query1['isBlock'] = false
     }
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
     query1["isDeleted"] = false
@@ -1128,7 +1128,7 @@ exports.block = async (req, reply) => {
       req.body._id,
       {
         isBlock: req.body.isBlock,
-        isDeleted: true
+        // isDeleted: true
       },
       { new: true }
     );
