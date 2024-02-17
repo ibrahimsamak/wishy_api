@@ -2626,13 +2626,7 @@ exports.getSupervisorOrdersExcel = async (req, reply) => {
         200,
         MESSAGE_STRING_ARABIC.SUCCESS,
         MESSAGE_STRING_ENGLISH.SUCCESS,
-        item,
-        {
-          size: item.length,
-          totalElements: total,
-          totalPages: Math.floor(total / limit),
-          pageNumber: page,
-        }
+        item
       )
     );
     return;
