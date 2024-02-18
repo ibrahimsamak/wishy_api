@@ -1771,7 +1771,7 @@ exports.getEmployeeOrder = async (req, reply) => {
       }
     }
     if (req.body.order_no && req.body.order_no != "")
-      query["order_no"] = req.body.order_no;
+      query["order_no"] = { $regex: new RegExp(req.body.order_no, "i") };
 
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
