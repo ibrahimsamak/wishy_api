@@ -12,6 +12,8 @@ const {
   encryptPassword,
   decryptPasswordfunction,
   handleError,
+  makeid,
+  sendSMS,
 } = require("../utils/utils");
 const { success, errorAPI } = require("../utils/responseApi");
 const {
@@ -202,6 +204,144 @@ exports.updateMyProfile = async (req, reply) => {
 };
 
 //login
+
+exports.resetAdmin = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const _password = makeid(6)
+    var msg = `تم اعادة ضبط كلمة المرور الخاصة بكم وهي: ${_password}`;
+    const pass = encryptPassword(_password);
+    const Admins = await Admin.findOne({
+      $and: [
+        { phone_number: String(req.body.email).toLowerCase() }
+      ],
+    });
+
+    const _providers = await Supplier.findOne({
+      $and: [
+        { phone_number: String(req.body.email).toLowerCase() },
+        { isDeleted:false }
+      ],
+    });
+
+    const _supervisor = await Supervisor.findOne({
+      $and: [
+        { phone_number: String(req.body.email).toLowerCase() },
+        { isDeleted:false }
+      ],
+    });
+
+    if (Admins) {
+      const ـuser = await Admin.findByIdAndUpdate(
+        Admins._id,
+        {
+          password: pass,
+        },
+        { new: true }
+      );
+
+      sendSMS(req.body.email, "", "", msg)
+      reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.SUCCESS,
+            MESSAGE_STRING_ENGLISH.SUCCESS,
+            {}
+          )
+        );
+      return;
+    } else if (_providers) {
+      if (_providers.isBlock == true) {
+        reply
+          .code(200)
+          .send(
+            errorAPI(
+              language,
+              400,
+              MESSAGE_STRING_ARABIC.USER_BLOCK,
+              MESSAGE_STRING_ENGLISH.USER_BLOCK
+            )
+          );
+        return;
+      } else {
+        const ـuser = await Supplier.findByIdAndUpdate(
+          _providers._id,
+          {
+            password: pass,
+          },
+          { new: true }
+        );
+        sendSMS(req.body.email, "", "", msg)
+        reply
+          .code(200)
+          .send(
+            success(
+              language,
+              200,
+              MESSAGE_STRING_ARABIC.SUCCESS,
+              MESSAGE_STRING_ENGLISH.SUCCESS,
+              {}
+            )
+          );
+        return;
+      }
+    } else if (_supervisor) {
+      if (_supervisor.isBlock == true) {
+        reply
+          .code(200)
+          .send(
+            errorAPI(
+              language,
+              400,
+              MESSAGE_STRING_ARABIC.USER_BLOCK,
+              MESSAGE_STRING_ENGLISH.USER_BLOCK
+            )
+          );
+        return;
+      } else {
+        const ـuser = await Supervisor.findByIdAndUpdate(
+          _supervisor._id,
+          {
+            password: pass,
+          },
+          { new: true }
+        );
+        sendSMS(req.body.email, "", "", msg)
+        reply
+          .code(200)
+          .send(
+            success(
+              language,
+              200,
+              MESSAGE_STRING_ARABIC.SUCCESS,
+              MESSAGE_STRING_ENGLISH.SUCCESS,
+              { }
+            )
+          );
+        return;
+      }
+    }  
+    else {
+      reply
+        .code(200)
+        .send(
+          errorAPI(
+            language,
+            400,
+            MESSAGE_STRING_ARABIC.USER_PHONE_ERROR,
+            MESSAGE_STRING_ENGLISH.USER_PHONE_ERROR
+          )
+        );
+      return;
+    }
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 exports.login = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {

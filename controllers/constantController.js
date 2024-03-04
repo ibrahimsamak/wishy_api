@@ -26,6 +26,7 @@ const {
   times,
   getCurrentDateTime,
   currentDate,
+  special,
 } = require("../models/Constant");
 const { Users } = require("../models/User");
 const { employee } = require("../models/Employee");
@@ -432,6 +433,28 @@ exports.getCountry = async (req, reply) => {
   }
 };
 
+exports.getSpecial = async (req, reply) => {
+  try {
+    var arr = [];
+    const language = req.headers["accept-language"];
+    const _country = await special.find({ isDeleted: false });
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          _country
+        )
+      );
+    return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 exports.getCountryAdmin = async (req, reply) => {
   try {
     var arr = [];
@@ -738,6 +761,21 @@ exports.getSingleCity = async (req, reply) => {
 exports.getSingleCountry = async (req, reply) => {
   try {
     const _country = await country.findById(req.params.id).sort({ _id: -1 });
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      items: _country,
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getSingleSpecial = async (req, reply) => {
+  try {
+    const _country = await special.findById(req.params.id).sort({ _id: -1 });
     const response = {
       status_code: 200,
       status: true,
@@ -1280,6 +1318,42 @@ exports.addCountry = async (req, reply) => {
   }
 };
 
+
+exports.addSpecial = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    let _country = new special({
+      arName: req.body.arName,
+      enName: req.body.enName,
+      isDeleted: false,
+    });
+    var _return = handleError(_country.validateSync());
+    if (_return.length > 0) {
+      reply.code(200).send({
+        status_code: 400,
+        status: false,
+        message: _return[0],
+        items: _return,
+      });
+      return;
+    }
+    let rs = await _country.save();
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 exports.addCity = async (req, reply) => {
   try {
     const language = req.headers["accept-language"];
@@ -1465,6 +1539,45 @@ exports.updateCountry = async (req, reply) => {
   }
 };
 
+exports.updateSpecial = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    const _country = await special.findByIdAndUpdate(
+      req.params.id,
+      {
+        arName: req.body.arName,
+        enName: req.body.enName,
+      },
+      { new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        {}
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 exports.updateCity = async (req, reply) => {
   try {
     const language = req.headers["accept-language"];
@@ -1512,6 +1625,42 @@ exports.deleteCountry = async (req, reply) => {
     const language = req.headers["accept-language"];
     const previousCountry = await country.findById(req.params.id);
     const _country = await country.findByIdAndUpdate(
+      req.params.id,
+      { isDeleted: !previousCountry.isDeleted },
+      { new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.deleteSpecial = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    const previousCountry = await special.findById(req.params.id);
+    const _country = await special.findByIdAndUpdate(
       req.params.id,
       { isDeleted: !previousCountry.isDeleted },
       { new: true, runValidators: true },

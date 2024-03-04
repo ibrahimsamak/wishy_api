@@ -587,12 +587,16 @@ exports.getEmployees = async (req, reply) => {
     }
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
     query1["isDeleted"] = false
+    if(req.body.special_id && req.body.special_id != ""){
+      query1["special_id"] = req.body.special_id
+    }
     if(req.user.userType == ACTORS.STORE){
       query1["provider"] = req.user._id
     }
     if(req.user.userType == ACTORS.SUPERVISOR){
       query1["supervisor"] = req.user._id
     }
+    
     const total = await employee.find(query1).countDocuments();
     const item = await employee
       .find(query1)
@@ -641,6 +645,9 @@ exports.getEmployeesExcel = async (req, reply) => {
     }
     // query1["isDeleted"] = false
     query1[search_field] = { $regex: new RegExp(search_value, "i") };
+    if(req.body.special_id && req.body.special_id != ""){
+      query1["special_id"] = req.body.special_id
+    }
     if(req.user.userType == ACTORS.STORE){
       query1["supplier_id"] = req.user._id
     }
@@ -855,7 +862,9 @@ exports.updateEmploye = async (req, reply) => {
               full_name: req.raw.body.full_name,
               supervisor_id: req.raw.body.supervisor_id,
               password: encryptPassword(req.raw.body.password),
-              supplier_id: supervisor ? supervisor.supplier_id : null
+              supplier_id: supervisor ? supervisor.supplier_id : null,
+              special_id: req.raw.body.special_id,
+              
             },
             { new: true, runValidators: true },
             function (err, model) {
@@ -902,7 +911,8 @@ exports.updateEmploye = async (req, reply) => {
               full_name: req.raw.body.full_name,
               supervisor_id: req.raw.body.supervisor_id,
               password: encryptPassword(req.raw.body.password),
-              supplier_id: supervisor ? supervisor.supplier_id : null
+              supplier_id: supervisor ? supervisor.supplier_id : null,
+              special_id: req.raw.body.special_id
             },
             { new: true, runValidators: true },
             function (err, model) {
@@ -1065,6 +1075,7 @@ exports.addEmployee = async (req, reply) => {
         supervisor_id: req.raw.body.supervisor_id,
         address: req.raw.body.address,
         supplier_id: supervisor ? supervisor.supplier_id : null,
+        special_id: req.raw.body.special_id,
         lat: 0.0,
         lng: 0.0,
         licenseNo: "",

@@ -33,7 +33,7 @@ const PAYMENT_TYPE = Object.freeze({
 const USER_TYPE = Object.freeze({
   USER: "user",
   DRIVER: "driver",
-  ADMIN: "admin",
+  ADMIN: "ADMIN",
   GUEST: "guest",
   PANEL: "Panel",
 });
@@ -59,6 +59,7 @@ const ACTORS = Object.freeze({
 const ORDER_STATUS = Object.freeze({
   new: "new",
   accpeted: "accepted",
+  way: "way",
   started: "started",
   progress: "progress",
   prefinished: "prefinished",
@@ -114,6 +115,8 @@ exports.MESSAGE_STRING_ENGLISH = {
 
   USER_LOGIN_FAILD: "Invalid phone number or password",
   USER_VERIFY_ERROR: "Invalid verify code",
+  USER_PHONE_ERROR:"Invalid Phone Number",
+
   USER_VERIFY_SUCCESS: "Verified successfully",
   USER_FORGET_PASSWORD_SUCCESS:
     "Password has been sent to e-mail successfully.",
@@ -201,6 +204,7 @@ exports.MESSAGE_STRING_ARABIC = {
   USER_EXSIT3: "رقم الجوال موجود لدينا مسبقا",
   USER_LOGIN_FAILD: "خطأ في رقم الجوال او كلمة المرور",
   USER_VERIFY_ERROR: "خطأ!! في رقم التفعيل",
+  USER_PHONE_ERROR: "خطأ!! في رقم الجوال",
   USER_VERIFY_SUCCESS: "تم التحقق بنجاح",
   USER_FORGET_PASSWORD_SUCCESS:
     "تم ارسال كلمة المرور الى البريد الالكتروني بنجاح",

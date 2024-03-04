@@ -2018,15 +2018,15 @@ exports.updateWallet = async (req, reply) => {
   try {
     var orderNo = `${makeOrderNumber(6)}`;
     const _user = await NewPayment(req.user._id, orderNo ,"شحن المحفظة الالكترونية", "+", req.body.amount, "Online" );
-    if(req.body.coupon && req.body.coupon != ""){
-      let usage = new coupon_usage({
-        coupon: req.body.coupon,
-        dt_date: getCurrentDateTime(),   
-        amount: Number(req.body.amount),
-        user: req.user._id
-      });
-      await usage.save()
-    }
+    // if(req.body.coupon && req.body.coupon != ""){
+    //   let usage = new coupon_usage({
+    //     coupon: req.body.coupon,
+    //     dt_date: getCurrentDateTime(),   
+    //     amount: Number(req.body.amount),
+    //     user: req.user._id
+    //   });
+    //   await usage.save()
+    // }
     reply
     .code(200)
     .send(

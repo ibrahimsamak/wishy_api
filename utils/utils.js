@@ -312,9 +312,8 @@ exports.CreateGeneralNotification = function (
       fromName: fromName,
       toName: toName,
     });
-
     let rs = _Notification.save();
-    console.log(rs)
+
     let postModel = {
       notification: {
         title: title,

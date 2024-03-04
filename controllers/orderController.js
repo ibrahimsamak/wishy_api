@@ -382,6 +382,20 @@ exports.addOffer = async (req, reply) => {
           userObj.full_name
         );
 
+        let _Notification = new Notifications({
+          fromId: userId,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: sp._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
+
         reply
         .code(200)
         .send(
@@ -432,6 +446,20 @@ exports.addOffer = async (req, reply) => {
           "",
           userObj.full_name
         );
+
+        let _Notification = new Notifications({
+          fromId: userId,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: sp._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
 
         reply
         .code(200)
@@ -521,6 +549,20 @@ exports.updateOffer = async (req, reply) => {
         ""
       );
   
+      let _Notification = new Notifications({
+        fromId: userId,
+        user_id: USER_TYPE.PANEL,
+        title: NOTIFICATION_TITILES.ORDERS,
+        msg: msg,
+        dt_date: getCurrentDateTime(),
+        type: NOTIFICATION_TYPE.ORDERS,
+        body_parms: sp._id,
+        isRead: false,
+        fromName: "",
+        toName: "",
+      });
+      let rs = _Notification.save();
+
       reply
       .code(200)
       .send(
@@ -548,6 +590,7 @@ exports.updateOrder = async (req, reply) => {
       const tax = await setting.findOne({ code: "TAX" });
       var msg_started = `الفني في الطريق اليك الطلب بنجاح`;
       var msg_progress = `تم البدء في تنفيذ الطلب بنجاح`;
+      var msg_way = `الفي في الطريق اليك`;
       var msg_accpet = `تم قبول طلبكم بنجاح وسوف يتم التنفيذ في اقرب وقت ممكن`;
       var msg_accpet2 = `تم تعينك لتقديم خدمة`;
       var msg_updated = `تم التعديل على الطلب من قبل الفني يرجى تأكيد العملية`;
@@ -560,10 +603,53 @@ exports.updateOrder = async (req, reply) => {
       if(req.body.status == ORDER_STATUS.progress) {
         msg = msg_progress;
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        let _Notification = new Notifications({
+          fromId: check.user._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
+      }
+      if(req.body.status == ORDER_STATUS.way) {
+        msg = msg_way;
+        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        let _Notification = new Notifications({
+          fromId: check.user._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
       }
       if(req.body.status == ORDER_STATUS.started) {
         msg = msg_started; 
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        let _Notification = new Notifications({
+          fromId: check.user._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
       }
       if(req.body.status == ORDER_STATUS.accpeted) {
         msg = msg_accpet;
@@ -583,6 +669,21 @@ exports.updateOrder = async (req, reply) => {
           await CreateGeneralNotification(emp.fcmToken, NOTIFICATION_TITILES.ORDERS, msg2, NOTIFICATION_TYPE.ORDERS, check._id, check.user.fcmToken, check.user._id, "", "");
         }
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+      
+        let _Notification = new Notifications({
+          fromId: check.user._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
+
       }
       if(req.body.status == ORDER_STATUS.updated) {
         var code = "1234"; // makeid(6)
@@ -598,6 +699,19 @@ exports.updateOrder = async (req, reply) => {
         new_total)+Number(check.total), netTotal: Number(new_total)+Number(check.total)},{ new: true })       
         await sendSMS(check.user.phone_number, "", "", msg)
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        let _Notification = new Notifications({
+          fromId: check.user._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
       }
       if(req.body.status == ORDER_STATUS.prefinished) {
         var code =  "1234";//makeid(6)
@@ -606,18 +720,70 @@ exports.updateOrder = async (req, reply) => {
         await Order.findByIdAndUpdate( req.params.id, { update_code: code},{ new: true })
         await sendSMS(check.user.phone_number, "", "", msg)
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        let _Notification = new Notifications({
+          fromId: check.user._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
       }
       if(req.body.status == ORDER_STATUS.finished) {
         msg = msg_finished;
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        let _Notification = new Notifications({
+          fromId: check.user._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
       }     
       if(req.body.status == ORDER_STATUS.canceled_by_driver && check.status != ORDER_STATUS.prefinished && check.status != ORDER_STATUS.finished && check.status != ORDER_STATUS.rated){
         msg = msg_canceled_by_driver;
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        let _Notification = new Notifications({
+          fromId: check.user._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
       }
       if(req.body.status == ORDER_STATUS.canceled_by_admin && check.status != ORDER_STATUS.prefinished && check.status != ORDER_STATUS.finished && check.status != ORDER_STATUS.rated){
         msg = msg_canceled_by_admin;
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        let _Notification = new Notifications({
+          fromId: check.user._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
       }
       if(req.body.status == ORDER_STATUS.canceled_by_user){
         msg = msg_canceled_by_user;
@@ -637,7 +803,22 @@ exports.updateOrder = async (req, reply) => {
         let emplployee = await employee.findById(check.employee)
         if(emplployee)
           await CreateGeneralNotification(emplployee.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.user._id, emplployee._id, "", "");
-      }
+    
+          let _Notification = new Notifications({
+            fromId: "",
+            user_id: USER_TYPE.PANEL,
+            title: NOTIFICATION_TITILES.ORDERS,
+            msg: msg,
+            dt_date: getCurrentDateTime(),
+            type: NOTIFICATION_TYPE.ORDERS,
+            body_parms: check._id,
+            isRead: false,
+            fromName: "",
+            toName: "",
+          });
+          let rs = _Notification.save();
+
+       }
       await Order.findByIdAndUpdate( req.params.id, { status: req.body.status },{ new: true })
 
       reply
@@ -747,7 +928,7 @@ exports.getUserOrder = async (req, reply) => {
       query.$and.push({ status: {$in:[ORDER_STATUS.new ]}})
     }
     if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.started) {
-      query.$and.push({ status: {$in:[ORDER_STATUS.progress, ORDER_STATUS.started, ORDER_STATUS.accpeted, ORDER_STATUS.updated ]}})
+      query.$and.push({ status: {$in:[ORDER_STATUS.progress, ORDER_STATUS.started, ORDER_STATUS.accpeted, ORDER_STATUS.updated, ORDER_STATUS.way ]}})
     }
     if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.finished) {
       query.$and.push({ status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished ]}})
@@ -1025,6 +1206,21 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
         "",
         ""
       );
+
+      let _Notification = new Notifications({
+        fromId: userId,
+        user_id: USER_TYPE.PANEL,
+        title: NOTIFICATION_TITILES.ORDERS,
+        msg: msg,
+        dt_date: getCurrentDateTime(),
+        type: NOTIFICATION_TYPE.ORDERS,
+        body_parms: check._id,
+        isRead: false,
+        fromName: "",
+        toName: "",
+      });
+      _Notification.save();
+
 
       reply
         .code(200)
@@ -2728,6 +2924,35 @@ exports.getEmployeesOrderExcel = async (req, reply) => {
       )
     );
     return;
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+
+exports.getSingleOrders = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const item = await Order.findById(req.query.id)
+      .sort({ _id: -1 })
+      .populate("user", "-token")
+      .populate({ path: "extra", populate: { path: "subcategory" } })
+      .populate("employee", "-token")
+      .populate("supervisor", "-token")
+      .populate("provider")
+      .populate("sub_category_id")
+      .populate("category_id")
+      .populate("address")
+      .select();
+
+    const response = {
+      status: true,
+      code: 200,
+      message: "تمت العملية بنجاح",
+      items: item,
+    };
+    reply.code(200).send(response);
   } catch (err) {
     reply.code(200).send(errorAPI(language, 400, err.message, err.message));
     return;

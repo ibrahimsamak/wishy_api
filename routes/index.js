@@ -60,6 +60,12 @@ const admin_routes = [
     beforeHandler: [auth.getAdminToken],
     handler: adminController.addAdmin,
   },
+  
+  {
+    method: "POST",
+    url: "/api/admin/resetAdmin",
+    handler: adminController.resetAdmin,
+  },
   {
     method: "POST",
     url: "/api/admin/loginAdmin",
@@ -208,6 +214,37 @@ const admin_routes = [
     beforeHandler: [auth.getAdminToken],
     handler: constantController.updateCountry,
   },
+
+  {
+    method: "GET",
+    url: "/api/constant/special",
+    handler: constantController.getSpecial,
+  },
+  {
+    method: "GET",
+    url: "/api/constant/special/:id",
+    handler: constantController.getSingleSpecial,
+  },
+  {
+    method: "POST",
+    url: "/api/constant/delete-special/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: constantController.deleteSpecial,
+  },
+  {
+    method: "POST",
+    url: "/api/constant/special",
+    beforeHandler: [auth.getAdminToken],
+    handler: constantController.addSpecial,
+  },
+  {
+    method: "POST",
+    url: "/api/constant/special/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: constantController.updateSpecial,
+  },
+
+
   {
     method: "GET",
     url: "/api/constant/city/:id",
@@ -783,6 +820,12 @@ const admin_routes = [
   },
 
   //orders
+    {
+    method: "GET",
+    url: "/api/admin/single-orders",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getSingleOrders,
+  },
   {
     method: "POST",
     url: "/api/admin/orders",
