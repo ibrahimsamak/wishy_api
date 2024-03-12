@@ -1288,7 +1288,7 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
         msg: msg,
         dt_date: getCurrentDateTime(),
         type: NOTIFICATION_TYPE.ORDERS,
-        body_parms: check._id,
+        body_parms: ord._id,
         isRead: false,
         fromName: "",
         toName: "",
