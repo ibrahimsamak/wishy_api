@@ -42,12 +42,14 @@ const NOTIFICATION_TYPE = Object.freeze({
   ORDERS: 1,
   COUPON: 2,
   GENERAL: 3,
+  REMINDER: 4,
 });
 
 const NOTIFICATION_TITILES = Object.freeze({
   ORDERS: "متابعة الطلبات",
   COUPON: "كوبون",
   GENERAL: "الادارة",
+  REMINDER: "تذكير",
 });
 
 const ACTORS = Object.freeze({

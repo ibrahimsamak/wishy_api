@@ -9,6 +9,8 @@ const Orderschema = mongoose.Schema(
     order_no: { type: String, required: false },
     tax: { type: Number },
     total: { type: Number, required: false },
+    admin_total: { type: Number, required: false },
+    provider_total: { type: Number, required: false },
     new_total: { type: Number, required: false, default: 0 },
     new_tax: { type: Number, required: false, default: 0 },
     totalDiscount: { type: Number },

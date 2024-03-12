@@ -267,12 +267,43 @@ const UnCoveredSchema = mongoose.Schema(
   { versionKey: false }
 );
 
+
+const ComnpanySchema = mongoose.Schema(
+  {
+    company_name: {
+      type: String,
+    },
+    phone_number: {
+      type: String,
+    },
+    email: {
+      type: String,
+    },
+    address: {
+      type: String,
+    },
+    lat: {
+      type: Number,
+    },
+    lng: {
+      type: Number,
+    },
+    createAt: {
+      type: Date,
+      default: getCurrentDateTime(),
+    },
+  },
+  { versionKey: false }
+);
+
 // var users = new Schema(Joigoose.convert(joiSchema));
 const Users = mongoose.model("Users", UserSchema);
+const Companies = mongoose.model("Companies", ComnpanySchema);
 const User_Address = mongoose.model("user_address", UserAddressSchema);
 const User_Uncovered = mongoose.model("user_uncovered", UnCoveredSchema);
 
 exports.Users = Users;
+exports.Companies = Companies;
 exports.User_Address = User_Address;
 exports.User_Uncovered = User_Uncovered;
 exports.validateUsers = validatieUsers;

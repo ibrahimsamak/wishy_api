@@ -20,6 +20,7 @@ const {
   validateUsers,
   getErrors,
   setLanguage,
+  Companies,
 } = require("../models/User");
 const {
   getCurrentDateTime,
@@ -478,9 +479,7 @@ exports.verify = async (req, reply) => {
 exports.forgetPassword = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
-    const _Users = await Users.findOne({
-      email: String(req.body.email).toLowerCase(),
-    });
+    const _Users = await Users.findOne({phone_number: String(req.body.phone_number)});
     if (_Users) {
       var newPassword = "1234";//makeid(8);
       let pass = encryptPassword(newPassword);
@@ -2124,4 +2123,84 @@ exports.referalDeepLink = async (req, reply) => {
     );
   return;
   });
+};
+
+
+// Add a new Users
+exports.addCompany = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const _user = await Companies.findOne({ phone_number: req.body.phone_number });
+    if (_user) {
+      reply
+      .code(200)
+      .send(
+        errorAPI(
+          language,
+          405,
+          MESSAGE_STRING_ARABIC.USER_EXSIT,
+          MESSAGE_STRING_ENGLISH.USER_EXSIT,
+          {}
+        )
+      );
+    return;
+    } else {
+      let user = new Companies({
+        company_name: req.body.company_name,
+        email: req.body.email,
+        phone_number: req.body.phone_number,
+        address: req.body.address,
+        lat: parseFloat(req.body.lat),
+        lng: parseFloat(req.body.lng),
+        createAt: getCurrentDateTime(),
+      });
+      let rs = await user.save();
+      let msg = "مرحبا بكم في تطبيق منصة جاز سيتم التواصل معكم في أقرب وقت ممكن: ";
+      sendSMS(req.body.phone_number, "", "", msg);
+      
+      reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.CREATE_USER,
+            MESSAGE_STRING_ENGLISH.CREATE_USER,
+            rs
+          )
+        );
+      return;
+    }
+  } catch (err) {
+    console.log(err)
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+exports.getCompany = async (req, reply) => {
+  try {
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+    const total = await Companies.countDocuments();
+    const item = await Companies.find()
+      .sort({ _id: -1 })
+      .skip(page * limit)
+      .limit(limit);
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      items: item,
+      pagenation: {
+        size: item.length,
+        totalElements: total,
+        totalPages: Math.floor(total / limit),
+        pageNumber: page,
+      },
+    };
+    reply.send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
 };

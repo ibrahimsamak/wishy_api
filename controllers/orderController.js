@@ -11,6 +11,7 @@ const moment = require("moment");
 const request = require("request");
 const axios = require("axios");
 const mongoose = require("mongoose");
+const cron = require("node-cron");
 
 // Get Data Models
 const { Favorite } = require("../models/Favorite");
@@ -70,6 +71,49 @@ var database = Firebase.database();
 var geoFire = new GeoFire(database.ref("userLocation"));
 var language = "ar"
 
+exports.PendingCronOrders = async function PendingCronOrders() {
+  // */1 * * * *
+  // 0 0 1 * *
+  cron.schedule(`0 */2 * * *`, async () => {
+    const _reminder = await setting.findOne({ code: "REMINDER" });
+    var today = moment().tz("Asia/Riyadh");
+    let orders = await Order.find({status: ORDER_STATUS.new})
+    for await (const doc of orders) {
+      // get diffrence
+      let createdAt = moment(doc.createAt).tz('Asia/Riyadh')
+      var minutes = today.diff(createdAt, "minutes");
+      if(minutes >= Number(_reminder.value)) {
+        var msg = `عزيزي المشرف يرجى اتخاذ الاجراء المناسب للطلب رقم: ${doc.order_no}`;
+        let _place = await place.findById(doc.place);
+        let _supervisors = await Supervisor.find({$and:[{place_id:_place._id},{isDeleted:false}]})
+        for await(const _super of _supervisors){
+          let _check = await Notifications.find({$and:[{user_id: _super._id},{type: NOTIFICATION_TYPE.REMINDER}]})
+          if(_check.length < 3) {
+            let _Notification = new Notifications({
+              fromId: USER_TYPE.PANEL,
+              user_id: _super._id,
+              title: NOTIFICATION_TITILES.REMINDER,
+              msg: msg,
+              dt_date: getCurrentDateTime(),
+              type: NOTIFICATION_TYPE.REMINDER,
+              body_parms: doc._id,
+              isRead: false,
+              fromName: "",
+              toName: "",
+            });
+            let rs = _Notification.save();
+            sendSMS(_super.phone_number , "", "", msg);
+          }else {
+            let supplier = await Supplier.findById(_super.supplier_id);
+            sendSMS(supplier.phone_number , "", "", msg);
+            await Order.findByIdAndUpdate(doc._id, {status:ORDER_STATUS.canceled_by_admin}, {new:true})
+          }
+        }
+      }
+    }
+  });
+};
+
 
 exports.addOrder = async (req, reply) => {
   const language = req.headers["accept-language"];
@@ -77,7 +121,9 @@ exports.addOrder = async (req, reply) => {
       var total = 0
       var total_discount = 0
       var total_tax = 0
-      
+      var provider_total = 0;
+      var admin_total = 0;
+
       var validationArray = [
         { name: "couponCode" },
         { name: "paymentType" },
@@ -165,7 +211,7 @@ exports.addOrder = async (req, reply) => {
           }
 
           _supplier = check_category.supplier_id 
-
+ 
           if(req.body.couponCode && req.body.couponCode != ""){
             let obj =  await check_coupon(req.user._id, req.body.couponCode, req.body.sub_category_id)
             if(obj == null){
@@ -209,7 +255,30 @@ exports.addOrder = async (req, reply) => {
             let _rs = await rs.save();
             address = _rs._id;
           }
+
+          if(req.body.paymentType == 'wallet' && Number(userObj.wallet) < total){
+            reply
+            .code(200)
+            .send(
+              errorAPI(
+                language,
+                400,
+                MESSAGE_STRING_ARABIC.WALLET,
+                MESSAGE_STRING_ENGLISH.WALLET
+              )
+            );
+            return;
+          }
+          
+          let _supplierObj = await Supplier.findById(_supplier);
+          if(_supplierObj){
+            admin_total = Number(_supplierObj.orderPercentage) * Number(total);
+          }
+          provider_total = Number(total) - Number(admin_total);
+
           let Orders = new Order({
+            provider_total: provider_total,
+            admin_total: admin_total,
             lat: req.body.lat,
             lng: req.body.lng,           
             price: sub_category.price,
@@ -241,7 +310,6 @@ exports.addOrder = async (req, reply) => {
               coordinates: [req.body.lat, req.body.lng],
             },
           });
-
           let rs = await Orders.save();
           reply
           .code(200)
@@ -924,17 +992,23 @@ exports.getUserOrder = async (req, reply) => {
       $and: [ {user: userId}]
     };
 
+    if (req.query.q && req.query.q != "")
+      query.$and.push({ order_no: { $regex: new RegExp(req.query.q, "i") }});
+
     if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.new) {
       query.$and.push({ status: {$in:[ORDER_STATUS.new ]}})
     }
-    if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.started) {
+    else if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.started) {
       query.$and.push({ status: {$in:[ORDER_STATUS.progress, ORDER_STATUS.started, ORDER_STATUS.accpeted, ORDER_STATUS.updated, ORDER_STATUS.way ]}})
     }
-    if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.finished) {
+    else if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.finished) {
       query.$and.push({ status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished ]}})
     }
-    if (req.query.status && req.query.status != "" && req.query.status.includes(ORDER_STATUS.canceled)) {
+    else if (req.query.status && req.query.status != "" && req.query.status.includes(ORDER_STATUS.canceled)) {
       query.$and.push({ status:{$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]} })
+    }
+    else{
+      query.$and.push({status: req.query.status})
     }
     
     var arr = []
@@ -1320,6 +1394,51 @@ exports.getTransaction = async (req, reply) => {
 
 
 //admin
+exports.getAdminTransaction = async (req, reply) => {
+  try {
+    const userId = req.params.id;
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+    
+    const total = await Transactions.find({ user: userId }).countDocuments();
+    const item = await Transactions.find({ user: userId })
+    .sort({ _id: -1 })
+    .populate("user", "-token")
+    .skip(page * limit)
+    .limit(limit);
+
+    // let trans = new Transactions({
+    //     order_no: "2030394",
+    //     user: "5f590217ff72110024dd1686",
+    //     total: 300,
+    //     createAt: getCurrentDateTime(),
+    //     paymentType: "Online",
+    //     details: "شحن المحفظة",
+    //   });
+    //   await trans.save();
+
+
+    const response = {
+      items: item,
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      messageAr: "تمت العملية بنجاح",
+      messageEn: "Done Successfully",
+      pagenation: {
+        size: item.length,
+        totalElements: total,
+        totalPages: Math.floor(total / limit),
+        pageNumber: page,
+      },
+    };
+    reply.send(response);
+  } catch {
+    throw boom.boomify();
+  }
+};
+
+
 exports.updateOrderByAdmin = async (req, reply) => {
   try {
     const sp = await Order.findByIdAndUpdate(
@@ -1967,7 +2086,7 @@ exports.getEmployeeOrder = async (req, reply) => {
       }
     }
     if (req.body.order_no && req.body.order_no != "")
-      query["order_no"] = { $regex: new RegExp(req.body.order_no, "i") };
+      query.$and.push({ order_no: { $regex: new RegExp(req.body.order_no, "i") }});
 
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
@@ -3037,6 +3156,7 @@ exports.getOrdersExcel = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
     var query = {};
+    query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
     if (
       req.body.dt_from &&
       req.body.dt_from != "" &&
@@ -3050,18 +3170,16 @@ exports.getOrdersExcel = async (req, reply) => {
         },
       };
     }
-
-    if (req.body.status && req.body.status != ""){
-      if(req.body.status == ORDER_STATUS.finished){
-        query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
-      }
-      else if(req.body.status == 'canceled' ){
-        query["status"] = {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}
-      }
-      else{
-        query["status"] = req.body.status;
-      }
-    }
+    // if (req.body.status && req.body.status != ""){
+    //   if(req.body.status == ORDER_STATUS.finished){
+    //   }
+    //   else if(req.body.status == 'canceled' ){
+    //     query["status"] = {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}
+    //   }
+    //   else{
+    //     query["status"] = req.body.status;
+    //   }
+    // }
     if (req.body.order_no && req.body.order_no != "")
       query["order_no"] = req.body.order_no;
 
@@ -3103,6 +3221,7 @@ exports.getOrdersEarnings = async (req, reply) => {
   try {
     var _result  = []
     var query = {};
+    query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
     if (
       req.body.dt_from &&
       req.body.dt_from != "" &&
@@ -3115,18 +3234,6 @@ exports.getOrdersEarnings = async (req, reply) => {
           $lt: moment(req.body.dt_to).tz("Asia/Riyadh").endOf("day"),
         },
       };
-    }
-
-    if (req.body.status && req.body.status != ""){
-      if(req.body.status == ORDER_STATUS.finished){
-        query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
-      }
-      else if(req.body.status == 'canceled' ){
-        query["status"] = {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}
-      }
-      else{
-        query["status"] = req.body.status;
-      }
     }
 
     if (req.body.order_no && req.body.order_no != "")
@@ -3155,8 +3262,9 @@ exports.getOrdersEarnings = async (req, reply) => {
         _result = lodash(item)
         .groupBy('employee')
         .map(function (platform, id) {
-          if (platform.length > 0) {
-            if(platform[0].employee){
+          if (platform && platform.length > 0) {
+            if(platform[0] && platform[0].employee){
+              console.log(platform[0].employee)
               return {
                 id: platform[0].employee._id,
                 title: platform[0].employee ? platform[0].employee.full_name : "",
@@ -3192,11 +3300,17 @@ exports.getOrdersEarnings = async (req, reply) => {
     //   .value()
     //   console.log(_result)
     // }
+    var arr = []
+    _result.forEach(element => {
+      if(element){
+        arr.push(element)
+      }
+    });
     const response = {
       status: true,
       code: 200,
       message: "تمت العملية بنجاح",
-      items: _result
+      items: arr
     };
     reply.code(200).send(response);
   } catch (err) {

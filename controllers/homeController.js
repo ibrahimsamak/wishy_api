@@ -3,8 +3,8 @@ const lodash = require("lodash");
 
 const { Admin } = require("../models/Admin");
 const { Users } = require("../models/User");
-const { Order } = require("../models/Order");
-const { Supplier, Product, Product_Price } = require("../models/Product");
+const { Order, Rate } = require("../models/Order");
+const { Supplier, Product, Product_Price, Category, SubCategory } = require("../models/Product");
 const { USER_TYPE, ORDER_STATUS, ACTORS } = require("../utils/constants");
 const { employee } = require("../models/Employee");
 
@@ -135,6 +135,28 @@ exports.getCounterUsers = async (req, reply) => {
       Admins: _Admin,
       Replacment: Replacment,
       New: New,
+    };
+    reply.send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getCounter2 = async (req, reply) => {
+  try {
+    const _Order = await Order.countDocuments({status:{$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]}})
+    const _Rate = await Rate.countDocuments({});
+    const _Category = await Category.countDocuments({isDeleted:false});
+    const _SubCategory = await SubCategory.countDocuments({isDeleted: false});
+
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      Order: _Order,
+      Rate: _Rate,
+      Category: _Category,
+      SubCategory: _SubCategory,
     };
     reply.send(response);
   } catch (err) {

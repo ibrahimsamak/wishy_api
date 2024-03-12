@@ -265,31 +265,25 @@ exports.forgetPassword = async (req, reply) => {
         );
       return;
     }
-    const _Users = await employee.findOne({
-      $and:[{isDeleted:false},{phone_number: req.body.phone_number}]
-    });
+    const _Users = await employee.findOne({$and:[{isDeleted:false},{phone_number: req.body.phone_number}]});
     if (_Users) {
-      var newPassword = makeid(8);
+      var newPassword = makeid(6);
       var verify_code = makeid(4);
       // var verify_code = 1234;
       let pass = encryptPassword(newPassword);
       const update = await employee.findByIdAndUpdate(
         _Users._id,
-        { password: pass, isVerify: false, verify_code: verify_code },
+        { password: pass },
         { new: true }
       );
       //send sms to activation code
       //send sms to new password
-
+      sendSMS(req.body.phone_number, "", "", `كلمة المرور الجديدة الخاصة بكم هي: ${newPassword}`);
       //mail_reset_password(req, req.body.email, "استعادة كلمة المرور", "", data);
 
       let user = update.toObject();
-      user.CompleteOrder = await Order.find({
-        $and: [{ employee_id: user._id }, { StatusId: 4 }],
-      }).countDocuments();
-      user.ActiveOrder = await Order.find({
-        $and: [{ employee_id: user._id }, { StatusId: { $in: [2, 3] } }],
-      }).countDocuments();
+      user.CompleteOrder = await Order.countDocuments({ $and: [{ employee_id: user._id }, { StatusId: 4 }], });
+      user.ActiveOrder = await Order.countDocuments({ $and: [{ employee_id: user._id }, { StatusId: { $in: [2, 3] } }]});
 
       reply
         .code(200)

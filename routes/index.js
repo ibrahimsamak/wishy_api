@@ -19,6 +19,19 @@ const fastify = require("fastify")({
 // const documentation = require('./documentation/carApi')
 const admin_routes = [
   {
+    method: "GET",
+    url: "/api/company/list",
+    beforeHandler: [auth.getAdminToken],
+    handler: userController.getCompany,
+  },
+    //transaction
+  {
+    method: "GET",
+    url: "/api/users/wallet/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getAdminTransaction,
+  },
+  {
     method: "POST",
     url: "/api/sms",
     handler: userController.AddSMS,
@@ -919,6 +932,11 @@ const admin_routes = [
   },
   {
     method: "GET",
+    url: "/api/home/getCounter2",
+    handler: homeController.getCounter2,
+  },
+  {
+    method: "GET",
     url: "/api/home/UsersproviderPerYear",
     handler: homeController.UsersproviderPerYear,
   },
@@ -950,6 +968,12 @@ const admin_routes = [
 
 //mobile client
 const mobile_routes = [
+  
+  {
+    method: "POST",
+    url: "/api/mobile/add-company",
+    handler: userController.addCompany,
+  },
   {
     method: "GET",
     url: "/api/mobile/rates/:id",
@@ -1294,6 +1318,12 @@ const mobile_routes = [
 
 //mobile driver
 const driver_routes = [
+  {
+    method: "POST",
+    url: "/api/mobile/driver/reset",
+    // beforeHandler: [auth.getToken],
+    handler: employeeController.forgetPassword,
+  },
   {
     method: "POST",
     url: "/api/mobile/employee/logout/:id",
