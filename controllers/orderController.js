@@ -269,6 +269,7 @@ exports.addOrder = async (req, reply) => {
             );
             return;
           }
+
           
           let _supplierObj = await Supplier.findById(_supplier);
           if(_supplierObj){
@@ -276,6 +277,9 @@ exports.addOrder = async (req, reply) => {
           }
           provider_total = Number(total) - Number(admin_total);
 
+          if(req.body.paymentType == 'wallet'){
+            await NewPayment(userId, orderNo , ` سحب رصيد لطلب جديد ${orderNo}` , '-' , total , 'Online');
+          }
           let Orders = new Order({
             provider_total: provider_total,
             admin_total: admin_total,
@@ -290,6 +294,7 @@ exports.addOrder = async (req, reply) => {
             netTotal: total,
             status: ORDER_STATUS.new,
             createAt: getCurrentDateTime(),
+            period: 0,
             dt_date: req.body.dt_date,
             dt_time: req.body.dt_time,
             sub_category_id: req.body.sub_category_id,
@@ -668,6 +673,9 @@ exports.updateOrder = async (req, reply) => {
       var msg_canceled_by_user = `تم الغاء الطلب من قبل الزبون`;
       var msg_canceled_by_admin = `تم الغاء الطلب من قبل الادارة`;
       
+      var today = getCurrentDateTime();
+      var createAt = moment(check.createAt)
+      var period = moment(today).diff(createAt,"minutes")
       if(req.body.status == ORDER_STATUS.progress) {
         msg = msg_progress;
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
@@ -729,7 +737,8 @@ exports.updateOrder = async (req, reply) => {
             status: req.body.status,
             employee: req.body.employee,
             supervisor: emp ? emp.supervisor_id : null,
-            canceled_note: req.body.canceled_note
+            canceled_note: req.body.canceled_note,
+            period:period
           },
           { new: true }
         )
@@ -763,7 +772,7 @@ exports.updateOrder = async (req, reply) => {
         var new_total = (Number(price) * Number(tax.value)) + Number(price)
         var new_tax = (Number(price) * Number(tax.value)) 
 
-        await Order.findByIdAndUpdate( req.params.id, { update_code: code , extra: req.body.extra , tax: Number(new_tax)+Number(check.tax), new_total: new_total, new_tax: new_tax, total: Number(/* The above code is declaring a variable called "new_total" in JavaScript. However, the code is incomplete and does not provide any further information about what the variable is intended to be used for or how it is being assigned a value. */
+        await Order.findByIdAndUpdate( req.params.id, { update_code: code , extra: req.body.extra , period: period, tax: Number(new_tax)+Number(check.tax), new_total: new_total, new_tax: new_tax, total: Number(/* The above code is declaring a variable called "new_total" in JavaScript. However, the code is incomplete and does not provide any further information about what the variable is intended to be used for or how it is being assigned a value. */
         new_total)+Number(check.total), netTotal: Number(new_total)+Number(check.total)},{ new: true })       
         await sendSMS(check.user.phone_number, "", "", msg)
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
@@ -785,7 +794,7 @@ exports.updateOrder = async (req, reply) => {
         var code =  "1234";//makeid(6)
         msg = msg_prefinished + " كود العملية هو: " + code;
 
-        await Order.findByIdAndUpdate( req.params.id, { update_code: code},{ new: true })
+        await Order.findByIdAndUpdate( req.params.id, { update_code: code, period},{ new: true })
         await sendSMS(check.user.phone_number, "", "", msg)
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
         let _Notification = new Notifications({
@@ -887,7 +896,7 @@ exports.updateOrder = async (req, reply) => {
           let rs = _Notification.save();
 
        }
-      await Order.findByIdAndUpdate( req.params.id, { status: req.body.status },{ new: true })
+      await Order.findByIdAndUpdate( req.params.id, { status: req.body.status, period:period },{ new: true })
 
       reply
       .code(200)

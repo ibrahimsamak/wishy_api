@@ -17,6 +17,7 @@ const Orderschema = mongoose.Schema(
     netTotal: { type: Number, required: false },
     status: { type: String },
     createAt: { type: Date },
+    period: { type: Number },
     dt_date: { type: Date },
     dt_time: { type: String },
     couponCode: { type: String },
