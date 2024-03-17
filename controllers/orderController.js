@@ -137,6 +137,7 @@ exports.addOrder = async (req, reply) => {
       validationArray.push({ name: "lng" });
       check_request_params(req.body, validationArray, async function (response) {
         if (response.success) {
+          var address = req.body.address;
           var userId = req.user._id;
           const userObj = await Users.findById(userId);
           const tax = await setting.findOne({ code: "TAX" });
@@ -144,6 +145,16 @@ exports.addOrder = async (req, reply) => {
           var orderNo = `${makeOrderNumber(6)}`;
           var _supplier = null;
           var _employee = null;
+          var lat = Number(req.body.lat);
+          var lng = Number(req.body.lng);
+
+          if(req.body.address && req.body.address != ""){
+            let objAddress = await User_Address.findById(req.body.address)
+            if(objAddress){
+              lat = Number(objAddress.lat);
+              lng = Number(objAddress.lng);
+            }
+          }
 
           var PoinInPolygon = await place.find({
             $and: [
@@ -152,7 +163,7 @@ exports.addOrder = async (req, reply) => {
                   $geoIntersects: {
                     $geometry: {
                       type: "Point",
-                      coordinates: [Number(req.body.lng), Number(req.body.lat)],
+                      coordinates: [Number(lng), Number(lat)],
                     },
                   },
                 },
@@ -164,8 +175,8 @@ exports.addOrder = async (req, reply) => {
             let rs = new User_Uncovered({
               user_id: userId,
               user_type: "",
-              lat: req.body.lat,
-              lng: req.body.lng,
+              lat: lat,
+              lng: lng,
               address: req.body.address,
             });
             await rs.save();
@@ -190,8 +201,8 @@ exports.addOrder = async (req, reply) => {
             let rs = new User_Uncovered({
               user_id: userId,
               user_type: "",
-              lat: req.body.lat,
-              lng: req.body.lng,
+              lat: lat,
+              lng: lng,
               address: req.body.address,
             });
             await rs.save();
@@ -235,26 +246,25 @@ exports.addOrder = async (req, reply) => {
             total = (Number(sub_category.price) * Number(tax.value)) + Number(sub_category.price)
             total_tax = (Number(sub_category.price) * Number(tax.value))
           }
-          var address = req.body.address;
-          if(!req.body.address || req.body.address == ""){
-            let rs = new User_Address({
-              title: req.body.title,
-              lat: req.body.lat,
-              lng: req.body.lng,
-              address: req.body.address,
-              user_id: userId,
-              isDefault: false,
-              discount: 0,
-              streetName: req.body.streetName,
-              floorNo: req.body.floorNo,
-              buildingNo: req.body.buildingNo,
-              flatNo: req.body.flatNo,
-              type: 'home'
-            });
+          // if(!req.body.address || req.body.address == ""){
+          //   let rs = new User_Address({
+          //     title: req.body.title,
+          //     lat: req.body.lat,
+          //     lng: req.body.lng,
+          //     address: req.body.address,
+          //     user_id: userId,
+          //     isDefault: false,
+          //     discount: 0,
+          //     streetName: req.body.streetName,
+          //     floorNo: req.body.floorNo,
+          //     buildingNo: req.body.buildingNo,
+          //     flatNo: req.body.flatNo,
+          //     type: 'home'
+          //   });
         
-            let _rs = await rs.save();
-            address = _rs._id;
-          }
+          //   let _rs = await rs.save();
+          //   address = _rs._id;
+          // }
 
           if(req.body.paymentType == 'wallet' && Number(userObj.wallet) < total){
             reply
@@ -283,10 +293,10 @@ exports.addOrder = async (req, reply) => {
           let Orders = new Order({
             provider_total: provider_total,
             admin_total: admin_total,
-            lat: req.body.lat,
-            lng: req.body.lng,           
+            lat: lat,
+            lng: lng,           
             price: sub_category.price,
-            address: address,
+            address: (address && address != "") ? address : null,
             order_no: orderNo,
             tax: Number(total_tax),
             total: total,
@@ -312,7 +322,7 @@ exports.addOrder = async (req, reply) => {
             extra: [],
             loc: {
               type: "Point",
-              coordinates: [req.body.lat, req.body.lng],
+              coordinates: [lat, lng],
             },
           });
           let rs = await Orders.save();
@@ -3230,7 +3240,7 @@ exports.getOrdersEarnings = async (req, reply) => {
   try {
     var _result  = []
     var query = {};
-    query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
+    query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]}
     if (
       req.body.dt_from &&
       req.body.dt_from != "" &&
@@ -3309,6 +3319,68 @@ exports.getOrdersEarnings = async (req, reply) => {
     //   .value()
     //   console.log(_result)
     // }
+    var arr = []
+    _result.forEach(element => {
+      if(element){
+        arr.push(element)
+      }
+    });
+    const response = {
+      status: true,
+      code: 200,
+      message: "تمت العملية بنجاح",
+      items: arr
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+exports.getOrdersPercentage = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var _result  = []
+    var query = {};
+    query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]}
+    if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query = {
+        createAt: {
+          $gte: moment(req.body.dt_from).tz("Asia/Riyadh").startOf("day"),
+          $lt: moment(req.body.dt_to).tz("Asia/Riyadh").endOf("day"),
+        },
+      };
+    }
+
+    if (req.body.supplier_id && req.body.supplier_id != "")
+      query["provider"] = req.body.supplier_id;
+
+    const item = await Order.find(query)
+      .sort({ _id: -1 })
+      .populate("provider")
+      .select();
+
+      _result = lodash(item)
+      .groupBy('provider')
+      .map(function (platform, id) {
+        if (platform && platform.length > 0) {
+          if(platform[0] && platform[0].provider){
+            return {
+              title: platform[0].provider ? platform[0].provider.name : "",
+              totalAdmin: lodash.sumBy(platform, 'admin_total'),
+              totalProvider: lodash.sumBy(platform, 'provider_total'),
+              totals: lodash.sumBy(platform, 'total')
+            }
+          }
+        }
+      })
+      .value()
     var arr = []
     _result.forEach(element => {
       if(element){

@@ -859,6 +859,12 @@ const admin_routes = [
   },
   {
     method: "POST",
+    url: "/api/admin/orders-percentage",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getOrdersPercentage,
+  },
+  {
+    method: "POST",
     url: "/api/admin/update_order/:id",
     beforeHandler: [auth.getAdminToken],
     handler: orderController.updateOrder,
