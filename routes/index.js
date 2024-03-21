@@ -1324,6 +1324,13 @@ const mobile_routes = [
 
 //mobile driver
 const driver_routes = [
+  
+  {
+    method: "POST",
+    url: "/api/mobile/driver/change/:id",
+    // beforeHandler: [auth.getToken],
+    handler: employeeController.changePassword,
+  },
   {
     method: "POST",
     url: "/api/mobile/driver/reset",

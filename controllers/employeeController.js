@@ -362,7 +362,7 @@ exports.getSingleEmployee = async (req, reply) => {
 exports.changePassword = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
-    const User_id = req.user._id;
+    const User_id = req.params.id;
     let pass = encryptPassword(req.body.password);
     let old_password = encryptPassword(req.body.old_password);
     const _Users = await employee.findById(User_id);
@@ -387,13 +387,9 @@ exports.changePassword = async (req, reply) => {
       );
 
       let user = update.toObject();
-      user.CompleteOrder = await Order.find({
-        $and: [{ employee_id: user._id }, { StatusId: 4 }],
-      }).countDocuments();
-      user.ActiveOrder = await Order.find({
-        $and: [{ employee_id: user._id }, { StatusId: { $in: [2, 3] } }],
-      }).countDocuments();
-
+      user.CompleteOrder = 0
+      user.ActiveOrder = 0
+      
       reply
         .code(200)
         .send(
