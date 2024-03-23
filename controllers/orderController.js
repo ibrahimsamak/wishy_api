@@ -933,7 +933,7 @@ exports.updateOrderCode = async (req, reply) => {
       var msg = ""
       if(check.status == ORDER_STATUS.updated) {
         if(String(req.body.update_code) == String(check.update_code)) {
-          await Order.findByIdAndUpdate(req.params.id, { status: ORDER_STATUS.started },{ new: true } )
+          await Order.findByIdAndUpdate(req.params.id, { status: ORDER_STATUS.progress },{ new: true } )
           // send notification to employee 
         }else {
           reply
