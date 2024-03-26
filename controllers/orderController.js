@@ -74,7 +74,7 @@ var language = "ar"
 exports.PendingCronOrders = async function PendingCronOrders() {
   // */1 * * * *
   // 0 0 1 * *
-  cron.schedule(`0 */1 * * *`, async () => {
+  cron.schedule(`0/10 * * * *`, async () => {
     const _reminder = await setting.findOne({ code: "REMINDER" });
     var today = moment().tz("Asia/Riyadh");
     let orders = await Order.find({status: ORDER_STATUS.new})
@@ -773,7 +773,7 @@ exports.updateOrder = async (req, reply) => {
 
       }
       if(req.body.status == ORDER_STATUS.updated) {
-        var code = "1234"; // makeid(6)
+        var code = makeid(6)
         msg = msg_updated + " كود العملية هو: " + code;
         
         var subs = await SubCategory.find({_id:{$in:req.body.extra}})
@@ -801,7 +801,7 @@ exports.updateOrder = async (req, reply) => {
         let rs = _Notification.save();
       }
       if(req.body.status == ORDER_STATUS.prefinished) {
-        var code =  "1234";//makeid(6)
+        var code =  makeid(6)
         msg = msg_prefinished + " كود العملية هو: " + code;
 
         await Order.findByIdAndUpdate( req.params.id, { update_code: code, period},{ new: true })

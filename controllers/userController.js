@@ -224,7 +224,7 @@ exports.addUsers = async (req, reply) => {
     //     );
     //   return;
     // }
-    let verify_code = "1234";//makeid(4);
+    let verify_code = makeid(4);
     const _user = await Users.findOne({ phone_number: req.body.phone_number });
     if (_user) {
       //login
@@ -481,7 +481,7 @@ exports.forgetPassword = async (req, reply) => {
   try {
     const _Users = await Users.findOne({phone_number: String(req.body.phone_number)});
     if (_Users) {
-      var newPassword = "1234";//makeid(8);
+      var newPassword = makeid(8);
       let pass = encryptPassword(newPassword);
       const update = await Users.findByIdAndUpdate(
         _Users._id,
@@ -915,7 +915,7 @@ exports.changePhone = async (req, reply) => {
       return;
     }
 
-    const sms_code = "1234";//makeid(4);
+    const sms_code = makeid(4);
 
     const update = await Users.findByIdAndUpdate(
       User_id,
@@ -1219,7 +1219,7 @@ exports.guestToken = async (req, reply) => {
 exports.Resend = async (req, reply) => {
   const language = req.headers["accept-language"];
   var msg = "";
-  const sms_code = "1234";//makeid(4);
+  const sms_code = makeid(4);
 
   if (!req.body.id) {
     reply
