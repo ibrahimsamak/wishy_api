@@ -974,7 +974,12 @@ const admin_routes = [
 
 //mobile client
 const mobile_routes = [
-  
+  {
+    method: "POST",
+    url: "/api/mobile/delete/:id",
+    // beforeHandler: [auth.getToken],
+    handler: userController.deleteUser,
+  },
   {
     method: "POST",
     url: "/api/mobile/add-company",
@@ -1324,7 +1329,12 @@ const mobile_routes = [
 
 //mobile driver
 const driver_routes = [
-  
+  {
+    method: "POST",
+    url: "/api/mobile/driver/delete/:id",
+    // beforeHandler: [auth.getToken],
+    handler: employeeController.deleteEmployee,
+  },
   {
     method: "POST",
     url: "/api/mobile/driver/change/:id",

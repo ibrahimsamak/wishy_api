@@ -523,6 +523,27 @@ exports.updateAvailable = async (req, reply) => {
   }
 };
 
+exports.deleteEmployee = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    await employee.findByIdAndRemove(req.params.id);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        {}
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+
 ///////////Admin////////////
 exports.getStoresEmployees = async (req, reply) => {
   try {

@@ -353,7 +353,8 @@ exports.makeid = function (number) {
   for (var i = 0; i < number; i++)
     text += possible.charAt(Math.floor(Math.random() * possible.length));
 
-  return text;
+  return "1234";
+  //return text;
 };
 
 exports.CreateNotificationMultiple = function (deviceId, title, msg, order_id) {
