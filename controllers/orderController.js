@@ -70,7 +70,8 @@ const e = require("cors");
 var database = Firebase.database();
 var geoFire = new GeoFire(database.ref("userLocation"));
 var language = "ar"
-
+var firebaseRef = Firebase.database().ref();
+ 
 exports.PendingCronOrders = async function PendingCronOrders() {
   // */1 * * * *
   // 0 0 1 * *
@@ -290,6 +291,7 @@ exports.addOrder = async (req, reply) => {
           if(req.body.paymentType == 'wallet'){
             await NewPayment(userId, orderNo , ` سحب رصيد لطلب جديد ${orderNo}` , '-' , total , 'Online');
           }
+
           let Orders = new Order({
             provider_total: provider_total,
             admin_total: admin_total,
@@ -326,6 +328,27 @@ exports.addOrder = async (req, reply) => {
             },
           });
           let rs = await Orders.save();
+
+          const currentTimestamp = Date.now();
+          const currentTimestampInSeconds = Math.floor(currentTimestamp);
+          firebaseRef
+            .child("orders")
+            .child(String(rs._id))
+            .once("value", (snapshot) => {
+              if (!snapshot.exists()) {
+                firebaseRef
+                  .child("orders")
+                  .child(String(rs._id))
+                  .set({
+                      order_id: String(rs._id),
+                      order_no: orderNo,
+                      status: ORDER_STATUS.new,
+                      timestamp: currentTimestampInSeconds,
+                      user_id: userId
+                   });
+              }
+            });
+
           reply
           .code(200)
           .send(
@@ -686,6 +709,9 @@ exports.updateOrder = async (req, reply) => {
       var today = getCurrentDateTime();
       var createAt = moment(check.createAt)
       var period = moment(today).diff(createAt,"minutes")
+      const currentTimestamp = Date.now();
+      const currentTimestampInSeconds = Math.floor(currentTimestamp);
+
       if(req.body.status == ORDER_STATUS.progress) {
         msg = msg_progress;
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
@@ -771,6 +797,12 @@ exports.updateOrder = async (req, reply) => {
         });
         let rs = _Notification.save();
 
+        firebaseRef
+        .child("orders")
+        .child(String(req.params.id))
+        .update({ employee_id: req.body.employee }); 
+      
+        
       }
       if(req.body.status == ORDER_STATUS.updated) {
         var code = makeid(6)
@@ -905,9 +937,20 @@ exports.updateOrder = async (req, reply) => {
           });
           let rs = _Notification.save();
 
-       }
-      await Order.findByIdAndUpdate( req.params.id, { status: req.body.status, period:period },{ new: true })
+      }
+      
+      firebaseRef
+      .child("orders")
+      .child(String(req.params.id))
+      .update({ timestamp: currentTimestampInSeconds, status: req.body.status}); 
+      if(req.body.status == ORDER_STATUS.finished || req.body.status == ORDER_STATUS.canceled_by_admin || req.body.status == ORDER_STATUS.canceled_by_driver || req.body.status == ORDER_STATUS.canceled_by_user){
+          firebaseRef
+          .child("orders")
+          .child(String(req.params.id))
+          .remove();
+      }
 
+      await Order.findByIdAndUpdate( req.params.id, { status: req.body.status, period:period },{ new: true })  
       reply
       .code(200)
       .send(
@@ -997,7 +1040,6 @@ exports.updateOrderCode = async (req, reply) => {
     throw boom.boomify(err);
   }
 };
-
 
 exports.getUserOrder = async (req, reply) => {
   try {
