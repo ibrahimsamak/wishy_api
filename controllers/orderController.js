@@ -345,6 +345,7 @@ exports.addOrder = async (req, reply) => {
                       status: ORDER_STATUS.new,
                       timestamp: currentTimestampInSeconds,
                       user_id: userId,
+                      employee_id: "",
                       msg: "هناك طلب جديد برقم " + orderNo
                    });
               }
