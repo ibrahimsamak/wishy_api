@@ -344,7 +344,8 @@ exports.addOrder = async (req, reply) => {
                       order_no: orderNo,
                       status: ORDER_STATUS.new,
                       timestamp: currentTimestampInSeconds,
-                      user_id: userId
+                      user_id: userId,
+                      msg: "هناك طلب جديد برقم " + orderNo
                    });
               }
             });
@@ -694,7 +695,7 @@ exports.updateOrder = async (req, reply) => {
       let userId = req.user._id
       const check = await Order.findById(req.params.id).populate("user")
       const tax = await setting.findOne({ code: "TAX" });
-      var msg_started = `الفني في الطريق اليك الطلب بنجاح`;
+      var msg_started = `الفني استلم الطلب بنجاح `;
       var msg_progress = `تم البدء في تنفيذ الطلب بنجاح`;
       var msg_way = `الفي في الطريق اليك`;
       var msg_accpet = `تم قبول طلبكم بنجاح وسوف يتم التنفيذ في اقرب وقت ممكن`;
@@ -728,6 +729,11 @@ exports.updateOrder = async (req, reply) => {
           toName: "",
         });
         let rs = _Notification.save();
+        
+        firebaseRef
+        .child("orders")
+        .child(String(req.params.id))
+        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم البدء في تنفيذ الطلب رقم " + check.order_id}); 
       }
       if(req.body.status == ORDER_STATUS.way) {
         msg = msg_way;
@@ -745,6 +751,12 @@ exports.updateOrder = async (req, reply) => {
           toName: "",
         });
         let rs = _Notification.save();
+       
+        
+        firebaseRef
+        .child("orders")
+        .child(String(req.params.id))
+        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "الفني في الطريق للطلب رقم "+ check.order_id});
       }
       if(req.body.status == ORDER_STATUS.started) {
         msg = msg_started; 
@@ -762,6 +774,11 @@ exports.updateOrder = async (req, reply) => {
           toName: "",
         });
         let rs = _Notification.save();
+    
+        firebaseRef
+        .child("orders")
+        .child(String(req.params.id))
+        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "الفني استلم الطلب رقم "+ check.order_id}); 
       }
       if(req.body.status == ORDER_STATUS.accpeted) {
         msg = msg_accpet;
@@ -800,8 +817,7 @@ exports.updateOrder = async (req, reply) => {
         firebaseRef
         .child("orders")
         .child(String(req.params.id))
-        .update({ employee_id: req.body.employee }); 
-      
+        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم قبول الطلب رقم " + check.order_no}); 
         
       }
       if(req.body.status == ORDER_STATUS.updated) {
@@ -831,6 +847,11 @@ exports.updateOrder = async (req, reply) => {
           toName: "",
         });
         let rs = _Notification.save();
+
+        firebaseRef
+        .child("orders")
+        .child(String(req.params.id))
+        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم تعديل حالة الطلب رقم " + check.order_id}); 
       }
       if(req.body.status == ORDER_STATUS.prefinished) {
         var code =  makeid(6)
@@ -852,6 +873,11 @@ exports.updateOrder = async (req, reply) => {
           toName: "",
         });
         let rs = _Notification.save();
+
+        firebaseRef
+        .child("orders")
+        .child(String(req.params.id))
+        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "بانتظار تأكيد الطلب رقم " + check.order_id}); 
       }
       if(req.body.status == ORDER_STATUS.finished) {
         msg = msg_finished;
@@ -869,6 +895,11 @@ exports.updateOrder = async (req, reply) => {
           toName: "",
         });
         let rs = _Notification.save();
+
+        firebaseRef
+        .child("orders")
+        .child(String(req.params.id))
+        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم تنفيذ الطلب رقم " + check.order_id}); 
       }     
       if(req.body.status == ORDER_STATUS.canceled_by_driver && check.status != ORDER_STATUS.prefinished && check.status != ORDER_STATUS.finished && check.status != ORDER_STATUS.rated){
         msg = msg_canceled_by_driver;
@@ -886,6 +917,14 @@ exports.updateOrder = async (req, reply) => {
           toName: "",
         });
         let rs = _Notification.save();
+
+        await NewPayment(check.user._id, check.orderNo , ` ارجاع مبلغ الطلب ${check.orderNo}` , '+' , check.total , 'Online');
+        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ طلب الى المحفظة", NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+      
+        firebaseRef
+        .child("orders")
+        .child(String(req.params.id))
+        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "الفني قام بالغاء الطلب رقم " + check.order_id}); 
       }
       if(req.body.status == ORDER_STATUS.canceled_by_admin && check.status != ORDER_STATUS.prefinished && check.status != ORDER_STATUS.finished && check.status != ORDER_STATUS.rated){
         msg = msg_canceled_by_admin;
@@ -903,6 +942,14 @@ exports.updateOrder = async (req, reply) => {
           toName: "",
         });
         let rs = _Notification.save();
+
+        await NewPayment(check.user._id, check.orderNo , ` ارجاع مبلغ الطلب ${check.orderNo}` , '+' , check.total , 'Online');
+        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ طلب الى المحفظة", NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+      
+        firebaseRef
+        .child("orders")
+        .child(String(req.params.id))
+        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "الادارة قام بالغاء الطلب رقم " + check.order_id}); 
       }
       if(req.body.status == ORDER_STATUS.canceled_by_user){
         msg = msg_canceled_by_user;
@@ -937,12 +984,16 @@ exports.updateOrder = async (req, reply) => {
           });
           let rs = _Notification.save();
 
-      }
+          await NewPayment(check.user._id, check.orderNo , ` ارجاع مبلغ الطلب ${check.orderNo}` , '+' , check.total , 'Online');
+          await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ طلب الى المحفظة", NOTIFICATION_TYPE.ORDERS, check._id, "", check.user._id, "", "");
+         
+          firebaseRef
+          .child("orders")
+          .child(String(req.params.id))
+          .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "العميل قام بالغاء الطلب رقم " + check.order_id}); 
+        }
       
-      firebaseRef
-      .child("orders")
-      .child(String(req.params.id))
-      .update({ timestamp: currentTimestampInSeconds, status: req.body.status}); 
+
       if(req.body.status == ORDER_STATUS.finished || req.body.status == ORDER_STATUS.canceled_by_admin || req.body.status == ORDER_STATUS.canceled_by_driver || req.body.status == ORDER_STATUS.canceled_by_user){
           firebaseRef
           .child("orders")

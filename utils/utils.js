@@ -237,7 +237,7 @@ exports.sendSMS = async function(number, from, to, code){
   };
   let body = {
     "src": "JAZCOM",
-    "body": code,
+    "body": "1234", //code,
     "dests": [number]
   }
 
