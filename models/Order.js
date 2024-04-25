@@ -3,6 +3,7 @@ const { getCurrentDateTime } = require("../models/Constant");
 
 const Orderschema = mongoose.Schema(
   {
+    paymnet_id: { type: String },
     lat: { type: Number },
     lng: { type: Number },
     price: { type: Number },
