@@ -996,10 +996,7 @@ exports.updateOrder = async (req, reply) => {
           .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "العميل قام بالغاء الطلب رقم " + check.order_no}); 
       }
       if(req.body.status == ORDER_STATUS.finished || req.body.status == ORDER_STATUS.canceled_by_admin || req.body.status == ORDER_STATUS.canceled_by_driver || req.body.status == ORDER_STATUS.canceled_by_user){
-          firebaseRef
-          .child("orders")
-          .child(String(req.params.id))
-          .remove();
+        
       }
 
       await Order.findByIdAndUpdate( req.params.id, { status: req.body.status, period:period },{ new: true })  
@@ -1058,6 +1055,12 @@ exports.updateOrderCode = async (req, reply) => {
           .child(String(req.params.id))
           .update({ timestamp: currentTimestampInSeconds, status: ORDER_STATUS.finished , msg: "تم انهاء الطلب رقم " + check.order_no}); 
 
+
+          firebaseRef
+          .child("orders")
+          .child(String(req.params.id))
+          .remove();
+          
           // send notification to employee 
           await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg_finished, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
         }else {
