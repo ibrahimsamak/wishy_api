@@ -75,10 +75,10 @@ var firebaseRef = Firebase.database().ref();
 exports.PendingCronOrders = async function PendingCronOrders() {
   // */1 * * * *
   // 0 0 1 * *
-  cron.schedule(`0/10 * * * *`, async () => {
+  cron.schedule(`0/1 * * * *`, async () => {
     const _reminder = await setting.findOne({ code: "REMINDER" });
     var today = moment().tz("Asia/Riyadh");
-    let orders = await Order.find({status: ORDER_STATUS.new})
+    let orders = await Order.find({status: ORDER_STATUS.new}).populate("user")
     for await (const doc of orders) {
       // get diffrence
       let createdAt = moment(doc.createAt).tz('Asia/Riyadh')
@@ -108,6 +108,7 @@ exports.PendingCronOrders = async function PendingCronOrders() {
             let supplier = await Supplier.findById(_super.supplier_id);
             sendSMS(supplier.phone_number , "", "", msg);
             await Order.findByIdAndUpdate(doc._id, {status:ORDER_STATUS.canceled_by_admin}, {new:true})
+            await NewPayment(doc.user._id, doc.orderNo , ` ارجاع مبلغ الطلب ${doc.orderNo} ` , '+' , doc.total , 'Online');
           }
         }
       }
@@ -293,7 +294,7 @@ exports.addOrder = async (req, reply) => {
           }
 
           let Orders = new Order({
-            paymnet_id: req.body.paymnet_id,
+            payment_id: req.body.payment_id,
             provider_total: provider_total,
             admin_total: admin_total,
             lat: lat,
@@ -1021,6 +1022,8 @@ exports.updateOrder = async (req, reply) => {
 
 exports.updateOrderCode = async (req, reply) => {
   try {
+    const currentTimestamp = Date.now();
+    const currentTimestampInSeconds = Math.floor(currentTimestamp);
      let userId = req.user._id
      var msg_finished = `تم الانتهاء من تنفيذ الطلب بنجاح`;
      const check = await Order.findById(req.params.id).populate("user")
@@ -1028,6 +1031,10 @@ exports.updateOrderCode = async (req, reply) => {
       if(check.status == ORDER_STATUS.updated) {
         if(String(req.body.update_code) == String(check.update_code)) {
           await Order.findByIdAndUpdate(req.params.id, { status: ORDER_STATUS.progress },{ new: true } )
+          firebaseRef
+          .child("orders")
+          .child(String(req.params.id))
+          .update({ timestamp: currentTimestampInSeconds, status: ORDER_STATUS.progress , msg: "تم تعديل الطلب رقم " + check.order_no}); 
           // send notification to employee 
         }else {
           reply
@@ -1046,6 +1053,11 @@ exports.updateOrderCode = async (req, reply) => {
       else if(check.status == ORDER_STATUS.prefinished) {
         if(String(req.body.update_code) == String(check.update_code)) {
           await Order.findByIdAndUpdate(req.params.id, { status: ORDER_STATUS.finished },{ new: true } )
+          firebaseRef
+          .child("orders")
+          .child(String(req.params.id))
+          .update({ timestamp: currentTimestampInSeconds, status: ORDER_STATUS.finished , msg: "تم انهاء الطلب رقم " + check.order_no}); 
+
           // send notification to employee 
           await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg_finished, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
         }else {
