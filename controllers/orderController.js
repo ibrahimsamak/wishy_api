@@ -110,6 +110,10 @@ exports.PendingCronOrders = async function PendingCronOrders() {
             let supplier = await Supplier.findById(_super.supplier_id);
             sendSMS(supplier.phone_number , "", "", msg);
             await Order.findByIdAndUpdate(doc._id, {status:ORDER_STATUS.canceled_by_admin}, {new:true})
+            firebaseRef
+            .child("orders")
+            .child(String(doc._id))
+            .remove();
           }
         }
 
