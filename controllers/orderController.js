@@ -89,7 +89,7 @@ exports.PendingCronOrders = async function PendingCronOrders() {
         var msg = `عزيزي المشرف يرجى اتخاذ الاجراء المناسب للطلب رقم: ${doc.order_no}`;
         let _place = await place.findById(doc.place);
         let _supervisors = await Supervisor.find({$and:[{place_id:_place._id},{isDeleted:false}]})
-        for await(const _super of _supervisors){
+        for await(const _super of _supervisors) {
           let _check = await Notifications.find({$and:[{user_id: _super._id},{type: NOTIFICATION_TYPE.REMINDER}]})
           if(_check.length < 3) {
             let _Notification = new Notifications({
@@ -110,16 +110,15 @@ exports.PendingCronOrders = async function PendingCronOrders() {
             let supplier = await Supplier.findById(_super.supplier_id);
             sendSMS(supplier.phone_number , "", "", msg);
             await Order.findByIdAndUpdate(doc._id, {status:ORDER_STATUS.canceled_by_admin}, {new:true})
-            if(doc.paymentType == PAYMENT_TYPE.ONLINE){
-              await refund(doc.payment_id, doc.total).then((x) => { response = x });
-            }else{
-              await NewPayment(doc.user._id, doc.order_no , ` ارجاع مبلغ الطلب ${doc.order_no}` , '+' , doc.total , 'Online');
-            }
-            await CreateGeneralNotification(doc.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, doc._id, "", doc.user._id, "", "");  
-            // await utils.refund(doc.payment_id, doc.total).then((x) => { response = x });
-            // await NewPayment(doc.user._id, doc.orderNo , ` ارجاع مبلغ الطلب ${doc.orderNo} ` , '+' , doc.total , 'Online');
           }
         }
+
+        if(doc.paymentType == PAYMENT_TYPE.ONLINE){
+          await refund(doc.payment_id, doc.total).then((x) => { response = x });
+        }else{
+          await NewPayment(doc.user._id, doc.order_no , ` ارجاع مبلغ الطلب ${doc.order_no}` , '+' , doc.total , 'Online');
+        }
+        await CreateGeneralNotification(doc.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, doc._id, "", doc.user._id, "", "");  
       }
     }
   });

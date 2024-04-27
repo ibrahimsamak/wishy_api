@@ -244,7 +244,6 @@ exports.sendSMS = async function(number, from, to, code){
   axios
   .post(url,body, _config)
   .then((response) => {
-    console.log(response)
   })
   .catch((error) => {
     console.log(error)
@@ -577,11 +576,9 @@ exports.refund = async function(paymen_id, amount){
     axios
     .post(url,body, auth)
     .then((response) => {
-      console.log(response.data)
       resolve(response.data)
     })
     .catch((error) => {
-      console.log(error.response.data)
       reject(error.response.data);
     });
   });
