@@ -91,7 +91,7 @@ exports.PendingCronOrders = async function PendingCronOrders() {
         let _supervisors = await Supervisor.find({$and:[{place_id:_place._id},{isDeleted:false}]})
         for await(const _super of _supervisors){
           let _check = await Notifications.find({$and:[{user_id: _super._id},{type: NOTIFICATION_TYPE.REMINDER}]})
-          if(_check.length < 1) {
+          if(_check.length < 3) {
             let _Notification = new Notifications({
               fromId: USER_TYPE.PANEL,
               user_id: _super._id,
@@ -115,7 +115,7 @@ exports.PendingCronOrders = async function PendingCronOrders() {
             }else{
               await NewPayment(doc.user._id, doc.order_no , ` ارجاع مبلغ الطلب ${doc.order_no}` , '+' , doc.total , 'Online');
             }
-
+            await CreateGeneralNotification(doc.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, doc._id, "", doc.user._id, "", "");  
             // await utils.refund(doc.payment_id, doc.total).then((x) => { response = x });
             // await NewPayment(doc.user._id, doc.orderNo , ` ارجاع مبلغ الطلب ${doc.orderNo} ` , '+' , doc.total , 'Online');
           }
@@ -965,7 +965,7 @@ exports.updateOrder = async (req, reply) => {
           await NewPayment(check.user._id, check.orderNo , ` ارجاع مبلغ الطلب ${check.orderNo}` , '+' , check.total , 'Online');
         }
 
-        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ طلب الى البطاقة", NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
       
         firebaseRef
         .child("orders")
@@ -1011,7 +1011,7 @@ exports.updateOrder = async (req, reply) => {
             await NewPayment(check.user._id, check.orderNo , ` ارجاع مبلغ الطلب ${check.orderNo}` , '+' , check.total , 'Online');
           }
 
-          await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ طلب الى المحفظة", NOTIFICATION_TYPE.ORDERS, check._id, "", check.user._id, "", "");
+          await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, "", check.user._id, "", "");
          
           firebaseRef
           .child("orders")
