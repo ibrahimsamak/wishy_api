@@ -974,6 +974,13 @@ const admin_routes = [
 
 //mobile client
 const mobile_routes = [
+  
+  // {
+  //   method: "POST",
+  //   url: "/api/mobile/refund/:id",
+  //   // beforeHandler: [auth.getToken],
+  //   handler: userController.refund_test,
+  // },
   {
     method: "POST",
     url: "/api/mobile/delete/:id",

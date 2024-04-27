@@ -2204,3 +2204,15 @@ exports.getCompany = async (req, reply) => {
     throw boom.boomify(err);
   }
 };
+
+exports.refund_test = async (req, reply) => {
+  // try {
+    response = null;
+    await utils.refund(req.params.id, req.body.amount).then((x) => {
+      response = x;
+    });
+    reply.send(response)
+  // } catch (err) {
+  //   throw boom.boomify(err);
+  // }
+};

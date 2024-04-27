@@ -563,3 +563,26 @@ exports.check_coupon = async function check_coupon(user_id, _coupon, sub_categor
   };
   return returnObject
 }
+
+exports.refund = async function(paymen_id, amount){
+  return new Promise(function (resolve, reject) {
+    var username = 'sk_test_5BKbvG1gY8rf7AWp7XW8FCbZGSfvnm1vptvaQu5m'
+    var url = `https://api.moyasar.com/v1/payments/${paymen_id}/refund`
+    let auth = {
+      auth: { username: username, password: '' }
+    }
+    let body = {
+      "amount": parseInt(amount, 10),
+    }
+    axios
+    .post(url,body, auth)
+    .then((response) => {
+      console.log(response.data)
+      resolve(response.data)
+    })
+    .catch((error) => {
+      console.log(error.response.data)
+      reject(error.response.data);
+    });
+  });
+}
