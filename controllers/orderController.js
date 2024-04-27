@@ -77,7 +77,7 @@ var firebaseRef = Firebase.database().ref();
 exports.PendingCronOrders = async function PendingCronOrders() {
   // */1 * * * *
   // 0 0 1 * *
-  cron.schedule(`0/1 * * * *`, async () => {
+  cron.schedule(`* * * * *`, async () => {
     const _reminder = await setting.findOne({ code: "REMINDER" });
     var today = moment().tz("Asia/Riyadh");
     let orders = await Order.find({status: ORDER_STATUS.new}).populate("user")
