@@ -90,7 +90,7 @@ exports.PendingCronOrders = async function PendingCronOrders() {
         let _place = await place.findById(doc.place);
         let _supervisors = await Supervisor.find({$and:[{place_id:_place._id},{isDeleted:false}]})
         for await(const _super of _supervisors) {
-          let _check = await Notifications.find({$and:[{user_id: _super._id},{type: NOTIFICATION_TYPE.REMINDER}]})
+          let _check = await Notifications.find({$and:[{user_id: _super._id},{type: NOTIFICATION_TYPE.REMINDER}, {body_parms:doc._id }]})
           if(_check.length < 3) {
             let _Notification = new Notifications({
               fromId: USER_TYPE.PANEL,
@@ -119,7 +119,8 @@ exports.PendingCronOrders = async function PendingCronOrders() {
 
         if(doc.paymentType == PAYMENT_TYPE.ONLINE){
           await refund(doc.payment_id, doc.total).then((x) => { response = x });
-        }else{
+        }
+        if(doc.paymentType == PAYMENT_TYPE.WALLET){
           await NewPayment(doc.user._id, doc.order_no , ` ارجاع مبلغ الطلب ${doc.order_no}` , '+' , doc.total , 'Online');
         }
         await CreateGeneralNotification(doc.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, doc._id, "", doc.user._id, "", "");  
@@ -935,7 +936,8 @@ exports.updateOrder = async (req, reply) => {
 
         if(check.paymentType == PAYMENT_TYPE.ONLINE){
           await refund(check.payment_id, check.total).then((x) => { response = x });
-        }else{
+        }
+        if(check.paymentType == PAYMENT_TYPE.WALLET){
           await NewPayment(check.user._id, check.orderNo , ` ارجاع مبلغ الطلب ${check.orderNo}` , '+' , check.total , 'Online');
         }
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");  
@@ -964,7 +966,8 @@ exports.updateOrder = async (req, reply) => {
 
         if(check.paymentType == PAYMENT_TYPE.ONLINE){
           await refund(check.payment_id, check.total).then((x) => { response = x });
-        }else{
+        }
+        if(check.paymentType == PAYMENT_TYPE.WALLET){
           await NewPayment(check.user._id, check.orderNo , ` ارجاع مبلغ الطلب ${check.orderNo}` , '+' , check.total , 'Online');
         }
 
@@ -1010,7 +1013,8 @@ exports.updateOrder = async (req, reply) => {
 
           if(check.paymentType == PAYMENT_TYPE.ONLINE){
             await refund(check.payment_id, check.total).then((x) => { response = x });
-          }else{
+          }
+          if(check.paymentType == PAYMENT_TYPE.WALLET){
             await NewPayment(check.user._id, check.orderNo , ` ارجاع مبلغ الطلب ${check.orderNo}` , '+' , check.total , 'Online');
           }
 
