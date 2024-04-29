@@ -78,6 +78,8 @@ exports.PendingCronOrders = async function PendingCronOrders() {
   // */1 * * * *
   // 0 0 1 * *
   cron.schedule(`* * * * *`, async () => {
+    const currentTimestamp = Date.now();
+    const currentTimestampInSeconds = Math.floor(currentTimestamp);
     const _reminder = await setting.findOne({ code: "REMINDER" });
     var today = moment().tz("Asia/Riyadh");
     let orders = await Order.find({status: ORDER_STATUS.new}).populate("user")
@@ -110,10 +112,13 @@ exports.PendingCronOrders = async function PendingCronOrders() {
             let supplier = await Supplier.findById(_super.supplier_id);
             sendSMS(supplier.phone_number , "", "", msg);
             await Order.findByIdAndUpdate(doc._id, {status:ORDER_STATUS.canceled_by_admin}, {new:true})
+            
             firebaseRef
             .child("orders")
-            .child(String(doc._id))
-            .remove();
+            .child(String(req.params.id))
+            .update({ timestamp: currentTimestampInSeconds, status: ORDER_STATUS.canceled_by_admin, msg: "تم الغاء الطلب رقم " + doc.order_no}); 
+
+            firebaseRef.child("orders").child(String(doc._id)).remove();
           }
         }
 
