@@ -90,7 +90,7 @@ exports.PendingCronOrders = async function PendingCronOrders() {
         let _place = await place.findById(doc.place);
         let _supervisors = await Supervisor.find({$and:[{place_id:_place._id},{isDeleted:false}]})
         for await(const _super of _supervisors) {
-          let _check = await Notifications.find({$and:[{user_id: _super._id},{type: NOTIFICATION_TYPE.REMINDER}, {body_parms:doc._id }]})
+          let _check = await Notifications.find({$and:[{user_id: _super._id}, {type: NOTIFICATION_TYPE.REMINDER}, {body_parms:doc._id }]})
           if(_check.length < 3) {
             let _Notification = new Notifications({
               fromId: USER_TYPE.PANEL,
