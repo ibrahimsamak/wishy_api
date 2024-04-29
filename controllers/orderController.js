@@ -943,7 +943,7 @@ exports.updateOrder = async (req, reply) => {
           await refund(check.payment_id, check.total).then((x) => { response = x });
         }
         if(check.paymentType == PAYMENT_TYPE.WALLET){
-          await NewPayment(check.user._id, check.orderNo , ` ارجاع مبلغ الطلب ${check.orderNo}` , '+' , check.total , 'Online');
+          await NewPayment(check.user._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
         }
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");  
 
@@ -973,7 +973,7 @@ exports.updateOrder = async (req, reply) => {
           await refund(check.payment_id, check.total).then((x) => { response = x });
         }
         if(check.paymentType == PAYMENT_TYPE.WALLET){
-          await NewPayment(check.user._id, check.orderNo , ` ارجاع مبلغ الطلب ${check.orderNo}` , '+' , check.total , 'Online');
+          await NewPayment(check.user._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
         }
 
         await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
@@ -1020,7 +1020,7 @@ exports.updateOrder = async (req, reply) => {
             await refund(check.payment_id, check.total).then((x) => { response = x });
           }
           if(check.paymentType == PAYMENT_TYPE.WALLET){
-            await NewPayment(check.user._id, check.orderNo , ` ارجاع مبلغ الطلب ${check.orderNo}` , '+' , check.total , 'Online');
+            await NewPayment(check.user._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
           }
 
           await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, "", check.user._id, "", "");
