@@ -571,7 +571,7 @@ exports.refund = async function(paymen_id, amount){
       auth: { username: username, password: '' }
     }
     let body = {
-      "amount": parseInt(amount, 10),
+      "amount": Number(amount) * 100
     }
     axios
     .post(url,body, auth)
