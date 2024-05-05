@@ -100,7 +100,7 @@ exports.MESSAGE_STRING_ENGLISH = {
   WALLET: "There is no enough balance in your wallet",
   NOCAR: "Sorry...please add a car so you can add an offer.",
   
-  WELCOME: "Welcome to Jaz App your verification code is: ",
+  WELCOME: "Welcome to wishy-ويشي App your verification code is: ",
   INVALID_TOKEN: "Invalid token",
   INVALID_TOKEN2: "Invalid token",
   ACCESS_DENIED: "Access denied. No token provided.",
@@ -177,7 +177,7 @@ exports.MESSAGE_STRING_ENGLISH = {
 exports.MESSAGE_STRING_ARABIC = {
   DELETED: "تم الحذف بنجاح",
   SUCCESS: "تمت العملية بنجاح",
-  SUCCESSNEW: "شكرا لكم لاستخدام تطبيق منصة جاز \n تم استقبال طلبكم بنجاح",
+  SUCCESSNEW: "شكرا لكم لاستخدام تطبيق منصة wishy-ويشي \n تم استقبال طلبكم بنجاح",
   ERROR: "عذرا .. حدث خطأ ما الرجاء المحاولة في وقت لاحق",
   WARNING: "عذرا .. موقعك الحالي غير مغظى",
   EXIT: " هذا العنصر موجود لدينا مسبقا",
@@ -188,7 +188,7 @@ exports.MESSAGE_STRING_ARABIC = {
 
   CANT_COMPLETEL_PROCESS:
     "عذرا .. لا يمكن اتمام العملية الرجاء التأكد من الحالة المرسلة",
-  WELCOME: "أهلا بكم في منصة جاز كوم رمز التفعيل هو: ",
+  WELCOME: "أهلا بكم في منصة wishy-ويشي رمز التفعيل هو: ",
   WALLET: "عذرا .. ليس لديك الرصيد الكافي في المحفظة",
   NOCAR: "عذرا .. يرجى اضافة سيارة لتتمكن من اضافة عرض",
 

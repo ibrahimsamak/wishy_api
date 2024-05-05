@@ -61,14 +61,14 @@ exports.decryptPasswordfunction = function (password) {
 
 exports.mail_reset_password = function (req, to, sub, text, data) {
   try {
-    email = "info@jazapp.online";
+    email = "info@wishy-ويشيapp.online";
     psw = "Ha@1020300";
     var transporter = nodemailer.createTransport({
       host: "",
       port: 465,
       secure: true,
       auth: {
-        user: "info@jazapp.online",
+        user: "info@wishy-ويشيapp.online",
         pass: "Ha@1020300",
       },
     });
@@ -91,7 +91,7 @@ exports.mail_reset_password = function (req, to, sub, text, data) {
         htmls = htmls.replace(/&#34;/g, '"');
 
         var mailOptions = {
-          from: '"منصة جاز" <' + email + ">",
+          from: '"منصة wishy-ويشي" <' + email + ">",
           to: to,
           subject: sub,
           text: text,
@@ -116,14 +116,14 @@ exports.mail_reset_password = function (req, to, sub, text, data) {
 
 exports.mail_welcome = function (req, to, sub, text, data) {
   try {
-    email = "info@jazapp.online";
+    email = "info@wishy-ويشيapp.online";
     psw = "Ha@1020300";
     var transporter = nodemailer.createTransport({
       host: "",
       port: 465,
       secure: true,
       auth: {
-        user: "info@jazapp.online",
+        user: "info@wishy-ويشيapp.online",
         pass: "Ha@1020300",
       },
     });
@@ -147,7 +147,7 @@ exports.mail_welcome = function (req, to, sub, text, data) {
         htmls = htmls.replace(/&#34;/g, '"');
 
         var mailOptions = {
-          from: '"منصة جاز" <' + email + ">",
+          from: '"منصة wishy-ويشي" <' + email + ">",
           to: to,
           subject: sub,
           text: text,
@@ -172,14 +172,14 @@ exports.mail_welcome = function (req, to, sub, text, data) {
 
 exports.mail_general = function (req, to, sub, text, data) {
   try {
-    email = "info@jazapp.online";
+    email = "info@wishy-ويشيapp.online";
     psw = "Ha@1020300";
     var transporter = nodemailer.createTransport({
       host: "smtp.hostinger.com",
       port: 465,
       secure: true,
       auth: {
-        user: "info@jazapp.online",
+        user: "info@wishy-ويشيapp.online",
         pass: "Ha@1020300",
       },
     });
@@ -202,7 +202,7 @@ exports.mail_general = function (req, to, sub, text, data) {
         htmls = htmls.replace(/&#34;/g, '"');
 
         var mailOptions = {
-          from: '"منصة جاز" <' + email + ">",
+          from: '"منصة wishy-ويشي" <' + email + ">",
           to: to,
           subject: sub,
           text: text,
@@ -236,18 +236,18 @@ exports.sendSMS = async function(number, from, to, code){
     },
   };
   let body = {
-    "src": "JAZCOM",
+    "src": "wishy-ويشيCOM",
     "body": "1234", //code,
     "dests": [number]
   }
 
-  axios
-  .post(url,body, _config)
-  .then((response) => {
-  })
-  .catch((error) => {
-    console.log(error)
-  });
+  // axios
+  // .post(url,body, _config)
+  // .then((response) => {
+  // })
+  // .catch((error) => {
+  //   console.log(error)
+  // });
 }
 
 exports.sendWhatsApp = async function(number, from, to, code){
