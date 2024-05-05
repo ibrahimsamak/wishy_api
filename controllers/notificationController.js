@@ -222,7 +222,6 @@ exports.getTop10AdminNotification = async (req, reply) => {
     query = {};
     if (req.user.userType == USER_TYPE.ADMIN) query["user_id"] = USER_TYPE.PANEL;
     if (req.user.userType != USER_TYPE.ADMIN) query["user_id"] = req.user._id;
-    console.log(req.user.userType);
     const _Notification = await Notifications.find(query)
       .sort({ _id: -1 })
       .limit(30);

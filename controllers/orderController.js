@@ -351,6 +351,7 @@ exports.addOrder = async (req, reply) => {
 
           const currentTimestamp = Date.now();
           const currentTimestampInSeconds = Math.floor(currentTimestamp);
+          
           firebaseRef
             .child("orders")
             .child(String(rs._id))
