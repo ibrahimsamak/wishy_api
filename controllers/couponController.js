@@ -397,3 +397,205 @@ exports.checkCouponReplacment = async (req, reply) => {
     throw boom.boomify(err);
   }
 };
+
+
+exports.checkCouponCart = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var place_id = req.headers["place"];
+    var supplier_id = req.headers["supplier"];
+    const tax = await setting.findOne({ code: "TAX" });
+    const user_id = req.user._id;
+
+    var totalPrice = 0.0;
+    var totalDiscount = 0.0;
+    var today = moment().tz("Asia/Riyadh");
+    var deliverycost = 0.0;
+    var expresscost = 0.0;
+    var providerArr = [];
+    var ar_msg = "";
+    var en_msg = "";
+    var statusCode = 200;
+    var newPlaceId = "";
+    var lat = 0.0;
+    var lng = 0.0;
+
+    const _sp = await Order.findOne({
+      $and: [{ user_id: user_id }, { couponCode: req.body.coupon }],
+    });
+
+    const item = await Cart.find({
+      $and: [{ user_id: user_id }],
+    })
+      .sort({ _id: -1 })
+      .lean();
+
+    if (item.length == 0) {
+      reply
+        .code(200)
+        .send(
+          errorAPI(
+            language,
+            400,
+            MESSAGE_STRING_ARABIC.EMPTY_CART,
+            MESSAGE_STRING_ENGLISH.EMPTY_CART,
+            {}
+          )
+        );
+      return;
+    }
+
+    for await (const data of item) {
+      var _product = await Product.findOne({
+        $and: [{ _id: data.product_id }, { isDeleted: false }],
+      });
+      if (_product) {
+          var productObject = _product.toObject();
+          delete productObject.arName;
+          delete productObject.enName;
+          delete productObject.arDescription;
+          delete productObject.enDescription;
+          productObject.name = _product[`${language}Name`];
+          productObject.description = _product[`${language}Description`];
+          productObject.cart_id = data._id;
+          productObject.qty = data.qty;
+          productObject.Total = data.Total;
+          productObject.TotalDiscount = data.TotalDiscount;
+
+          providerArr.push(productObject);
+        
+        if (
+          _product.price &&
+          _product.price != 0
+        ) {
+          totalPrice += Number(_product.price) * data.qty;
+          // totalDiscount += Number( Product_Price_Object.discountPrice * data.qty);
+        } 
+
+        // deliverycost += Number(Product_Price_Object.deliveryCost) * Number(data.qty);
+        // expresscost += Number(Product_Price_Object.expressCost) * Number(data.qty);
+      }
+    }
+
+    var sub_total = totalPrice - totalDiscount;
+    let sub_total_delivery = Number(sub_total) + Number(deliverycost);
+    let sub_total_express_delivery = Number(sub_total) + Number(expresscost);
+    var final_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery) ;
+    var final_express_total = Number(sub_total_express_delivery * Number(tax.value)) + Number(sub_total_express_delivery) ;
+   
+    const sp = await coupon.findOne({
+      $and: [
+        { dt_from: { $lte: today } },
+        { dt_to: { $gte: today } },
+        { coupon: req.body.coupon },
+        { isActive: true },
+      ],
+    });
+
+    // var sub_total = totalPrice - totalDiscount;
+    // var final_total =
+    //   Number(sub_total * Number(tax.value)) +
+    //   Number(sub_total) +
+    //   Number(deliverycost);
+
+    if (_sp) {
+      var sub_total = totalPrice - totalDiscount;
+      let sub_total_delivery = Number(sub_total) + Number(deliverycost);
+      let sub_total_express_delivery = Number(sub_total) + Number(expresscost);
+      var final_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
+      var final_express_total = Number(sub_total_express_delivery * Number(tax.value)) + Number(sub_total_express_delivery);
+
+      var returnObject = {
+        // results: [],
+        tax: Number(sub_total_delivery * Number(tax.value)),
+        deliveryCost: Number(deliverycost),
+        // expressCost: Number(expresscost),
+        total_price: Number(parseFloat(totalPrice).toFixed(2)),
+        total_discount: Number(parseFloat(totalDiscount).toFixed(2)),
+        final_total: Number(parseFloat(final_total).toFixed(2)),
+        // final_express_total: Number(parseFloat(final_express_total).toFixed(2)),
+      };
+
+      reply
+        .code(200)
+        .send(
+          errorAPI(
+            language,
+            400,
+            MESSAGE_STRING_ARABIC.COUPON_ERROR,
+            MESSAGE_STRING_ENGLISH.COUPON_ERROR,
+            returnObject
+          )
+        );
+      return;
+    } else {
+      if (sp) {
+        let newDeliverycost = deliverycost //- Number(deliverycost * sp.discount_rate);
+        let newExpresscost = expresscost //- Number(expresscost * sp.discount_rate);
+        var sub_total = totalPrice - totalDiscount;
+        let sub_total_delivery = Number(sub_total) + Number(newDeliverycost);
+        let sub_total_express_delivery = Number(sub_total) + Number(newExpresscost);
+        var final_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
+        // var final_express_total = Number(sub_total_express_delivery * Number(tax.value)) + Number(sub_total_express_delivery);
+        
+        var new_final_total = final_total - Number(final_total * sp.discount_rate);
+        var new_final_express_total = final_express_total - Number(final_express_total * sp.discount_rate);
+
+        var returnObject = {
+          tax: Number(tax.value),
+          deliveryCost: Number(newDeliverycost),
+          // expressCost: Number(newExpresscost),
+          total_price: Number(parseFloat(totalPrice).toFixed(2)),
+          total_discount: Number(parseFloat(Number(final_total * sp.discount_rate)).toFixed(2)),
+          final_total: Number(parseFloat(new_final_total).toFixed(2)),
+          // final_express_total: Number(parseFloat(new_final_express_total).toFixed(2)),
+        };
+
+        reply
+          .code(200)
+          .send(
+            success(
+              language,
+              200,
+              MESSAGE_STRING_ARABIC.SUCCESS,
+              MESSAGE_STRING_ENGLISH.SUCCESS,
+              returnObject
+            )
+          );
+        return;
+      } else {
+        var sub_total = totalPrice - totalDiscount;
+        let sub_total_delivery = Number(sub_total) + Number(deliverycost);
+        let sub_total_express_delivery = Number(sub_total) + Number(expresscost);
+        var final_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
+        var final_express_total = Number(sub_total_express_delivery * Number(tax.value)) + Number(sub_total_express_delivery);
+
+        var returnObject = {
+          results: [],
+          tax: Number(sub_total_delivery * Number(tax.value)),
+          deliveryCost: Number(deliverycost),
+          // expressCost: Number(expresscost),
+          total_price: Number(parseFloat(totalPrice).toFixed(2)),
+          total_discount: Number(parseFloat(totalDiscount).toFixed(2)),
+          final_total: Number(parseFloat(final_total).toFixed(2)),
+          // final_express_total: Number(parseFloat(final_express_total).toFixed(2)),
+        };
+
+        reply
+          .code(200)
+          .send(
+            errorAPI(
+              language,
+              400,
+              MESSAGE_STRING_ARABIC.COUPON_ERROR,
+              MESSAGE_STRING_ENGLISH.COUPON_ERROR,
+              returnObject
+            )
+          );
+        return;
+      }
+    }
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};

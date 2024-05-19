@@ -27,6 +27,7 @@ const {
   getCurrentDateTime,
   currentDate,
   special,
+  event,
 } = require("../models/Constant");
 const { Users } = require("../models/User");
 const { employee } = require("../models/Employee");
@@ -50,32 +51,7 @@ const { Adv } = require("../models/adv");
 exports.getHomeRequest = async (req, reply) => {
   try {
     const language = req.headers["accept-language"];
-    const cats = await Category.find({isDeleted: false}).sort({ sort: 1 });
-    var arr = [];
-    for await(const element of cats){
-      var newObject = element.toObject();
-      var subs = []
-      var _subs = await SubCategory.find({$and:[{isDeleted: false},{category_id:newObject._id }]}).sort({ _id: -1 });
-      for await(const i of _subs){
-        var _newObject = i.toObject();
-        var obj = {
-          _id: _newObject._id,
-          price: _newObject.price,
-          title: _newObject[`${language}Name`],
-          description: _newObject[`${language}Description`],
-          image: _newObject.image,
-        };
-        subs.push(obj)
-      }
-      var obj = {
-        _id: newObject._id,
-        title: newObject[`${language}Name`],
-        description: newObject[`${language}Description`],
-        image: newObject.image,
-        sub:subs
-      };
-      arr.push(obj);
-    }
+    const cats = await special.find({isDeleted: false}).sort({ sort: 1 });
     var arr2 = [];
     const slider = await Adv.find({}).sort({ _id: -1 });
     for await(const element of slider){
@@ -90,7 +66,7 @@ exports.getHomeRequest = async (req, reply) => {
     }
 
     var res_obj = {
-      category: arr,
+      category: cats,
       slider: arr2
     }
     reply
@@ -433,6 +409,38 @@ exports.getCountry = async (req, reply) => {
   }
 };
 
+exports.getEvent = async (req, reply) => {
+  try {
+    var arr = [];
+    const language = req.headers["accept-language"];
+    const _country = await event.find({ isDeleted: false });
+
+    for (const item of _country) {
+      var newCountry = item.toObject();
+      var obj = {
+        _id: newCountry._id,
+        name: newCountry[`${language}Name`],
+      };
+      arr.push(obj);
+    }
+
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          arr
+        )
+      );
+    return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 exports.getSpecial = async (req, reply) => {
   try {
     var arr = [];
@@ -477,6 +485,30 @@ exports.getCountryAdmin = async (req, reply) => {
     throw boom.boomify(err);
   }
 };
+
+exports.getEventAdmin = async (req, reply) => {
+  try {
+    var arr = [];
+    const language = req.headers["accept-language"];
+    const _country = await event.find();
+
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          _country
+        )
+      );
+    return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 
 exports.getCity = async (req, reply) => {
   try {
@@ -773,6 +805,21 @@ exports.getSingleCountry = async (req, reply) => {
   }
 };
 
+exports.getSingleEvent = async (req, reply) => {
+  try {
+    const _country = await event.findById(req.params.id).sort({ _id: -1 });
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      items: _country,
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 exports.getSingleSpecial = async (req, reply) => {
   try {
     const _country = await special.findById(req.params.id).sort({ _id: -1 });
@@ -791,7 +838,17 @@ exports.getSingleSpecial = async (req, reply) => {
 exports.getSettings = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
-    const settings = await setting.find().sort({ _id: -1 });
+    const _settings = await setting.find().sort({ _id: -1 });
+    const _category = await Category.find({isDeleted:false}).sort({ _id: -1 });
+    const _special = await special.find({isDeleted:false}).sort({ _id: -1 });
+    const _event = await event.find({isDeleted:false}).sort({ _id: -1 });
+
+    var obj = {
+      settings: _settings,
+      category: _category,
+      special: _special,
+      event: _event
+    }
     reply
     .code(200)
     .send(
@@ -800,7 +857,7 @@ exports.getSettings = async (req, reply) => {
         200,
         MESSAGE_STRING_ARABIC.SUCCESS,
         MESSAGE_STRING_ENGLISH.SUCCESS,
-        settings
+        obj
       )
     );
   } catch (err) {
@@ -1319,10 +1376,10 @@ exports.addCountry = async (req, reply) => {
 };
 
 
-exports.addSpecial = async (req, reply) => {
+exports.addEvent = async (req, reply) => {
   try {
     const language = req.headers["accept-language"];
-    let _country = new special({
+    let _country = new event({
       arName: req.body.arName,
       enName: req.body.enName,
       isDeleted: false,
@@ -1353,6 +1410,76 @@ exports.addSpecial = async (req, reply) => {
     throw boom.boomify(err);
   }
 };
+
+exports.addSpecial = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var approve = false;
+    if (req.raw.body.by == 1) {
+      approve = true;
+    }
+    if (req.raw.files) {
+      const files = req.raw.files;
+      let fileArr = [];
+      for (let key in files) {
+        fileArr.push({
+          name: files[key].name,
+          mimetype: files[key].mimetype,
+        });
+      }
+      var data = Buffer.from(files.image.data);
+      fs.writeFile(
+        "./uploads/" + files.image.name,
+        data,
+        "binary",
+        function (err) {
+          if (err) {
+            console.log("There was an error writing the image");
+          } else {
+            console.log("The sheel file was written");
+          }
+        }
+      );
+
+      let img = "";
+      await uploadImages(files.image.name).then((x) => {
+        img = x;
+      });
+
+      let Advs = new special({
+        arName: req.raw.body.arName,
+        arName: req.raw.body.arName,
+        image: img,
+        isDeleted: false
+      });
+      var _return = handleError(Advs.validateSync());
+      if (_return.length > 0) {
+        reply.code(200).send({
+          status_code: 400,
+          status: false,
+          message: _return[0],
+          items: _return,
+        });
+        return;
+      }
+      let rs = await Advs.save();
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          rs
+        )
+      );
+    }
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 
 exports.addCity = async (req, reply) => {
   try {
@@ -1539,10 +1666,11 @@ exports.updateCountry = async (req, reply) => {
   }
 };
 
-exports.updateSpecial = async (req, reply) => {
+
+exports.updateEvent = async (req, reply) => {
   try {
     const language = req.headers["accept-language"];
-    const _country = await special.findByIdAndUpdate(
+    const _country = await event.findByIdAndUpdate(
       req.params.id,
       {
         arName: req.body.arName,
@@ -1570,9 +1698,112 @@ exports.updateSpecial = async (req, reply) => {
         200,
         MESSAGE_STRING_ARABIC.SUCCESS,
         MESSAGE_STRING_ENGLISH.SUCCESS,
-        {}
+        country
       )
     );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.updateSpecial = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    if (req.raw.files) {
+      const files = req.raw.files;
+      let fileArr = [];
+      for (let key in files) {
+        fileArr.push({
+          name: files[key].name,
+          mimetype: files[key].mimetype,
+        });
+      }
+      var data = Buffer.from(files.image.data);
+      fs.writeFile(
+        "./uploads/" + files.image.name,
+        data,
+        "binary",
+        function (err) {
+          if (err) {
+            console.log("There was an error writing the image");
+          } else {
+            console.log("The sheel file was written");
+          }
+        }
+      );
+
+      let img = "";
+      await uploadImages(files.image.name).then((x) => {
+        img = x;
+      });
+
+      const Advs = await special.findByIdAndUpdate(
+        req.params.id,
+        {
+          arName: req.raw.body.arName,
+          enName: req.raw.body.enName,
+          image: img,
+        },
+        { new: true, runValidators: true },
+        function (err, model) {
+          var _return = handleError(err);
+          if (_return.length > 0) {
+            reply.code(200).send({
+              status_code: 400,
+              status: false,
+              message: _return[0],
+              items: _return,
+            });
+            return;
+          }
+        }
+      );
+      // await updateCacheWithUpdate('Advs', Advs, req.params.id)
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          Advs
+        )
+      );
+    } else {
+      const Advs = await special.findByIdAndUpdate(
+        req.params.id,
+        {
+          arName: req.raw.body.arName,
+          enName: req.raw.body.enName,
+        },
+        { new: true, runValidators: true },
+        function (err, model) {
+          var _return = handleError(err);
+          if (_return.length > 0) {
+            reply.code(200).send({
+              status_code: 400,
+              status: false,
+              message: _return[0],
+              items: _return,
+            });
+            return;
+          }
+        }
+      );
+      // await updateCacheWithUpdate('Advs', Advs, req.params.id)
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          Advs
+        )
+      );
+    }
   } catch (err) {
     throw boom.boomify(err);
   }
@@ -1655,6 +1886,43 @@ exports.deleteCountry = async (req, reply) => {
     throw boom.boomify(err);
   }
 };
+
+exports.deleteEvent = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    const previousCountry = await event.findById(req.params.id);
+    const _country = await event.findByIdAndUpdate(
+      req.params.id,
+      { isDeleted: !previousCountry.isDeleted },
+      { new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 
 exports.deleteSpecial = async (req, reply) => {
   try {

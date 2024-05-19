@@ -42,8 +42,6 @@ const { request } = require("request");
 exports.getProductsByCategoryId = async (req, reply) => {
   try {
     const language = req.headers["accept-language"];
-    var place_id = req.headers["place"];
-    var supplier_id = req.headers["supplier"];
     const user_id = req.user._id;
 
     // const lat = req.query.lat;
@@ -54,157 +52,39 @@ exports.getProductsByCategoryId = async (req, reply) => {
     var limit = parseFloat(req.query.limit, 10);
     // get products prices in location
 
-    var Product_Prices = await Product_Price.find({
-      $and: [
-        { place_id: place_id },
-        { supplier_id: supplier_id },
-        { isDeleted: false },
-      ],
-    });
-    var products_ids = Product_Prices.map((x) => x.product_id);
-
-    var total = await Product.find({
-      $and: [
-        { _id: { $in: products_ids } },
-        { category_id: req.params.id },
-        { isNewProduct: true },
-        { isDeleted: false },
-      ],
-    }).countDocuments();
-    var item = await Product.find({
-      $and: [
-        { _id: { $in: products_ids } },
-        { category_id: req.params.id },
-        { isNewProduct: true },
-        { isDeleted: false },
-      ],
-    })
-      .populate("category_id")
-      .sort({ _id: -1 })
-      .skip(page * limit)
-      .limit(limit);
-
-    for await (const data of item) {
-      var Product_Price_Object = Product_Prices.find((x) => {
-        return String(x.product_id) === String(data._id);
-      });
-
-      const checkFavorite = await Favorite.findOne({
-        $and: [
-          { user_id: user_id },
-          { product_id: data._id },
-          { place_id: place_id },
-          { supplier_id: supplier_id },
-        ],
-      });
-      const newObj = data.toObject();
-      if (checkFavorite) {
-        newObj.favorite_id = checkFavorite._id;
-      } else {
-        newObj.favorite_id = null;
-      }
-
-      var cateogory = {
-        _id: data.category_id._id,
-        name: data.category_id[`${language}Name`],
-        image: data.category_id.image ? data.category_id.image : "",
-      };
-
-      delete newObj.arName;
-      delete newObj.enName;
-      delete newObj.arDescription;
-      delete newObj.enDescription;
-      newObj.discountPrice = Product_Price_Object.discountPrice;
-      newObj.price_for_new = Product_Price_Object.price_for_new;
-      newObj.price_for_replacment = Product_Price_Object.price_for_replacment;
-      newObj.name = data[`${language}Name`];
-      newObj.description = data[`${language}Description`];
-      newObj.category_id = cateogory;
-      returnArr.push(newObj);
+    var query1 = {$and:[{isDeleted:false}]}
+    if (req.query.q && req.query.q != "") {
+        query1.$and.push({
+          $or: [
+            { arName: { $regex: new RegExp(req.query.q, "i") } },
+            { enName: { $regex: new RegExp(req.query.q, "i") } },
+          ],
+      })
+    }
+    if (req.query.category_id && req.query.category_id != "") {
+        query1.$and.push({category_id: req.query.category_id});
+    }
+    if (req.query.special_id && req.query.special_id != "") {
+        query1.$and.push({special_id: req.query.special_id});
+    }
+    if (req.query.isOffer && req.query.isOffer != "") {
+        query1.$and.push({isOffer: req.query.isOffer});
     }
 
-    reply.code(200).send(
-      success(
-        language,
-        200,
-        MESSAGE_STRING_ARABIC.SUCCESS,
-        MESSAGE_STRING_ENGLISH.SUCCESS,
-        returnArr,
-        {
-          size: returnArr.length,
-          totalElements: total,
-          totalPages: Math.floor(total / limit),
-          pageNumber: page,
-        }
-      )
-    );
-    return;
-  } catch (err) {
-    throw boom.boomify(err);
-  }
-};
 
-exports.getProductsSearchFilter = async (req, reply) => {
-  try {
-    var returnArr = [];
-    const language = req.headers["accept-language"];
-    var place_id = req.headers["place"];
-    var supplier_id = req.headers["supplier"];
-    const user_id = req.user._id;
-
-    var sort = {};
-    var sort_field = req.body.sort_field;
-    var sort_value = req.body.sort_value;
-    sort[sort_field] = sort_value;
-
-    let query1 = {};
-    var page = parseFloat(req.body.page, 10);
-    var limit = parseFloat(req.body.limit, 10);
-    if (req.body.name && req.body.name != "") {
-      query1 = {
-        $or: [
-          { arName: { $regex: new RegExp(req.body.name, "i") } },
-          { enName: { $regex: new RegExp(req.body.name, "i") } },
-        ],
-      };
-    }
-
-    if (req.body.category_id && req.body.category_id != "") {
-      query1["category_id"] = req.body.category_id;
-    }
-    query1["isNewProduct"] = true;
-    query1["isDeleted"] = false;
-
-
-    var Product_Prices = await Product_Price.find({
-      $and: [
-        { place_id: place_id },
-        { supplier_id: supplier_id },
-        { isDeleted: false },
-      ],
-    }).sort(sort);
-    var products_ids = Product_Prices.map((x) => x.product_id);
-    query1["_id"] = { $in: products_ids };
-    const total = await Product.find(query1).countDocuments();
+    var total = await Product.countDocuments(query1);
     var item = await Product.find(query1)
-      .populate("category_id")
-      .populate("type_id")
-      .select(["-token", "-password"])
-      .skip(page * limit)
-      .limit(limit)
-      .sort(sort);
+    // .populate("category_id")
+    // .populate("special_id")
+    .sort({ _id: -1 })
+    .skip(page * limit)
+    .limit(limit);
 
     for await (const data of item) {
-      var Product_Price_Object = Product_Prices.find((x) => {
-        return String(x.product_id) === String(data._id);
-      });
-
       const checkFavorite = await Favorite.findOne({
         $and: [
           { user_id: user_id },
           { product_id: data._id },
-          { place_id: place_id },
-          { supplier_id: supplier_id },
         ],
       });
       const newObj = data.toObject();
@@ -214,22 +94,12 @@ exports.getProductsSearchFilter = async (req, reply) => {
         newObj.favorite_id = null;
       }
 
-      var cateogory = {
-        _id: data.category_id._id,
-        name: data.category_id[`${language}Name`],
-        image: data.category_id.image ? data.category_id.image : "",
-      };
-
       delete newObj.arName;
       delete newObj.enName;
       delete newObj.arDescription;
       delete newObj.enDescription;
-      newObj.discountPrice = Product_Price_Object.discountPrice;
-      newObj.price_for_new = Product_Price_Object.price_for_new;
-      newObj.price_for_replacment = Product_Price_Object.price_for_replacment;
       newObj.name = data[`${language}Name`];
       newObj.description = data[`${language}Description`];
-      newObj.category_id = cateogory;
       returnArr.push(newObj);
     }
 
@@ -248,170 +118,6 @@ exports.getProductsSearchFilter = async (req, reply) => {
         }
       )
     );
-  } catch (err) {
-    throw boom.boomify(err);
-  }
-};
-
-exports.getRefillProducts = async (req, reply) => {
-  try {
-    const language = req.headers["accept-language"];
-    var place_id = req.headers["place"];
-    var supplier_id = req.headers["supplier"];
-    const user_id = req.user._id;
-
-    // const lat = req.query.lat;
-    // const lng = req.query.lng;
-    var returnArr = [];
-
-    // var page = parseFloat(req.query.page, 10);
-    // var limit = parseFloat(req.query.limit, 10);
-    // get products prices in location
-
-    var Product_Prices = await Product_Price.find({
-      $and: [
-        { place_id: place_id },
-        { supplier_id: supplier_id },
-        { isDeleted: false },
-      ],
-    });
-    var products_ids = Product_Prices.map((x) => x.product_id);
-
-    // var total = await Product.find({
-    //   $and: [
-    //     { _id: { $in: products_ids } },
-    //     { isReplacement: true },
-    //     {
-    //       isDeleted: false,
-    //     },
-    //   ],
-    // }).countDocuments();
-    var item = await Product.find({
-      $and: [
-        { _id: { $in: products_ids } },
-        { isReplacement: true },
-        { isDeleted: false },
-      ],
-    })
-      .populate("category_id")
-      .sort({ _id: -1 });
-    // .skip(page * limit)
-    // .limit(limit);
-
-    for await (const data of item) {
-      var Product_Price_Object = Product_Prices.find((x) => {
-        return String(x.product_id) === String(data._id);
-      });
-
-      const checkFavorite = await Favorite.findOne({
-        $and: [
-          { user_id: user_id },
-          { product_id: data._id },
-          { place_id: place_id },
-          { supplier_id: supplier_id },
-        ],
-      });
-      const newObj = data.toObject();
-      if (checkFavorite) {
-        newObj.favorite_id = checkFavorite._id;
-      } else {
-        newObj.favorite_id = null;
-      }
-
-      var cateogory = {
-        _id: data.category_id._id,
-        name: data.category_id[`${language}Name`],
-        image: data.category_id.image ? data.category_id.image : "",
-      };
-
-      delete newObj.arName;
-      delete newObj.enName;
-      delete newObj.arDescription;
-      delete newObj.enDescription;
-      newObj.discountPriceReplacment =
-        Product_Price_Object.discountPriceReplacment;
-      newObj.discountPriceReplacment =
-        Product_Price_Object.discountPriceReplacment;
-      newObj.price_for_new = Product_Price_Object.price_for_new;
-      newObj.price_for_replacment = Product_Price_Object.price_for_replacment;
-      newObj.name = data[`${language}Name`];
-      newObj.description = data[`${language}Description`];
-      newObj.category_id = cateogory;
-      returnArr.push(newObj);
-    }
-
-    reply.code(200).send(
-      success(
-        language,
-        200,
-        MESSAGE_STRING_ARABIC.SUCCESS,
-        MESSAGE_STRING_ENGLISH.SUCCESS,
-        returnArr
-        // {
-        //   size: returnArr.length,
-        //   totalElements: total,
-        //   totalPages: Math.floor(total / limit),
-        //   pageNumber: page,
-        // }
-      )
-    );
-    return;
-  } catch (err) {
-    throw boom.boomify(err);
-  }
-};
-
-exports.getCategories = async (req, reply) => {
-  try {
-    const language = req.headers["accept-language"];
-
-    const _Category = await Category.find({
-      isDeleted: false,
-    }).sort({ sort: 1 });
-    var arr = [];
-    _Category.forEach((element) => {
-      var newObject = element.toObject();
-      var obj = {
-        _id: newObject._id,
-        name: newObject[`${language}Name`],
-        image: newObject.image,
-      };
-      arr.push(obj);
-    });
-    reply
-      .code(200)
-      .send(
-        success(
-          language,
-          200,
-          MESSAGE_STRING_ARABIC.SUCCESS,
-          MESSAGE_STRING_ENGLISH.SUCCESS,
-          arr
-        )
-      );
-    return;
-  } catch (err) {
-    throw boom.boomify(err);
-  }
-};
-
-exports.getSuppliers = async (req, reply) => {
-  try {
-    const language = req.headers["accept-language"];
-    const _Category = await Supplier.find({isDeleted:false})
-      .sort({ _id: -1 })
-      .populate("cities");
-    reply
-      .code(200)
-      .send(
-        success(
-          language,
-          200,
-          MESSAGE_STRING_ARABIC.SUCCESS,
-          MESSAGE_STRING_ENGLISH.SUCCESS,
-          _Category
-        )
-      );
     return;
   } catch (err) {
     throw boom.boomify(err);
@@ -585,12 +291,12 @@ exports.addProduct = async (req, reply) => {
         arDescription: req.raw.body.arDescription,
         enDescription: req.raw.body.enDescription,
         rate: 0,
+        price:req.raw.body.price,
         image: img,
         createat: getCurrentDateTime(),
         category_id: req.raw.body.category_id,
-        isNewProduct: req.raw.body.isNewProduct,
-        isReplacement: req.raw.body.isReplacement,
-        sort: req.raw.body.sort,
+        special_id: req.raw.body.special_id,
+        isOffer: req.raw.body.isOffer,
         isDeleted: false,
       });
       var _return = handleError(rs.validateSync());
@@ -657,9 +363,9 @@ exports.updateProduct = async (req, reply) => {
           enDescription: req.raw.body.enDescription,
           image: img,
           category_id: req.raw.body.category_id,
-          isNewProduct: req.raw.body.isNewProduct,
-          isReplacement: req.raw.body.isReplacement,
-          sort: req.raw.body.sort,
+          special_id: req.raw.body.special_id,
+          isOffer: req.raw.body.isOffer,
+          price:req.raw.body.price,
         },
         { new: true, runValidators: true },
         function (err, model) {
@@ -691,9 +397,9 @@ exports.updateProduct = async (req, reply) => {
           arDescription: req.raw.body.arDescription,
           enDescription: req.raw.body.enDescription,
           category_id: req.raw.body.category_id,
-          isNewProduct: req.raw.body.isNewProduct,
-          isReplacement: req.raw.body.isReplacement,
-          sort: req.raw.body.sort,
+          special_id: req.raw.body.special_id,
+          isOffer: req.raw.body.isOffer,
+          price:req.raw.body.price,
         },
         { new: true }
       );
@@ -726,6 +432,7 @@ exports.getSingleProduct = async (req, reply) => {
   }
 };
 
+
 exports.getAllProductPlaceByAdmin = async (req, reply) => {
   try {
     const language = req.headers["accept-language"];
@@ -733,27 +440,28 @@ exports.getAllProductPlaceByAdmin = async (req, reply) => {
     var limit = parseFloat(req.query.limit, 10);
     // var query = {};
     var query = { $and: [] };
-
+    if (String(req.body.name) != "") {
+      query.$and.push({
+        $or: [
+          { arName: { $regex: new RegExp(req.body.name, "i") } },
+          { arDescription: { $regex: new RegExp(req.body.name, "i") } },
+          { enName: { $regex: new RegExp(req.body.name, "i") } },
+          { enDescription: { $regex: new RegExp(req.body.name, "i") } },
+        ],
+      });
+    }
     if (req.body.category_id != "") {
         query.$and.push({ category_id: req.body.category_id });
     }
-    if (req.body.city_id != "") {
-        query.$and.push({ city_id: req.body.city_id });
+    if (req.body.special_id != "") {
+        query.$and.push({ special_id: req.body.special_id });
     }
-    if (req.body.place_id != "") {
-      query.$and.push({ place_id: req.body.place_id });
-    }
-    if (req.body.supplier_id != "") {
-      query.$and.push({ supplier_id: req.body.supplier_id });
-    }
-
+  
     query.$and.push({ isDeleted: false });
-    const total = await Product_Price.find(query).countDocuments();
-    const item = await Product_Price.find(query)
+    const total = await Product.find(query).countDocuments();
+    const item = await Product.find(query)
       .populate("category_id")
-      .populate("place_id")
-      .populate("city_id")
-      .populate("supplier_id")
+      .populate("special_id")
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -790,24 +498,18 @@ exports.getAllProductPlaceExcelByAdmin = async (req, reply) => {
         ],
       });
     }
-    if (req.body.supplier_id != "") {
-      query.$and.push({ supplier_id: req.body.supplier_id });
+    if (req.body.category_id != "") {
+      query.$and.push({ category_id: req.body.category_id });
     }
-    if (req.body.place_id != "") {
-      query.$and.push({ place_id: req.body.place_id });
+    if (req.body.special_id != "") {
+        query.$and.push({ special_id: req.body.special_id });
     }
 
     query.$and.push({ isDeleted: false });
-    const total = await Product_Price.find(query).countDocuments();
-    const item = await Product_Price.find(query)
-      .populate("product_id")
-      .populate({
-        path: "product_id",
-        populate: {
-          path: "category_id",
-        },
-      })
-      .populate("place_id")
+    const total = await Product.find(query).countDocuments();
+    const item = await Product.find(query)
+    .populate("category_id")
+    .populate("special_id")
       .sort({ _id: -1 });
 
     var obj = {};

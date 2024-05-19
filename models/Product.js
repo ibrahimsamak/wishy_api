@@ -4,21 +4,48 @@ const { getCurrentDateTime } = require("../models/Constant");
 
 const Productschema = mongoose.Schema(
   {
+    arName: {
+      type: String,
+      required: [true, "arabic name is required"],
+    },
+    enName: {
+      type: String,
+      required: [true, "english name is required"],
+    },
+    enDescription: {
+      type: String,
+    },
+    arDescription: {
+      type: String,
+    },
+    image: {
+      type: String,
+    },
     createat: {
       type: Date,
+    },
+    price: {
+      type: Number,
     },
     category_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "category",
       required: [true, "category is required"],
     },
-    supplier_id: {
+    special_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "supplier",
+      ref: "special",
+      required: [true, "special is required"],
     },
-    sort: {
+    owner: {
+      type: String,
+    },
+    isOffer: {
+      type: Boolean,
+    },
+    rate: {
       type: Number,
-      default: 0
+      default:0
     },
     isDeleted: {
       type: Boolean,

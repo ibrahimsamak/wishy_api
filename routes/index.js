@@ -10,6 +10,8 @@ const providerController = require("../controllers/providerController");
 const homeController = require("../controllers/homeController");
 const employeeController = require("../controllers/employeeController");
 const productController = require("../controllers/productController");
+const favoriteController = require("../controllers/favoriteController");
+const cartController = require("../controllers/cartController");
 
 const fastify = require("fastify")({
   logger: true,
@@ -226,6 +228,36 @@ const admin_routes = [
     url: "/api/constant/country/:id",
     beforeHandler: [auth.getAdminToken],
     handler: constantController.updateCountry,
+  },
+
+
+  {
+    method: "GET",
+    url: "/api/constant/event",
+    handler: constantController.getEventAdmin,
+  },
+  {
+    method: "GET",
+    url: "/api/constant/event/:id",
+    handler: constantController.getSingleEvent,
+  },
+  {
+    method: "POST",
+    url: "/api/constant/delete-event/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: constantController.deleteEvent,
+  },
+  {
+    method: "POST",
+    url: "/api/constant/event",
+    beforeHandler: [auth.getAdminToken],
+    handler: constantController.addEvent,
+  },
+  {
+    method: "POST",
+    url: "/api/constant/event/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: constantController.updateEvent,
   },
 
   {
@@ -765,13 +797,19 @@ const admin_routes = [
     //place_Products
     {
       method: "POST",
-      url: "/api/products/places/list",
+      url: "/api/products/list",
       beforeHandler: [auth.getAdminToken],
       handler: productController.getAllProductPlaceByAdmin,
     },
     {
+      method: "GET",
+      url: "/api/products/details/:id",
+      beforeHandler: [auth.getAdminToken],
+      handler: productController.getSingleProduct,
+    },
+    {
       method: "POST",
-      url: "/api/products/places/list_excel",
+      url: "/api/products/list_excel",
       beforeHandler: [auth.getAdminToken],
       handler: productController.getAllProductPlaceExcelByAdmin,
     },
@@ -783,9 +821,21 @@ const admin_routes = [
     },
     {
       method: "POST",
-      url: "/api/products/places/add",
+      url: "/api/products/add",
       beforeHandler: [auth.getAdminToken],
-      handler: productController.addProductPlace,
+      handler: productController.addProduct,
+    },
+    {
+      method: "POST",
+      url: "/api/products/update/:id",
+      beforeHandler: [auth.getAdminToken],
+      handler: productController.updateProduct,
+    },
+    {
+      method: "POST",
+      url: "/api/products/delete/:id",
+      beforeHandler: [auth.getAdminToken],
+      handler: productController.deleteProduct,
     },
     {
       method: "POST",
@@ -981,6 +1031,74 @@ const mobile_routes = [
   //   // beforeHandler: [auth.getToken],
   //   handler: userController.refund_test,
   // },
+    //favorite
+    {
+      method: "POST",
+      url: "/api/mobile/favorite/add",
+      beforeHandler: [auth.getToken],
+      handler: favoriteController.addDeleteFavorite,
+    },
+    {
+      method: "GET",
+      url: "/api/mobile/favorite/get",
+      beforeHandler: [auth.getToken],
+      handler: favoriteController.getFavoriteByUserId,
+    },
+    //Cart
+    {
+      method: "POST",
+      url: "/api/mobile/cart/add",
+      beforeHandler: [auth.getToken],
+      handler: cartController.addProduct,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/cart/update",
+      beforeHandler: [auth.getToken],
+      handler: cartController.UpdateCart,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/cart/delete-cart",
+      beforeHandler: [auth.getToken],
+      handler: cartController.deleteCart,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/cart/delete",
+      beforeHandler: [auth.getToken],
+      handler: cartController.deleteItemCart,
+    },
+    {
+      method: "GET",
+      url: "/api/mobile/cart/count",
+      beforeHandler: [auth.getToken],
+      handler: cartController.getCartCount,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/cart/total",
+      beforeHandler: [auth.getToken],
+      handler: cartController.getCartTotalsUserId,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/cart/get",
+      beforeHandler: [auth.getToken],
+      handler: cartController.getCartUserId,
+    },
+  {
+    method: "GET",
+    url: "/api/mobile/product/list",
+    beforeHandler: [auth.getToken],
+    handler: productController.getProductsByCategoryId,
+  },
+  {
+    method: "GET",
+    url: "/api/mobile/products/details/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: productController.getSingleProduct,
+  },
   {
     method: "POST",
     url: "/api/mobile/delete/:id",
@@ -1321,9 +1439,9 @@ const mobile_routes = [
   //coupon
   {
     method: "POST",
-    url: "/api/mobile/check/coupon",
+    url: "/api/mobile/cart/coupon",
     beforeHandler: [auth.getToken],
-    handler: couponController.checkCouponReplacment,
+    handler: couponController.checkCouponCart,
   },
   //transaction
   {

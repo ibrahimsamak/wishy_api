@@ -40,6 +40,31 @@ const countrySchema = mongoose.Schema(
   { versionKey: false }
 );
 
+const specialSchema = mongoose.Schema(
+  {
+    arName: {
+      type: String,
+      required: [true, "arabic name is required"],
+    },
+    enName: {
+      type: String,
+      required: [true, "english name is required"],
+    },
+    image:{
+      type: String,
+      required: [true, "image is required"],
+    },
+    isDeleted: {
+      type: Boolean,
+    },
+    type: {
+      type: String,
+    },
+  },
+  { versionKey: false }
+);
+
+
 const generalSchema = mongoose.Schema(
   {
     arName: {
@@ -326,7 +351,7 @@ const ContactOption = mongoose.model("ContactOption", Socialschema);
 const city = mongoose.model("city", schema);
 const place = mongoose.model("place", PlacesSchema);
 const country = mongoose.model("countries", countrySchema);
-const special = mongoose.model("special", countrySchema);
+const special = mongoose.model("special", specialSchema);
 const delivery_time = mongoose.model("deliveryTime", delivery_timeSchema);
 const tokens = mongoose.model("tokens", tokenschema);
 const StaticPage = mongoose.model("staticpage", StaticPageSchema);
@@ -337,6 +362,7 @@ const walletsetting = mongoose.model("walletsettings", walletsettings);
 const type = mongoose.model("type", generalSchema);
 const language = mongoose.model("language", generalSchema);
 const times = mongoose.model("times", TimesSchema);
+const event = mongoose.model("event", countrySchema);
 
 function getCurrentDateTime() {
   // var utc = new Date();
@@ -371,3 +397,4 @@ exports.type = type;
 exports.languages = language;
 exports.times = times;
 exports.special = special;
+exports.event = event;

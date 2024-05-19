@@ -134,119 +134,149 @@ exports.PendingCronOrders = async function PendingCronOrders() {
   });
 };
 
-
 exports.addOrder = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
-      var total = 0
-      var total_discount = 0
-      var total_tax = 0
-      var provider_total = 0;
-      var admin_total = 0;
-
-      var validationArray = [
-        { name: "couponCode" },
-        { name: "paymentType" },
-        { name: "category_id" },
-        { name: "sub_category_id" },
-        { name: "dt_date" },
-        { name: "dt_time" },
-      ];
-
+    var validationArray = [
+      { name: "couponCode" },
+      { name: "PaymentType" },
+      // { name: "dt_date" },
+      // { name: "dt_time" },
+      { name: "address" },
+      { name: "is_address_book" },
+    ];
+    if (String(req.body.is_address_book) == "true") {
+      validationArray.push({ name: "address_book" });
+    } else {
       validationArray.push({ name: "lat" });
       validationArray.push({ name: "lng" });
-      check_request_params(req.body, validationArray, async function (response) {
-        if (response.success) {
-          var address = req.body.address;
-          var userId = req.user._id;
-          const userObj = await Users.findById(userId);
-          const tax = await setting.findOne({ code: "TAX" });
-          const sub_category = await SubCategory.findById(req.body.sub_category_id);
-          var orderNo = `${makeOrderNumber(6)}`;
-          var _supplier = null;
-          var _employee = null;
-          var lat = Number(req.body.lat);
-          var lng = Number(req.body.lng);
+    }
+    check_request_params(req.body, validationArray, async function (response) {
+      if (response.success) {
+        var userId = req.user._id;
+        const userObj = await Users.findById(userId);
+        const tax = await setting.findOne({ code: "TAX" });
 
-          if(req.body.address && req.body.address != ""){
-            let objAddress = await User_Address.findById(req.body.address)
-            if(objAddress){
-              lat = Number(objAddress.lat);
-              lng = Number(objAddress.lng);
-            }
+        const raduis = 1000;
+        var cart_place_id = "";
+        var supplier_id = "";
+        var items = [];
+        var total = 0.0;
+        var totalDiscount = 0.0;
+        var provider_Total = 0.0;
+        var net_total = 0.0;
+        var deliverycost = 0.0;
+        var lat = 0.0;
+        var lng = 0.0;
+        var remain = 0.0;
+        var gTax = 0.0;
+        var address = "";
+        var couponRate = 0.0;
+        var sp = null;
+        var personalDiscount = 0.0;
+
+        var ar_msg = MESSAGE_STRING_ARABIC.SUCCESSNEW;
+        var en_msg = MESSAGE_STRING_ENGLISH.SUCCESSNEW;
+        var statusCode = 200;
+        var employee_ids = [];
+
+        var doc = req.body;
+        var arr = [];
+        var newPlaceId = "";
+        arr = await Cart.find({
+          $and: [{ user_id: userId }],
+        });
+
+        if (arr.length == 0) {
+          // items on cart
+          reply
+            .code(200)
+            .send(
+              errorAPI(
+                language,
+                400,
+                MESSAGE_STRING_ARABIC.EMPTY_CART,
+                MESSAGE_STRING_ENGLISH.EMPTY_CART
+              )
+            );
+          return;
+        }
+
+        if (
+          String(req.body.is_address_book) == "true" &&
+          req.body.address_book &&
+          req.body.address_book != ""
+        ) {
+          var newAddress = await User_Address.findById(req.body.address_book);
+          if (newAddress) {
+            lat = Number(newAddress.lat);
+            lng = Number(newAddress.lng);
+            if (newAddress.discount != 0)
+              personalDiscount = Number(newAddress.discount);
+          } else {
+            reply
+              .code(200)
+              .send(
+                errorAPI(
+                  language,
+                  400,
+                  MESSAGE_STRING_ARABIC.ERROR,
+                  MESSAGE_STRING_ENGLISH.ERROR
+                )
+              );
+            return;
           }
+        } else {
+          lat = Number(req.body.lat);
+          lng = Number(req.body.lng);
+        }
 
-          var PoinInPolygon = await place.find({
+        if (lat == 0.0  || lng == 0.0) {
+          reply
+            .code(200)
+            .send(
+              errorAPI(
+                language,
+                400,
+                MESSAGE_STRING_ARABIC.ERROR,
+                MESSAGE_STRING_ENGLISH.ERROR
+              )
+            );
+          return;
+        } 
+
+        arr = await Cart.find({
+          $and: [{ user_id: userId }],
+        });
+
+        if (arr.length == 0) {
+          // items on cart
+          reply
+            .code(200)
+            .send(
+              errorAPI(
+                language,
+                400,
+                MESSAGE_STRING_ARABIC.EMPTY_CART,
+                MESSAGE_STRING_ENGLISH.EMPTY_CART
+              )
+            );
+          return;
+        }
+
+        if (req.body.couponCode && req.body.couponCode != "") {
+          // check coupon
+          // var today = moment(getCurrentDateTime());
+          var today = moment().tz("Asia/Riyadh");
+          sp = await coupon.findOne({
             $and: [
-              {
-                loc: {
-                  $geoIntersects: {
-                    $geometry: {
-                      type: "Point",
-                      coordinates: [Number(lng), Number(lat)],
-                    },
-                  },
-                },
-              },
-              { isDeleted: false },
+              { dt_from: { $lt: today } },
+              { dt_to: { $gt: today } },
+              { coupon: req.body.couponCode },
             ],
           });
-          if (PoinInPolygon.length == 0) {
-            let rs = new User_Uncovered({
-              user_id: userId,
-              user_type: "",
-              lat: lat,
-              lng: lng,
-              address: req.body.address,
-            });
-            await rs.save();
-
+          if (!sp) {
             reply
-              .code(200)
-              .send(
-                errorAPI(
-                  language,
-                  400,
-                  MESSAGE_STRING_ARABIC.NOT_COVERED,
-                  MESSAGE_STRING_ENGLISH.NOT_COVERED,
-                  {}
-                )
-              );
-            return;
-     
-          } 
-
-          let check_category= await Product_Price.findOne({$and:[{place_id:PoinInPolygon[0]._id}, {category_id:req.body.category_id}]})
-          if(!check_category){
-            let rs = new User_Uncovered({
-              user_id: userId,
-              user_type: "",
-              lat: lat,
-              lng: lng,
-              address: req.body.address,
-            });
-            await rs.save();
-
-            reply
-              .code(200)
-              .send(
-                errorAPI(
-                  language,
-                  400,
-                  MESSAGE_STRING_ARABIC.NOT_COVERED,
-                  MESSAGE_STRING_ENGLISH.NOT_COVERED,
-                  {}
-                )
-              );
-            return;
-          }
-
-          _supplier = check_category.supplier_id 
- 
-          if(req.body.couponCode && req.body.couponCode != ""){
-            let obj =  await check_coupon(req.user._id, req.body.couponCode, req.body.sub_category_id)
-            if(obj == null){
-              reply
               .code(200)
               .send(
                 errorAPI(
@@ -254,145 +284,470 @@ exports.addOrder = async (req, reply) => {
                   400,
                   MESSAGE_STRING_ARABIC.COUPON_ERROR,
                   MESSAGE_STRING_ENGLISH.COUPON_ERROR,
-                  null
+                  {}
                 )
               );
-              return;
-            }
-            total = obj.final_total;
-            total_discount = obj.discount;
-            total_tax = obj.total_tax
-          }else{
-            total = (Number(sub_category.price) * Number(tax.value)) + Number(sub_category.price)
-            total_tax = (Number(sub_category.price) * Number(tax.value))
-          }
-          // if(!req.body.address || req.body.address == ""){
-          //   let rs = new User_Address({
-          //     title: req.body.title,
-          //     lat: req.body.lat,
-          //     lng: req.body.lng,
-          //     address: req.body.address,
-          //     user_id: userId,
-          //     isDefault: false,
-          //     discount: 0,
-          //     streetName: req.body.streetName,
-          //     floorNo: req.body.floorNo,
-          //     buildingNo: req.body.buildingNo,
-          //     flatNo: req.body.flatNo,
-          //     type: 'home'
-          //   });
-        
-          //   let _rs = await rs.save();
-          //   address = _rs._id;
-          // }
-
-          if(req.body.paymentType == 'wallet' && Number(userObj.wallet) < total){
-            reply
-            .code(200)
-            .send(
-              errorAPI(
-                language,
-                400,
-                MESSAGE_STRING_ARABIC.WALLET,
-                MESSAGE_STRING_ENGLISH.WALLET
-              )
-            );
             return;
-          }
-
-          
-          let _supplierObj = await Supplier.findById(_supplier);
-          if(_supplierObj){
-            admin_total = Number(_supplierObj.orderPercentage) * Number(total);
-          }
-          provider_total = Number(total) - Number(admin_total);
-
-          if(req.body.paymentType == 'wallet'){
-            await NewPayment(userId, orderNo , ` سحب رصيد لطلب جديد ${orderNo}` , '-' , total , 'Online');
-          }
-
-          let Orders = new Order({
-            payment_id: req.body.payment_id,
-            provider_total: provider_total,
-            admin_total: admin_total,
-            lat: lat,
-            lng: lng,           
-            price: sub_category.price,
-            address: (address && address != "") ? address : null,
-            order_no: orderNo,
-            tax: Number(total_tax),
-            total: total,
-            totalDiscount: total_discount,
-            netTotal: total,
-            status: ORDER_STATUS.new,
-            createAt: getCurrentDateTime(),
-            period: 0,
-            dt_date: req.body.dt_date,
-            dt_time: req.body.dt_time,
-            sub_category_id: req.body.sub_category_id,
-            category_id: req.body.category_id,
-            addressType: req.body.addressType,
-            couponCode: req.body.couponCode,
-            paymentType: req.body.paymentType,
-            user: userId,
-            notes: req.body.notes,
-            canceled_note:"",
-            employee: null,
-            provider: _supplier,
-            supervisor: null,
-            place: PoinInPolygon[0]._id,
-            extra: [],
-            loc: {
-              type: "Point",
-              coordinates: [lat, lng],
-            },
-          });
-          let rs = await Orders.save();
-
-          const currentTimestamp = Date.now();
-          const currentTimestampInSeconds = Math.floor(currentTimestamp);
-          
-          firebaseRef
-            .child("orders")
-            .child(String(rs._id))
-            .once("value", (snapshot) => {
-              if (!snapshot.exists()) {
-                firebaseRef
-                  .child("orders")
-                  .child(String(rs._id))
-                  .set({
-                      order_id: String(rs._id),
-                      order_no: orderNo,
-                      status: ORDER_STATUS.new,
-                      timestamp: currentTimestampInSeconds,
-                      user_id: userId,
-                      employee_id: "",
-                      msg: "هناك طلب جديد برقم " + orderNo
-                   });
-              }
+          } else {
+            const prevOrd = await Order.findOne({
+              $and: [{ user_id: userId }, { couponCode: req.body.couponCode }],
             });
-
-          reply
-          .code(200)
-          .send(
-            success(
-              language,
-              200,
-              MESSAGE_STRING_ARABIC.SUCCESS,
-              MESSAGE_STRING_ENGLISH.SUCCESS,
-              {_id: rs._id}
-            )
-          );
-        return;
-        } else {
-          reply.send(response);
+            if (prevOrd) {
+              reply
+                .code(200)
+                .send(
+                  errorAPI(
+                    language,
+                    400,
+                    MESSAGE_STRING_ARABIC.COUPON_ERROR,
+                    MESSAGE_STRING_ENGLISH.COUPON_ERROR,
+                    {}
+                  )
+                );
+              return;
+            } else {
+              couponRate = sp.discount_rate;
+            }
+          }
         }
-      });
+
+        var admin_percentage = 0; //provider.orderPercentage;
+
+        for await (const data of arr) {
+          var Product_Price_Object = await Product.findOne({
+            $and: [
+              // { place_id: newPlaceId },
+              // { supplier_id: supplier_id },
+              { _id: data.product_id },
+              { isDeleted: false },
+            ],
+          });
+
+          if (Product_Price_Object) {
+            // reply
+            //   .code(200)
+            //   .send(
+            //     errorAPI(
+            //       language,
+            //       400,
+            //       MESSAGE_STRING_ARABIC.ERROR,
+            //       MESSAGE_STRING_ENGLISH.ERROR
+            //     )
+            //   );
+            // return;
+
+            let object = {
+              cartId: data._id,
+              product_id: data.product_id,
+              qty: data.qty,
+              Total: data.Total,
+              TotalDiscount: data.TotalDiscount,
+              createAt: data.createAt,
+            };
+
+            if (
+              Product_Price_Object.price &&
+              Product_Price_Object.price != 0
+            ) {
+              total += Number(Product_Price_Object.price) * data.qty;
+              // totalDiscount += Number( Product_Price_Object.discountPrice * data.qty);
+            } 
+
+            // if(String(req.body.isExpress) == "true"){
+            //   deliverycost += Number(Product_Price_Object.expressCost) * Number(data.qty);
+            // }else{
+            //   deliverycost += Number(Product_Price_Object.deliveryCost) * Number(data.qty);
+            // }
+            
+            net_total = total;
+            items.push(object);
+          }
+        }
+
+        // if (personalDiscount != 0)
+        //   deliverycost = Number(deliverycost) - Number(personalDiscount * deliverycost);
+
+        if (couponRate != 0.0) {
+          deliverycost = deliverycost //- Number(deliverycost * couponRate);
+          var sub_total = total - totalDiscount;
+          let sub_total_delivery = Number(sub_total) + Number(deliverycost);
+          gTax = Number(sub_total_delivery * Number(tax.value)) 
+          let discounted_total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
+          total = discounted_total - Number(discounted_total * couponRate);
+        } else {
+          var sub_total = total - totalDiscount;
+          let sub_total_delivery = Number(sub_total) + Number(deliverycost);
+          gTax = Number(sub_total_delivery * Number(tax.value)) 
+          total = Number(sub_total_delivery * Number(tax.value)) + Number(sub_total_delivery);
+        }
+
+        // let adminValue = parseFloat(admin_percentage).toFixed(2) * parseFloat(total).toFixed(2);
+        // provider_Total = parseFloat(total).toFixed(2) - parseFloat(adminValue);
+        var orderNo = `${makeOrderNumber(6)}`;
+        // if (keys_arr.length > 0) {
+        //   employee_ids = keys_arr.map(x=>x.key);
+        // } else {
+        //   var emp = await employee.find({
+        //     $and:[{ isDeleted: false },{supplier_id: supplier_id}]
+        //   });
+        //   if (emp.length > 0) employee_ids = emp.map(x=>x._id)
+        // }
+
+        // if (items && items.length == 0) {
+        //   reply
+        //     .code(200)
+        //     .send(
+        //       success(
+        //         language,
+        //         320,
+        //         MESSAGE_STRING_ARABIC.CHANGE_PLACE_OR_SUPPLIER_CHECK_ORDER,
+        //         MESSAGE_STRING_ENGLISH.CHANGE_PLACE_OR_SUPPLIER_CHECK_ORDER
+        //       )
+        //     );
+        //   return;
+        // }
+
+        let Orders = new Order({
+          Order_no: orderNo,
+          Tax: Number(gTax),
+          DeliveryCost: Number(deliverycost),
+          NetTotal: net_total,
+          Total: total,
+          TotalDiscount: totalDiscount,
+          Remain: parseFloat(remain).toFixed(2),
+          Admin_Total: 0.0,//adminValue,
+          provider_Total: provider_Total,
+          Status: ORDER_STATUS.new,
+          dt_date: req.body.dt_date,
+          dt_time: req.body.dt_time,
+          lat: lat,
+          lng: lng,
+          PaymentType: req.body.PaymentType,
+          couponCode: req.body.couponCode,
+          user_id: userId,
+          createAt: getCurrentDateTime(),
+          items: items,
+          address: req.body.address,
+          user_id: userId,
+          OrderType: req.body.OrderType,
+          // place_id: newPlaceId,
+          // supplier_id: supplier_id,
+          is_address_book: req.body.is_address_book,
+          address_book: req.body.address_book,
+          // isExpress:req.body.isExpress
+        });
+
+        let rs = await Orders.save();
+        let itemsId = items.map((x) => x.cartId);
+        console.log(itemsId)
+        Cart.deleteMany({ _id: { $in: itemsId } }, function (err) {});
+
+        let msg = "لديك طلب جديد";
+        if (employee_ids.length > 0) {
+          var current_employee = await employee.find({_id:{$in:employee_ids}});
+        }
+
+        var notifications_arr = []
+        // current_employee.forEach(element => {
+        //   let _Notification2 = new Notifications({
+        //     fromId: userId,
+        //     user_id: element._id,
+        //     title: NOTIFICATION_TITILES.ORDERS,
+        //     msg: msg,
+        //     dt_date: getCurrentDateTime(),
+        //     type: NOTIFICATION_TYPE.ORDERS,
+        //     body_parms: rs._id,
+        //     isRead: false,
+        //     fromName: userObj.full_name,
+        //     toName: element.full_name,
+        //   });
+        //   notifications_arr.push(_Notification2)
+        // });
+        //CreateNotificationMultiple(current_employee.map(x=>x.fcmToken),NOTIFICATION_TITILES.ORDERS,msg,rs._id)
+        // await Notifications.insertMany(notifications_arr, (err, _docs) => {
+        //   if (err) {
+        //     return console.error(err);
+        //   } else {
+        //     console.log("Multiple documents inserted to Collection");
+        //   }
+        // });
+   
+        // if (place_id != newPlaceId) {
+        //   ar_msg = MESSAGE_STRING_ARABIC.CHANGE_PLACE_OR_SUPPLIER;
+        //   en_msg = MESSAGE_STRING_ENGLISH.CHANGE_PLACE_OR_SUPPLIER;
+        //   statusCode = 300;
+        // }
+
+        reply.code(200).send(success(language, statusCode, ar_msg, en_msg, sp));
+        return;
+      } else {
+        reply.send(response);
+      }
+    });
   } catch (err) {
-      reply.code(200).send(errorAPI(language, 400, err.message, err.message));
-      return;
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
   }
 };
+
+// exports.addOrder = async (req, reply) => {
+//   const language = req.headers["accept-language"];
+//   try {
+//       var total = 0
+//       var total_discount = 0
+//       var total_tax = 0
+//       var provider_total = 0;
+//       var admin_total = 0;
+
+//       var validationArray = [
+//         { name: "couponCode" },
+//         { name: "paymentType" },
+//         { name: "category_id" },
+//         { name: "sub_category_id" },
+//         { name: "dt_date" },
+//         { name: "dt_time" },
+//       ];
+
+//       validationArray.push({ name: "lat" });
+//       validationArray.push({ name: "lng" });
+//       check_request_params(req.body, validationArray, async function (response) {
+//         if (response.success) {
+//           var address = req.body.address;
+//           var userId = req.user._id;
+//           const userObj = await Users.findById(userId);
+//           const tax = await setting.findOne({ code: "TAX" });
+//           const sub_category = await SubCategory.findById(req.body.sub_category_id);
+//           var orderNo = `${makeOrderNumber(6)}`;
+//           var _supplier = null;
+//           var _employee = null;
+//           var lat = Number(req.body.lat);
+//           var lng = Number(req.body.lng);
+
+//           if(req.body.address && req.body.address != ""){
+//             let objAddress = await User_Address.findById(req.body.address)
+//             if(objAddress){
+//               lat = Number(objAddress.lat);
+//               lng = Number(objAddress.lng);
+//             }
+//           }
+
+//           var PoinInPolygon = await place.find({
+//             $and: [
+//               {
+//                 loc: {
+//                   $geoIntersects: {
+//                     $geometry: {
+//                       type: "Point",
+//                       coordinates: [Number(lng), Number(lat)],
+//                     },
+//                   },
+//                 },
+//               },
+//               { isDeleted: false },
+//             ],
+//           });
+//           if (PoinInPolygon.length == 0) {
+//             let rs = new User_Uncovered({
+//               user_id: userId,
+//               user_type: "",
+//               lat: lat,
+//               lng: lng,
+//               address: req.body.address,
+//             });
+//             await rs.save();
+
+//             reply
+//               .code(200)
+//               .send(
+//                 errorAPI(
+//                   language,
+//                   400,
+//                   MESSAGE_STRING_ARABIC.NOT_COVERED,
+//                   MESSAGE_STRING_ENGLISH.NOT_COVERED,
+//                   {}
+//                 )
+//               );
+//             return;
+     
+//           } 
+
+//           let check_category= await Product_Price.findOne({$and:[{place_id:PoinInPolygon[0]._id}, {category_id:req.body.category_id}]})
+//           if(!check_category){
+//             let rs = new User_Uncovered({
+//               user_id: userId,
+//               user_type: "",
+//               lat: lat,
+//               lng: lng,
+//               address: req.body.address,
+//             });
+//             await rs.save();
+
+//             reply
+//               .code(200)
+//               .send(
+//                 errorAPI(
+//                   language,
+//                   400,
+//                   MESSAGE_STRING_ARABIC.NOT_COVERED,
+//                   MESSAGE_STRING_ENGLISH.NOT_COVERED,
+//                   {}
+//                 )
+//               );
+//             return;
+//           }
+
+//           _supplier = check_category.supplier_id 
+ 
+//           if(req.body.couponCode && req.body.couponCode != ""){
+//             let obj =  await check_coupon(req.user._id, req.body.couponCode, req.body.sub_category_id)
+//             if(obj == null){
+//               reply
+//               .code(200)
+//               .send(
+//                 errorAPI(
+//                   language,
+//                   400,
+//                   MESSAGE_STRING_ARABIC.COUPON_ERROR,
+//                   MESSAGE_STRING_ENGLISH.COUPON_ERROR,
+//                   null
+//                 )
+//               );
+//               return;
+//             }
+//             total = obj.final_total;
+//             total_discount = obj.discount;
+//             total_tax = obj.total_tax
+//           }else{
+//             total = (Number(sub_category.price) * Number(tax.value)) + Number(sub_category.price)
+//             total_tax = (Number(sub_category.price) * Number(tax.value))
+//           }
+//           // if(!req.body.address || req.body.address == ""){
+//           //   let rs = new User_Address({
+//           //     title: req.body.title,
+//           //     lat: req.body.lat,
+//           //     lng: req.body.lng,
+//           //     address: req.body.address,
+//           //     user_id: userId,
+//           //     isDefault: false,
+//           //     discount: 0,
+//           //     streetName: req.body.streetName,
+//           //     floorNo: req.body.floorNo,
+//           //     buildingNo: req.body.buildingNo,
+//           //     flatNo: req.body.flatNo,
+//           //     type: 'home'
+//           //   });
+        
+//           //   let _rs = await rs.save();
+//           //   address = _rs._id;
+//           // }
+
+//           if(req.body.paymentType == 'wallet' && Number(userObj.wallet) < total){
+//             reply
+//             .code(200)
+//             .send(
+//               errorAPI(
+//                 language,
+//                 400,
+//                 MESSAGE_STRING_ARABIC.WALLET,
+//                 MESSAGE_STRING_ENGLISH.WALLET
+//               )
+//             );
+//             return;
+//           }
+
+          
+//           let _supplierObj = await Supplier.findById(_supplier);
+//           if(_supplierObj){
+//             admin_total = Number(_supplierObj.orderPercentage) * Number(total);
+//           }
+//           provider_total = Number(total) - Number(admin_total);
+
+//           if(req.body.paymentType == 'wallet'){
+//             await NewPayment(userId, orderNo , ` سحب رصيد لطلب جديد ${orderNo}` , '-' , total , 'Online');
+//           }
+
+//           let Orders = new Order({
+//             payment_id: req.body.payment_id,
+//             provider_total: provider_total,
+//             admin_total: admin_total,
+//             lat: lat,
+//             lng: lng,           
+//             price: sub_category.price,
+//             address: (address && address != "") ? address : null,
+//             order_no: orderNo,
+//             tax: Number(total_tax),
+//             total: total,
+//             totalDiscount: total_discount,
+//             netTotal: total,
+//             status: ORDER_STATUS.new,
+//             createAt: getCurrentDateTime(),
+//             period: 0,
+//             dt_date: req.body.dt_date,
+//             dt_time: req.body.dt_time,
+//             sub_category_id: req.body.sub_category_id,
+//             category_id: req.body.category_id,
+//             addressType: req.body.addressType,
+//             couponCode: req.body.couponCode,
+//             paymentType: req.body.paymentType,
+//             user: userId,
+//             notes: req.body.notes,
+//             canceled_note:"",
+//             employee: null,
+//             provider: _supplier,
+//             supervisor: null,
+//             place: PoinInPolygon[0]._id,
+//             extra: [],
+//             loc: {
+//               type: "Point",
+//               coordinates: [lat, lng],
+//             },
+//           });
+//           let rs = await Orders.save();
+
+//           const currentTimestamp = Date.now();
+//           const currentTimestampInSeconds = Math.floor(currentTimestamp);
+          
+//           firebaseRef
+//             .child("orders")
+//             .child(String(rs._id))
+//             .once("value", (snapshot) => {
+//               if (!snapshot.exists()) {
+//                 firebaseRef
+//                   .child("orders")
+//                   .child(String(rs._id))
+//                   .set({
+//                       order_id: String(rs._id),
+//                       order_no: orderNo,
+//                       status: ORDER_STATUS.new,
+//                       timestamp: currentTimestampInSeconds,
+//                       user_id: userId,
+//                       employee_id: "",
+//                       msg: "هناك طلب جديد برقم " + orderNo
+//                    });
+//               }
+//             });
+
+//           reply
+//           .code(200)
+//           .send(
+//             success(
+//               language,
+//               200,
+//               MESSAGE_STRING_ARABIC.SUCCESS,
+//               MESSAGE_STRING_ENGLISH.SUCCESS,
+//               {_id: rs._id}
+//             )
+//           );
+//         return;
+//         } else {
+//           reply.send(response);
+//         }
+//       });
+//   } catch (err) {
+//       reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+//       return;
+//   }
+// };
 
 exports.addOffer = async (req, reply) => {
   try {
@@ -715,7 +1070,7 @@ exports.updateOrder = async (req, reply) => {
       var msg = ""
       var msg2= ""
       let userId = req.user._id
-      const check = await Order.findById(req.params.id).populate("user")
+      const check = await Order.findById(req.params.id).populate("user_id")
       const tax = await setting.findOne({ code: "TAX" });
       var msg_started = `الفني استلم الطلب بنجاح`;
       var msg_progress = `تم البدء في تنفيذ الطلب بنجاح`;
@@ -737,9 +1092,9 @@ exports.updateOrder = async (req, reply) => {
 
       if(req.body.status == ORDER_STATUS.started) {
         msg = msg_started; 
-        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");
         let _Notification = new Notifications({
-          fromId: check.user._id,
+          fromId: check.user_id._id,
           user_id: USER_TYPE.PANEL,
           title: NOTIFICATION_TITILES.ORDERS,
           msg: msg,
@@ -752,16 +1107,16 @@ exports.updateOrder = async (req, reply) => {
         });
         let rs = _Notification.save();
     
-        firebaseRef
-        .child("orders")
-        .child(String(req.params.id))
-        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "الفني استلم الطلب رقم "+ check.order_no}); 
+        // firebaseRef
+        // .child("orders")
+        // .child(String(req.params.id))
+        // .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "الفني استلم الطلب رقم "+ check.order_no}); 
       }
       if(req.body.status == ORDER_STATUS.progress) {
         msg = msg_progress;
-        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");
         let _Notification = new Notifications({
-          fromId: check.user._id,
+          fromId: check.user_id._id,
           user_id: USER_TYPE.PANEL,
           title: NOTIFICATION_TITILES.ORDERS,
           msg: msg,
@@ -774,16 +1129,16 @@ exports.updateOrder = async (req, reply) => {
         });
         let rs = _Notification.save();
         
-        firebaseRef
-        .child("orders")
-        .child(String(req.params.id))
-        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم البدء في تنفيذ الطلب رقم " + check.order_no}); 
+        // firebaseRef
+        // .child("orders")
+        // .child(String(req.params.id))
+        // .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم البدء في تنفيذ الطلب رقم " + check.order_no}); 
       }
       if(req.body.status == ORDER_STATUS.way) {
         msg = msg_way;
-        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");
         let _Notification = new Notifications({
-          fromId: check.user._id,
+          fromId: check.user_id._id,
           user_id: USER_TYPE.PANEL,
           title: NOTIFICATION_TITILES.ORDERS,
           msg: msg,
@@ -797,33 +1152,32 @@ exports.updateOrder = async (req, reply) => {
         let rs = _Notification.save();
        
         
-        firebaseRef
-        .child("orders")
-        .child(String(req.params.id))
-        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "الفني في الطريق للطلب رقم "+ check.order_no});
+        // firebaseRef
+        // .child("orders")
+        // .child(String(req.params.id))
+        // .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "الفني في الطريق للطلب رقم "+ check.order_no});
       }
       if(req.body.status == ORDER_STATUS.accpeted) {
         msg = msg_accpet;
         msg2 = msg_accpet2;
-        var emp = await employee.findById(req.body.employee);
+        var emp = await employee.findById(req.body.employee_id);
         await Order.findByIdAndUpdate(
           req.params.id,
           {
-            status: req.body.status,
-            employee: req.body.employee,
-            supervisor: emp ? emp.supervisor_id : null,
+            Status: req.body.status,
+            employee_id: req.body.employee_id,
             canceled_note: req.body.canceled_note,
             period:period
           },
           { new: true }
         )
         if(emp){
-          await CreateGeneralNotification(emp.fcmToken, NOTIFICATION_TITILES.ORDERS, msg2, NOTIFICATION_TYPE.ORDERS, check._id, check.user.fcmToken, check.user._id, "", "");
+          await CreateGeneralNotification(emp.fcmToken, NOTIFICATION_TITILES.ORDERS, msg2, NOTIFICATION_TYPE.ORDERS, check._id, check.user_id.fcmToken, check.user_id._id, "", "");
         }
-        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");
       
         let _Notification = new Notifications({
-          fromId: check.user._id,
+          fromId: check.user_id._id,
           user_id: USER_TYPE.PANEL,
           title: NOTIFICATION_TITILES.ORDERS,
           msg: msg,
@@ -836,10 +1190,10 @@ exports.updateOrder = async (req, reply) => {
         });
         let rs = _Notification.save();
 
-        firebaseRef
-        .child("orders")
-        .child(String(req.params.id))
-        .update({ employee_id: req.body.employee, timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم قبول الطلب رقم " + check.order_no}); 
+        // firebaseRef
+        // .child("orders")
+        // .child(String(req.params.id))
+        // .update({ employee_id: req.body.employee, timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم قبول الطلب رقم " + check.order_no}); 
         
       }
       if(req.body.status == ORDER_STATUS.updated) {
@@ -854,10 +1208,10 @@ exports.updateOrder = async (req, reply) => {
 
         await Order.findByIdAndUpdate( req.params.id, { update_code: code , extra: req.body.extra , period: period, tax: Number(new_tax)+Number(check.tax), new_total: new_total, new_tax: new_tax, total: Number(/* The above code is declaring a variable called "new_total" in JavaScript. However, the code is incomplete and does not provide any further information about what the variable is intended to be used for or how it is being assigned a value. */
         new_total)+Number(check.total), netTotal: Number(new_total)+Number(check.total)},{ new: true })       
-        await sendSMS(check.user.phone_number, "", "", msg)
-        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        await sendSMS(check.user_id.phone_number, "", "", msg)
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");
         let _Notification = new Notifications({
-          fromId: check.user._id,
+          fromId: check.user_id._id,
           user_id: USER_TYPE.PANEL,
           title: NOTIFICATION_TITILES.ORDERS,
           msg: msg,
@@ -870,20 +1224,20 @@ exports.updateOrder = async (req, reply) => {
         });
         let rs = _Notification.save();
 
-        firebaseRef
-        .child("orders")
-        .child(String(req.params.id))
-        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم تعديل حالة الطلب رقم " + check.order_no}); 
+        // firebaseRef
+        // .child("orders")
+        // .child(String(req.params.id))
+        // .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم تعديل حالة الطلب رقم " + check.order_no}); 
       }
       if(req.body.status == ORDER_STATUS.prefinished) {
         var code =  makeid(6)
         msg = msg_prefinished + " كود العملية هو: " + code;
 
         await Order.findByIdAndUpdate( req.params.id, { update_code: code, period},{ new: true })
-        await sendSMS(check.user.phone_number, "", "", msg)
-        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        await sendSMS(check.user_id.phone_number, "", "", msg)
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");
         let _Notification = new Notifications({
-          fromId: check.user._id,
+          fromId: check.user_id._id,
           user_id: USER_TYPE.PANEL,
           title: NOTIFICATION_TITILES.ORDERS,
           msg: msg,
@@ -896,16 +1250,16 @@ exports.updateOrder = async (req, reply) => {
         });
         let rs = _Notification.save();
 
-        firebaseRef
-        .child("orders")
-        .child(String(req.params.id))
-        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "بانتظار تأكيد الطلب رقم " + check.order_no}); 
+        // firebaseRef
+        // .child("orders")
+        // .child(String(req.params.id))
+        // .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "بانتظار تأكيد الطلب رقم " + check.order_no}); 
       }
       if(req.body.status == ORDER_STATUS.finished) {
         msg = msg_finished;
-        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");
         let _Notification = new Notifications({
-          fromId: check.user._id,
+          fromId: check.user_id._id,
           user_id: USER_TYPE.PANEL,
           title: NOTIFICATION_TITILES.ORDERS,
           msg: msg,
@@ -918,16 +1272,16 @@ exports.updateOrder = async (req, reply) => {
         });
         let rs = _Notification.save();
 
-        firebaseRef
-        .child("orders")
-        .child(String(req.params.id))
-        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم تنفيذ الطلب رقم " + check.order_no}); 
+        // firebaseRef
+        // .child("orders")
+        // .child(String(req.params.id))
+        // .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم تنفيذ الطلب رقم " + check.order_no}); 
       }     
-      if(req.body.status == ORDER_STATUS.canceled_by_driver && check.status != ORDER_STATUS.prefinished && check.status != ORDER_STATUS.finished && check.status != ORDER_STATUS.rated){
+      if(req.body.status == ORDER_STATUS.canceled_by_driver && check.Status != ORDER_STATUS.prefinished && check.Status != ORDER_STATUS.finished && check.Status != ORDER_STATUS.rated){
         msg = msg_canceled_by_driver;
-        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");
         let _Notification = new Notifications({
-          fromId: check.user._id,
+          fromId: check.user_id._id,
           user_id: USER_TYPE.PANEL,
           title: NOTIFICATION_TITILES.ORDERS,
           msg: msg,
@@ -944,20 +1298,20 @@ exports.updateOrder = async (req, reply) => {
           await refund(check.payment_id, check.total).then((x) => { response = x });
         }
         if(check.paymentType == PAYMENT_TYPE.WALLET){
-          await NewPayment(check.user._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
+          await NewPayment(check.user_id._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
         }
-        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");  
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");  
 
-        firebaseRef
-        .child("orders")
-        .child(String(req.params.id))
-        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "الفني قام بالغاء الطلب رقم " + check.order_no}); 
+        // firebaseRef
+        // .child("orders")
+        // .child(String(req.params.id))
+        // .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "الفني قام بالغاء الطلب رقم " + check.order_no}); 
       }
-      if(req.body.status == ORDER_STATUS.canceled_by_admin && check.status != ORDER_STATUS.prefinished && check.status != ORDER_STATUS.finished && check.status != ORDER_STATUS.rated){
+      if(req.body.status == ORDER_STATUS.canceled_by_admin && check.Status != ORDER_STATUS.prefinished && check.Status != ORDER_STATUS.finished && check.Status != ORDER_STATUS.rated){
         msg = msg_canceled_by_admin;
-        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");
         let _Notification = new Notifications({
-          fromId: check.user._id,
+          fromId: check.user_id._id,
           user_id: USER_TYPE.PANEL,
           title: NOTIFICATION_TITILES.ORDERS,
           msg: msg,
@@ -974,19 +1328,19 @@ exports.updateOrder = async (req, reply) => {
           await refund(check.payment_id, check.total).then((x) => { response = x });
         }
         if(check.paymentType == PAYMENT_TYPE.WALLET){
-          await NewPayment(check.user._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
+          await NewPayment(check.user_id._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
         }
 
-        await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, check.empemployee_idloyee, check.user_id._id, "", "");
       
-        firebaseRef
-        .child("orders")
-        .child(String(req.params.id))
-        .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "الادارة قام بالغاء الطلب رقم " + check.order_no}); 
+        // firebaseRef
+        // .child("orders")
+        // .child(String(req.params.id))
+        // .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "الادارة قام بالغاء الطلب رقم " + check.order_no}); 
       }
       if(req.body.status == ORDER_STATUS.canceled_by_user){
         msg = msg_canceled_by_user;
-        if(check.status != ORDER_STATUS.new && check.status != ORDER_STATUS.accpeted ){
+        if(check.Status != ORDER_STATUS.new && check.Status != ORDER_STATUS.accpeted ){
           reply
           .code(200)
           .send(
@@ -999,9 +1353,9 @@ exports.updateOrder = async (req, reply) => {
           );
         return;
         }
-        let emplployee = await employee.findById(check.employee)
+        let emplployee = await employee.findById(check.employee_id)
         if(emplployee)
-          await CreateGeneralNotification(emplployee.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.user._id, emplployee._id, "", "");
+          await CreateGeneralNotification(emplployee.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.user_id._id, emplployee._id, "", "");
     
           let _Notification = new Notifications({
             fromId: "",
@@ -1021,10 +1375,10 @@ exports.updateOrder = async (req, reply) => {
             await refund(check.payment_id, check.total).then((x) => { response = x });
           }
           if(check.paymentType == PAYMENT_TYPE.WALLET){
-            await NewPayment(check.user._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
+            await NewPayment(check.user_id._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
           }
 
-          await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, "", check.user._id, "", "");
+          await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, "", check.user_id._id, "", "");
          
           firebaseRef
           .child("orders")
@@ -1062,9 +1416,9 @@ exports.updateOrderCode = async (req, reply) => {
     const currentTimestampInSeconds = Math.floor(currentTimestamp);
      let userId = req.user._id
      var msg_finished = `تم الانتهاء من تنفيذ الطلب بنجاح`;
-     const check = await Order.findById(req.params.id).populate("user")
+     const check = await Order.findById(req.params.id).populate("user_id")
       var msg = ""
-      if(check.status == ORDER_STATUS.updated) {
+      if(check.Status == ORDER_STATUS.updated) {
         if(String(req.body.update_code) == String(check.update_code)) {
           await Order.findByIdAndUpdate(req.params.id, { status: ORDER_STATUS.progress },{ new: true } )
           firebaseRef
@@ -1086,7 +1440,7 @@ exports.updateOrderCode = async (req, reply) => {
         return;
         }
       }
-      else if(check.status == ORDER_STATUS.prefinished) {
+      else if(check.Status == ORDER_STATUS.prefinished) {
         if(String(req.body.update_code) == String(check.update_code)) {
           await Order.findByIdAndUpdate(req.params.id, { status: ORDER_STATUS.finished },{ new: true } )
           firebaseRef
@@ -1101,7 +1455,7 @@ exports.updateOrderCode = async (req, reply) => {
           .remove();
 
           // send notification to employee 
-          await CreateGeneralNotification(check.user.fcmToken, NOTIFICATION_TITILES.ORDERS, msg_finished, NOTIFICATION_TYPE.ORDERS, check._id, check.employee, check.user._id, "", "");
+          await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg_finished, NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");
         }else {
           reply
           .code(200)
@@ -1155,77 +1509,71 @@ exports.getUserOrder = async (req, reply) => {
     var limit = parseFloat(req.query.limit, 10);
     
     var query = {
-      $and: [ {user: userId}]
+      $and: [ {user_id: userId}]
     };
 
     if (req.query.q && req.query.q != "")
       query.$and.push({ order_no: { $regex: new RegExp(req.query.q, "i") }});
 
     if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.new) {
-      query.$and.push({ status: {$in:[ORDER_STATUS.new ]}})
+      query.$and.push({Status: {$in:[ORDER_STATUS.new ]}})
     }
     else if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.started) {
-      query.$and.push({ status: {$in:[ORDER_STATUS.progress, ORDER_STATUS.started, ORDER_STATUS.accpeted, ORDER_STATUS.updated, ORDER_STATUS.way ]}})
+      query.$and.push({Status: {$in:[ORDER_STATUS.progress, ORDER_STATUS.started, ORDER_STATUS.accpeted, ORDER_STATUS.updated, ORDER_STATUS.way ]}})
     }
     else if (req.query.status && req.query.status != "" && req.query.status === ORDER_STATUS.finished) {
-      query.$and.push({ status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished ]}})
+      query.$and.push({Status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished ]}})
     }
     else if (req.query.status && req.query.status != "" && req.query.status.includes(ORDER_STATUS.canceled)) {
-      query.$and.push({ status:{$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]} })
+      query.$and.push({Status:{$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]} })
     }
     else{
-      query.$and.push({status: req.query.status})
+      query.$and.push({Status: req.query.status})
     }
     
     var arr = []
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
-    .populate("user", "-token")
-    .populate({ path: "extra", populate: { path: "subcategory" } })
-    .populate("employee", "-token")
-    .populate("supervisor", "-token")
-    .populate("provider")
-    .populate("sub_category_id")
-    .populate("category_id")
-    .populate("address")
-      .skip(page * limit)
-      .limit(limit)
-      .sort({ createAt: -1 });
+    .populate("user_id", "-token")
+    .populate("employee_id", "-token")
+    .populate("supplier_id")
+    .populate("address_book")
+    .populate({ path: "items.product_id", populate: { path: "product_id" } })
+    .skip(page * limit)
+    .limit(limit)
+    .sort({ createAt: -1 });
 
-      var items = []
-    item.forEach(element => {
-      var arr = []
-      var obj = element.toObject();
-      delete obj.sub_category_id;
-      delete obj.category_id;
-      delete obj.extra;
-      obj.sub_category_id = {
-        _id: element.sub_category_id._id,
-        title: element.sub_category_id[`${language}Name`],
-        description: element.sub_category_id[`${language}Description`],
-        price: element.sub_category_id.price,
-        image: element.sub_category_id.image
-      }
-      obj.category_id = {
-        _id: element.category_id._id,
-        title: element.category_id[`${language}Name`],
-        description: element.category_id[`${language}Description`],
-        image: element.category_id.image
-      }
-      element.extra.forEach(_element => {
-        var _obj = {
-          _id: _element._id,
-          title: _element[`${language}Name`],
-          price: _element.price
-        }
-        arr.push(_obj)
+    var arr = [];
+    var products = []
+    item.forEach((element) => {
+      element.items.forEach(elm => {
+        var el = elm.product_id.toObject();
+        delete el.arName;
+        delete el.enName;
+        delete el.arDescription;
+        delete el.enDescription;
+        el.name = el[`${language}Name`];
+        el.description = el[`${language}Description`];
+        products.push(el);
       });
-      obj.extra = arr;
-      items.push(obj);
+      let obj = {
+        _id: element._id,
+        OrderType: element.OrderType,
+        Order_no: element.Order_no,
+        Total: element.Total,
+        Status: element.Status,
+        dt_date: element.dt_date,
+        dt_time: element.dt_time,
+        address: element.address,
+        address_book: element.address_book != null ? element.address_book : null,
+        Supplier_id: element.supplier_id != null ? element.supplier_id : null,
+        items: products,
+      };
+      arr.push(obj);
     });
     
     const response = {
-      items: items,
+      items: arr,
       status_code: 200,
       message: "تمت العملية بنجاح",
       messageAr: "تمت العملية بنجاح",
@@ -1287,6 +1635,9 @@ exports.getOrderTotal = async (req, reply) => {
 exports.getOrderDetails = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
+    var providerArr = [];
+    var isRate = false;
+
     var rate = await Rate.findOne({
       $and: [{ order_id: req.params.id }, { type: 1 }],
     });
@@ -1294,16 +1645,15 @@ exports.getOrderDetails = async (req, reply) => {
     if (rate) {
       isRate = true;
     }
-      
+
     var item = await Order.findById(req.params.id)
-    .populate("user", "-token")
-    .populate({ path: "extra", populate: { path: "subcategory" } })
-    .populate("employee", "-token")
-    .populate("provider")
-    .populate("sub_category_id")
-    .populate("category_id")
-    .populate("address")
-    .lean();
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .lean();
+
     if (!item) {
       reply
         .code(200)
@@ -1317,28 +1667,44 @@ exports.getOrderDetails = async (req, reply) => {
         );
       return;
     }
-    var obj = item;
-    var arr = []
-    var subCategoryObj = {
-      _id: obj.sub_category_id._id,
-      title: obj.sub_category_id[`${language}Name`],
-      price: obj.price
-    }
-    var categoryObj = {
-      _id: obj.category_id._id,
-      title: obj.category_id[`${language}Name`],
-    }
-    obj.extra.forEach(element => {
-      var _obj = {
-        _id: element._id,
-        title: element[`${language}Name`],
-        price: element.price
+    for await (const data of item.items) {
+      var _product = await Product.findOne({ $and: [{ _id: data.product_id }, { isDeleted: false }] })
+
+      if (_product) {
+        const newObj = _product.toObject();
+        const checkFavorite = await Favorite.findOne({
+          $and: [{ user_id: req.user._id }, { product_id: _product._id }],
+        });
+        if (checkFavorite) {
+          newObj.favorite_id = checkFavorite._id;
+        } else {
+          newObj.favorite_id = null;
+        }
+
+        delete newObj.arName;
+        delete newObj.enName;
+        delete newObj.arDescription;
+        delete newObj.enDescription;
+        newObj.name = _product[`${language}Name`];
+        newObj.description = _product[`${language}Description`];
+        newObj.qty = data.qty;
+        newObj.Total = data.Total;
+        newObj.TotalDiscount = data.TotalDiscount;
+
+        providerArr.push(newObj);
       }
-      arr.push(_obj)
-    });
-    obj.sub_category_id = subCategoryObj
-    obj.category_id = categoryObj
-    obj.extra = arr
+    }
+
+    item.items = providerArr
+    const response = {
+      items: item,
+      tax: Number(item.Tax),
+      deliveryCost: Number(item.DeliveryCost),
+      total_price: Number(parseFloat(item.NetTotal).toFixed(2)),
+      total_discount: Number(parseFloat(item.TotalDiscount).toFixed(2)),
+      final_total: Number(parseFloat(item.Total).toFixed(2)),
+      isRate: isRate
+    };
 
     reply
       .code(200)
@@ -1348,7 +1714,7 @@ exports.getOrderDetails = async (req, reply) => {
           200,
           MESSAGE_STRING_ARABIC.SUCCESS,
           MESSAGE_STRING_ENGLISH.SUCCESS,
-          obj
+          response
         )
       );
     return;
@@ -1362,7 +1728,7 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
   try {
     let userId = req.user._id
     const ord = await Order.findById(req.params.id)
-    var driver_id = ord.employee
+    var driver_id = ord.employee_id
       if (!ord) {
       reply
         .code(200)
@@ -1376,7 +1742,7 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
         );
       return;
     }
-    if (ord.status == ORDER_STATUS.finished) {
+    if (ord.Status == ORDER_STATUS.finished) {
       var checkBefore = await Rate.findOne({ $and: [{ order_id: ord._id }, { driver_id: driver_id }, { type: 1 }] });
       if (checkBefore) {
         reply
@@ -1422,15 +1788,15 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       let sum = lodash.sumBy(summation, function (o) { return o.rate_from_user; });
       let driver = await employee.findByIdAndUpdate(driver_id, { rate: Number(sum / totalRates).toFixed(1)},{new:true});
       
-      let all_supplier_employees_count = await employee.countDocuments({supplier_id: driver.supplier_id});
-      let all_supplier_employees = await employee.find({supplier_id: driver.supplier_id});
-      let all_supplier_employees_summation = lodash.sumBy(all_supplier_employees, function (o) { return o.rate; });   
-      let supp = await Supplier.findByIdAndUpdate(driver.supplier_id, { rate: Number(all_supplier_employees_summation / all_supplier_employees_count).toFixed(1)},{new:true});
+      // let all_supplier_employees_count = await employee.countDocuments({supplier_id: driver.supplier_id});
+      // let all_supplier_employees = await employee.find({supplier_id: driver.supplier_id});
+      // let all_supplier_employees_summation = lodash.sumBy(all_supplier_employees, function (o) { return o.rate; });   
+      // let supp = await Supplier.findByIdAndUpdate(driver.supplier_id, { rate: Number(all_supplier_employees_summation / all_supplier_employees_count).toFixed(1)},{new:true});
       
-      let all_supervisor_employees_count = await employee.countDocuments({supervisor_id: driver.supervisor_id});
-      let all_supervisor_employees = await employee.find({supervisor_id: driver.supervisor_id});
-      let all_supervisor_employees_summation = lodash.sumBy(all_supervisor_employees, function (o) { return o.rate; });   
-      let _supervisor = await Supervisor.findByIdAndUpdate(driver.supervisor_id, { rate: Number(all_supervisor_employees_summation / all_supervisor_employees_count).toFixed(1)},{new:true});
+      // let all_supervisor_employees_count = await employee.countDocuments({supervisor_id: driver.supervisor_id});
+      // let all_supervisor_employees = await employee.find({supervisor_id: driver.supervisor_id});
+      // let all_supervisor_employees_summation = lodash.sumBy(all_supervisor_employees, function (o) { return o.rate; });   
+      // let _supervisor = await Supervisor.findByIdAndUpdate(driver.supervisor_id, { rate: Number(all_supervisor_employees_summation / all_supervisor_employees_count).toFixed(1)},{new:true});
       
 
       await Order.findByIdAndUpdate(ord._id, { status: ORDER_STATUS.rated });
@@ -1505,7 +1871,7 @@ exports.getTransaction = async (req, reply) => {
     const total = await Transactions.find({ user: userId }).countDocuments();
     const item = await Transactions.find({ user: userId })
     .sort({ _id: -1 })
-    .populate("user", "-token")
+    .populate("user_id", "-token")
     .skip(page * limit)
     .limit(limit);
 
@@ -1569,7 +1935,7 @@ exports.getAdminTransaction = async (req, reply) => {
     const total = await Transactions.find({ user: userId }).countDocuments();
     const item = await Transactions.find({ user: userId })
     .sort({ _id: -1 })
-    .populate("user", "-token")
+    .populate("user_id", "-token")
     .skip(page * limit)
     .limit(limit);
 
@@ -2129,14 +2495,11 @@ exports.getOrdersSeacrhExcel = async (req, reply) => {
 
     const item = await Order.find(query)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("supervisor", "-token")
-      .populate("provider")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
     const response = {
       items: item,
       status_code: 200,
@@ -2203,14 +2566,11 @@ exports.getOrdersSeacrh = async (req, reply) => {
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("supervisor", "-token")
-      .populate("provider")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .skip(page * limit)
       .limit(limit);
     const response = {
@@ -2257,14 +2617,11 @@ exports.getEmployeeOrder = async (req, reply) => {
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("supervisor", "-token")
-      .populate("provider")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .skip(page * limit)
       .limit(limit)
       .select("-couponCode");
@@ -2647,13 +3004,11 @@ exports.getOrdersSearchFilter = async (req, reply) => {
     const total = await Order.find(query1).countDocuments();
     const item = await Order.find(query1)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("provider")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .skip(page * limit)
       .limit(limit)
       .select("-couponCode");
@@ -2836,14 +3191,11 @@ exports.getUserOrders = async (req, reply) => {
     const total = await Order.find(q).countDocuments();
     const item = await Order.find(q)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("provider")
-      .populate("supervisor")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -2888,15 +3240,11 @@ exports.getUserOrdersExcel = async (req, reply) => {
 
     const item = await Order.find(q)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("provider")
-      .populate("supervisor")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
-      .populate("place")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .sort({ _id: -1 })
     
     reply.code(200).send(
@@ -2938,14 +3286,11 @@ exports.getProivdeOrders = async (req, reply) => {
     const total = await Order.find(q).countDocuments();
     const item = await Order.find(q)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("provider")
-      .populate("supervisor")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -2990,15 +3335,11 @@ exports.getProivdeOrdersExcel = async (req, reply) => {
     }
     const item = await Order.find(q)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("provider")
-      .populate("supervisor")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
-      .populate("place")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .sort({ _id: -1 })
 
       
@@ -3039,14 +3380,11 @@ exports.getSupervisorOrders = async (req, reply) => {
     const total = await Order.find(q).countDocuments();
     const item = await Order.find(q)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("provider")
-      .populate("supervisor")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -3090,15 +3428,11 @@ exports.getSupervisorOrdersExcel = async (req, reply) => {
     }
     const item = await Order.find(q)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("provider")
-      .populate("supervisor")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
-      .populate("place")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .sort({ _id: -1 })
 
     reply.code(200).send(
@@ -3137,14 +3471,11 @@ exports.getEmployeesOrder = async (req, reply) => {
     }
     const total = await Order.find(q).countDocuments();
     const item = await Order.find(q)
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("provider")
-      .populate("supervisor")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
+    .populate("user_id", "-token")
+    .populate("employee_id", "-token")
+    .populate("supplier_id")
+    .populate("address_book")
+    .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -3189,14 +3520,11 @@ exports.getEmployeesOrderExcel = async (req, reply) => {
     }
     const total = await Order.find(q).countDocuments();
     const item = await Order.find(q)
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("provider")
-      .populate("supervisor")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
+    .populate("user_id", "-token")
+    .populate("employee_id", "-token")
+    .populate("supplier_id")
+    .populate("address_book")
+    .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .sort({ _id: -1 })
 
     reply.code(200).send(
@@ -3221,14 +3549,11 @@ exports.getSingleOrders = async (req, reply) => {
   try {
     const item = await Order.findById(req.query.id)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("supervisor", "-token")
-      .populate("provider")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .select();
 
     const response = {
@@ -3265,36 +3590,30 @@ exports.getOrders = async (req, reply) => {
     }
     if (req.body.status && req.body.status != ""){
       if(req.body.status == ORDER_STATUS.finished){
-        query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
+        query["Status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
       }
       else if(req.body.status == 'canceled' ){
-        query["status"] = {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}
+        query["Status"] = {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}
       }
       else{
-        query["status"] = req.body.status;
+        query["Status"] = req.body.status;
       }
     }
     if (req.body.order_no && req.body.order_no != "")
-      query["order_no"] = req.body.order_no;
+      query["Order_no"] = req.body.order_no;
 
     if (req.body.supplier_id && req.body.supplier_id != "")
-      query["provider"] = req.body.supplier_id;
-
-    if (req.body.place_id && req.body.supplier_id != "")
-      query["place"] = req.body.place_id;
+      query["supplier_id"] = req.body.supplier_id;
 
 
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("supervisor", "-token")
-      .populate("provider")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .skip(page * limit)
       .limit(limit)
       .select();
@@ -3322,7 +3641,7 @@ exports.getOrdersExcel = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
     var query = {};
-    query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
+    query["Status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
     if (
       req.body.dt_from &&
       req.body.dt_from != "" &&
@@ -3340,17 +3659,17 @@ exports.getOrdersExcel = async (req, reply) => {
     //   if(req.body.status == ORDER_STATUS.finished){
     //   }
     //   else if(req.body.status == 'canceled' ){
-    //     query["status"] = {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}
+    //     query["Status"] = {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}
     //   }
     //   else{
-    //     query["status"] = req.body.status;
+    //     query["Status"] = req.body.status;
     //   }
     // }
     if (req.body.order_no && req.body.order_no != "")
-      query["order_no"] = req.body.order_no;
+      query["Order_no"] = req.body.order_no;
 
     if (req.body.supplier_id && req.body.supplier_id != "")
-      query["provider"] = req.body.supplier_id;
+      query["supplier_id"] = req.body.supplier_id;
 
     if (req.body.place_id && req.body.supplier_id != "")
       query["place"] = req.body.place_id;
@@ -3358,15 +3677,11 @@ exports.getOrdersExcel = async (req, reply) => {
 
     const item = await Order.find(query)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("supervisor", "-token")
-      .populate("provider")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
-      .populate("place")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .select();
 
     const response = {
@@ -3387,7 +3702,7 @@ exports.getOrdersEarnings = async (req, reply) => {
   try {
     var _result  = []
     var query = {};
-    query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]}
+    query["Status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]}
     if (
       req.body.dt_from &&
       req.body.dt_from != "" &&
@@ -3403,10 +3718,10 @@ exports.getOrdersEarnings = async (req, reply) => {
     }
 
     if (req.body.order_no && req.body.order_no != "")
-      query["order_no"] = req.body.order_no;
+      query["Order_no"] = req.body.order_no;
 
     if (req.body.supplier_id && req.body.supplier_id != "")
-      query["provider"] = req.body.supplier_id;
+      query["supplier_id"] = req.body.supplier_id;
 
     if (req.body.place_id && req.body.supplier_id != "")
       query["place"] = req.body.place_id;
@@ -3414,14 +3729,11 @@ exports.getOrdersEarnings = async (req, reply) => {
 
     const item = await Order.find(query)
       .sort({ _id: -1 })
-      // .populate("user", "-token")
-      // .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("supervisor", "-token")
-      // .populate("provider")
-      .populate("place")
-      // .populate("category_id")
-      // .populate("address")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
       .select();
 
     if(req.body.supplier_id && req.body.supplier_id != ""){
@@ -3429,11 +3741,11 @@ exports.getOrdersEarnings = async (req, reply) => {
         .groupBy('employee')
         .map(function (platform, id) {
           if (platform && platform.length > 0) {
-            if(platform[0] && platform[0].employee){
-              console.log(platform[0].employee)
+            if(platform[0] && platform[0].employee_id){
+              console.log(platform[0].employee_id)
               return {
-                id: platform[0].employee._id,
-                title: platform[0].employee ? platform[0].employee.full_name : "",
+                id: platform[0].employee_id._id,
+                title: platform[0].employee_id ? platform[0].employee_id.full_name : "",
                 place: platform[0].place ? platform[0].place.arName : "",
                 supervisor: platform[0].supervisor ? platform[0].supervisor.name : "",
                 totalTaxs: lodash.sumBy(platform, 'tax'),
@@ -3490,7 +3802,7 @@ exports.getOrdersPercentage = async (req, reply) => {
   try {
     var _result  = []
     var query = {};
-    query["status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]}
+    query["Status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]}
     if (
       req.body.dt_from &&
       req.body.dt_from != "" &&
@@ -3506,11 +3818,11 @@ exports.getOrdersPercentage = async (req, reply) => {
     }
 
     if (req.body.supplier_id && req.body.supplier_id != "")
-      query["provider"] = req.body.supplier_id;
+      query["supplier_id"] = req.body.supplier_id;
 
     const item = await Order.find(query)
       .sort({ _id: -1 })
-      .populate("provider")
+      .populate("supplier_id")
       .select();
 
       _result = lodash(item)
@@ -3741,21 +4053,18 @@ exports.getOrdersMap = async (req, reply) => {
 
       var query = {}
       query["dt_date"]= { $gte: searchDate } 
-      query["status"] = req.query.status_id;
+      query["Status"] = req.query.status_id;
       
       
 
     console.log(query)
     const item = await Order.find(query)
       .sort({ _id: -1 })
-      .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("supervisor", "-token")
-      .populate("provider")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
     // .limit(2000)
     // if (err) return handleError(err);
     const response = {
