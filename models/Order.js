@@ -50,10 +50,19 @@ const Orderschema = mongoose.Schema(
 const RateSchema = mongoose.Schema(
   {
     order_id: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
-    driver_id: { type: mongoose.Schema.Types.ObjectId, ref: "employees" },
+    supplier_id: { type: mongoose.Schema.Types.ObjectId, ref: "supplier" },
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
     rate_from_user: { type: Number },
     note_from_user: { type: String },
+    products: {
+      type: [
+        {
+          product_id: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
+          rate: { type: Number },
+          note: { type: String },
+        },
+      ],
+    },
     createAt: { type: Date },
     type: { type: Number },
   },

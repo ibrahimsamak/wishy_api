@@ -50,6 +50,11 @@ const Productschema = mongoose.Schema(
     isDeleted: {
       type: Boolean,
     },
+    by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "supplier",
+      required: [true, "supplier is required"],
+    },
   },
   { versionKey: false }
 );

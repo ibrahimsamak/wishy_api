@@ -91,7 +91,8 @@ exports.MESSAGE_STRING_ENGLISH = {
   EXIT: "We already have this item",
   OFFER_ERROR: "This order is not recived offer for now",
 
-
+  FROMADMIN: "The process was completed successfully. Your request will be reviewed by the administration.",
+  MULTISPUPPLIER: "Sorry... it is not possible to add to the cart from more than one service provider",
   ERROR_PRICE: "Sorry...the price entered is not between the minimum and maximum for this trip",
   
   CANT_COMPLETEL_PROCESS:
@@ -185,6 +186,8 @@ exports.MESSAGE_STRING_ARABIC = {
 
   ERROR_PRICE: "عذرا .. السعر المدخل ليس بين الحد الادنى والاعلى لهذه الرحلة",
 
+  MULTISPUPPLIER: "عذرا .. لا يمكن الاضافة الى السلة من أكثر من مزود خدمة",
+  FROMADMIN: "تمت العملية بنجاح .. سيتم مراجعة طلبك من قبل الادارة",
 
   CANT_COMPLETEL_PROCESS:
     "عذرا .. لا يمكن اتمام العملية الرجاء التأكد من الحالة المرسلة",

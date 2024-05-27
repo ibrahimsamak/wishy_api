@@ -1024,13 +1024,118 @@ const admin_routes = [
 
 //mobile client
 const mobile_routes = [
-  
-  // {
-  //   method: "POST",
-  //   url: "/api/mobile/refund/:id",
-  //   // beforeHandler: [auth.getToken],
-  //   handler: userController.refund_test,
-  // },
+    //Forms
+    {
+      method: "POST",
+      url: "/api/mobile/form/vip",
+      beforeHandler: [auth.getToken],
+      handler: userController.addVip,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/form/product",
+      beforeHandler: [auth.getToken],
+      handler: userController.addProductRequest,
+    },
+   //wish
+    {
+      method: "POST",
+      url: "/api/mobile/wish/pay/:id",
+      beforeHandler: [auth.getToken],
+      handler: userController.paywish,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/wish/add",
+      beforeHandler: [auth.getToken],
+      handler: userController.addWish,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/wish/edit/:id",
+      beforeHandler: [auth.getToken],
+      handler: userController.updateWish,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/wish/delete/:id",
+      beforeHandler: [auth.getToken],
+      handler: userController.deleteWish,
+    },
+    {
+      method: "GET",
+      url: "/api/mobile/wish/get/:id",
+      beforeHandler: [auth.getToken],
+      handler: userController.getSingleWish,
+    },
+    {
+      method: "GET",
+      url: "/api/mobile/wish/get",
+      beforeHandler: [auth.getToken],
+      handler: userController.getWishByUserId,
+    },
+    //Reminder
+    {
+    method: "POST",
+    url: "/api/mobile/reminder/add",
+    beforeHandler: [auth.getToken],
+    handler: userController.addReminder,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/reminder/edit/:id",
+      beforeHandler: [auth.getToken],
+      handler: userController.updateReminder,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/reminder/delete/:id",
+      beforeHandler: [auth.getToken],
+      handler: userController.deleteReminder,
+    },
+    {
+      method: "GET",
+      url: "/api/mobile/reminder/get/:id",
+      beforeHandler: [auth.getToken],
+      handler: userController.getSingleReminder,
+    },
+    {
+      method: "GET",
+      url: "/api/mobile/reminder/get",
+      beforeHandler: [auth.getToken],
+      handler: userController.getWishReminder,
+    },
+    //wish group
+    {
+      method: "POST",
+      url: "/api/mobile/wish_group/add",
+      beforeHandler: [auth.getToken],
+      handler: userController.addWishGroup,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/wish_group/edit/:id",
+      beforeHandler: [auth.getToken],
+      handler: userController.updateWishGroup,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/wish_group/delete/:id",
+      beforeHandler: [auth.getToken],
+      handler: userController.deleteWishGroup,
+    },
+    {
+      method: "GET",
+      url: "/api/mobile/wish_group/get/:id",
+      beforeHandler: [auth.getToken],
+      handler: userController.getSingleWishGroup,
+    },
+    {
+      method: "GET",
+      url: "/api/mobile/wish_group/get",
+      beforeHandler: [auth.getToken],
+      handler: userController.getWishGroupByUserId,
+    },
     //favorite
     {
       method: "POST",
@@ -1387,12 +1492,17 @@ const mobile_routes = [
     beforeHandler: [auth.getToken],
     handler: orderController.updateOffer,
   },
-
   {
     method: "POST",
     url: "/api/mobile/order/add",
     beforeHandler: [auth.getToken],
     handler: orderController.addOrder,
+  },
+  {
+    method: "POST",
+    url: "/api/mobile/order/add_wish",
+    beforeHandler: [auth.getToken],
+    handler: orderController.addWishOrder,
   },
   {
     method: "POST",

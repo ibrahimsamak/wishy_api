@@ -5,6 +5,7 @@ const config = require("config");
 const cluster = require("cluster");
 let numCPUs = require("os").cpus().length;
 const orderController = require("./controllers/orderController");
+const userController = require("./controllers/userController");
 
 const fastify = require("fastify")({
   logger: true,
@@ -54,6 +55,7 @@ const start = async () => {
   fastify.swagger();
   fastify.log.info(`server listening on ${fastify.server.address().port}`);
   orderController.PendingCronOrders();
+  userController.Reminders();
 
 };
 // } catch (err) {

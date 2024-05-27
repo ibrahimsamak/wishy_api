@@ -9,6 +9,7 @@ const moment = require("moment-timezone");
 const Joi = require("@hapi/joi");
 const axios = require("axios");
 const utils = require("../utils/utils");
+const cron = require("node-cron");
 
 // Get Data Models
 
@@ -21,6 +22,12 @@ const {
   getErrors,
   setLanguage,
   Companies,
+  WishGroup,
+  Wish,
+  Reminder,
+  VIP,
+  Product_Request,
+  ProductRequest,
 } = require("../models/User");
 const {
   getCurrentDateTime,
@@ -54,8 +61,21 @@ const {
   VALIDATION_MESSAGE_ARABIC,
   VALIDATION_MESSAGE_ENGLISH,
   ORDER_STATUS,
+  NOTIFICATION_TITILES,
+  NOTIFICATION_TYPE,
 } = require("../utils/constants");
 const { coupon_usage } = require("../models/Coupon");
+
+exports.Reminders = async function PendingCronOrders() {
+  cron.schedule(`0 9 * * *`, async () => {
+    var today = moment().tz("Asia/Riyadh").startOf('day').format(moment.HTML5_FMT.DATE);
+    let orders = await Reminder.find({ date: today}).populate('user_id');
+    for await (const doc of orders) {
+      var msg = `عزيزي المشترك نود تذكيرك بمناسبتك: : ${doc.title}`;
+      await CreateGeneralNotification(doc.user.fcmToken, NOTIFICATION_TITILES.REMINDER, msg, NOTIFICATION_TYPE.REMINDER, doc._id, "", doc.user._id, "", "");  
+    }
+  });
+};
 
 // Get all Users
 exports.getUsers = async (req, reply) => {
@@ -1348,7 +1368,6 @@ exports.getUserAddressType = async (req, reply) => {
   }
 };
 
-
 exports.addUserAddress = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
@@ -2215,4 +2234,630 @@ exports.refund_test = async (req, reply) => {
   // } catch (err) {
   //   throw boom.boomify(err);
   // }
+};
+
+
+
+/////////////////Wish/////////////////
+exports.addWishGroup = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const _user = await WishGroup.findOne({ name: req.body.name });
+    if (_user) {
+      reply
+      .code(200)
+      .send(
+        errorAPI(
+          language,
+          405,
+          MESSAGE_STRING_ARABIC.EXIT,
+          MESSAGE_STRING_ENGLISH.EXIT,
+          {}
+        )
+      );
+    return;
+    } else {
+      let user = new WishGroup({
+        name: req.body.name,
+        user_id: req.user._id,
+        createAt: getCurrentDateTime(),
+      });
+      let rs = await user.save();  
+      reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.SUCCESS,
+            MESSAGE_STRING_ENGLISH.SUCCESS,
+            rs
+          )
+        );
+      return;
+    }
+  } catch (err) {
+    console.log(err)
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+exports.updateWishGroup = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const _setting = await WishGroup.findByIdAndUpdate(
+      req.params.id,
+      {
+        name: req.body.name,
+      },
+      { new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          _setting
+        )
+      );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.deleteWishGroup = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    await WishGroup.findByIdAndRemove(req.params.id);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getSingleWishGroup = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    const StaticPages = await WishGroup.findById(req.params.id);
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          StaticPages
+        )
+      );
+    return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getWishGroupByUserId = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+    const total = await WishGroup.countDocuments({ user_id: req.query.user_id });
+    const items = await WishGroup.find({ user_id: req.query.user_id })
+      .populate({path: "user_id"})
+      .skip(page * limit)
+      .limit(limit)
+      .sort({ _id: -1 });
+
+      reply.code(200).send(
+        success(
+          language, 
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          items,
+          {
+            size: items.length,
+            totalElements: total,
+            totalPages: Math.floor(total / limit),
+            pageNumber: page,
+         })
+      );
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+exports.addWish = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const _user = await Wish.findOne({ $and:[{product_id: req.body.product_id}, {group_id: req.body.group_id}] });
+    if (_user) {
+      reply
+      .code(200)
+      .send(
+        errorAPI(
+          language,
+          405,
+          MESSAGE_STRING_ARABIC.EXIT,
+          MESSAGE_STRING_ENGLISH.EXIT,
+          {}
+        )
+      );
+    return;
+    } else {
+      let user = new Wish({
+        product_id: req.body.product_id,
+        group_id: req.body.group_id,
+        isShare: req.body.isShare,
+        type: req.body.type,
+        total: req.body.total,
+        all_pays: 0,
+        user_id: req.user._id,
+        pays: [],
+        title: req.body.title,
+        description: req.body.description,
+        createAt: getCurrentDateTime(),
+      });
+      let rs = await user.save();
+      //send sms to pays if private
+
+      reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.SUCCESS,
+            MESSAGE_STRING_ENGLISH.SUCCESS,
+            rs
+          )
+        );
+      return;
+    }
+  } catch (err) {
+    console.log(err)
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+exports.updateWish = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const _setting = await Wish.findByIdAndUpdate(
+      req.params.id,
+      {
+        product_id: req.body.product_id,
+        group_id: req.body.group_id,
+        isShare: req.body.isShare,
+        type: req.body.type,
+        total: req.body.total,
+        title: req.body.title,
+        description: req.body.description,
+      },
+      { new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          _setting
+        )
+      );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.deleteWish = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    await Wish.findByIdAndRemove(req.params.id);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getSingleWish = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    const StaticPages = await Wish.findById(req.params.id)
+    .populate({path: "user_id"})
+    .populate({path: "product_id"})
+    .populate({path: "group_id"});
+
+    const newObj = StaticPages.toObject();
+    delete newObj.product_id.arName;
+    delete newObj.product_id.enName;
+    delete newObj.product_id.arDescription;
+    delete newObj.product_id.enDescription;
+    newObj.product_id.name = newObj.product_id[`${language}Name`];
+    newObj.product_id.description = newObj.product_id[`${language}Description`];
+
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          newObj
+        )
+      );
+    return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getWishByUserId = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var returnArr = []
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+    const total = await Wish.countDocuments({ user_id: req.query.user_id });
+    const items = await Wish.find({ user_id: req.query.user_id })
+    .populate({path: "user_id"})
+    .populate({path: "product_id"})
+    .populate({path: "group_id"})
+    .skip(page * limit)
+    .limit(limit)
+    .sort({ _id: -1 });
+
+      items.forEach(element => {
+        const newObj = element.toObject();
+        delete newObj.product_id.arName;
+        delete newObj.product_id.enName;
+        delete newObj.product_id.arDescription;
+        delete newObj.product_id.enDescription;
+        newObj.product_id.name = newObj.product_id[`${language}Name`];
+        newObj.product_id.description = newObj.product_id[`${language}Description`];
+        returnArr.push(newObj);
+      });
+
+      reply.code(200).send(
+        success(
+          language, 
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          returnArr,
+          {
+            size: items.length,
+            totalElements: total,
+            totalPages: Math.floor(total / limit),
+            pageNumber: page,
+         })
+      );
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+exports.paywish = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    let pay = {
+      user: req.user._id,
+      total: req.body.total,
+      createAt: getCurrentDateTime(),
+    }
+    const _setting = await Wish.findByIdAndUpdate(
+      req.params.id,
+      {
+        $push: { pays: pay } ,
+        $inc: { all_pays: Number(req.body.total)}
+      },
+      { new: true },
+    );
+
+    if(Number(_setting.total) == Number(_setting.all_pays)){
+      //notification to user 
+      await Wish.findByIdAndUpdate(req.params.id, { isComplete:true },{ new: true });
+      let user = await Users.findById(req.user._id)
+      await CreateGeneralNotification(user.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم اكتمال مبلغ القطة الخاص بأمنيتك", NOTIFICATION_TYPE.ORDERS, _setting._id, "", user._id, "", "");
+    }
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          _setting
+        )
+      );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+///////////////Reminder/////////////
+exports.addReminder = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const _user = await Reminder.findOne({ title: req.body.title });
+    if (_user) {
+      reply
+      .code(200)
+      .send(
+        errorAPI(
+          language,
+          405,
+          MESSAGE_STRING_ARABIC.EXIT,
+          MESSAGE_STRING_ENGLISH.EXIT,
+          {}
+        )
+      );
+    return;
+    } else {
+      let user = new Reminder({
+        title: req.body.title,
+        date: req.body.date,
+        user_id: req.user._id,
+        createAt: getCurrentDateTime(),
+      });
+      let rs = await user.save();  
+      reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.SUCCESS,
+            MESSAGE_STRING_ENGLISH.SUCCESS,
+            rs
+          )
+        );
+      return;
+    }
+  } catch (err) {
+    console.log(err)
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+exports.updateReminder = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const _setting = await Reminder.findByIdAndUpdate(
+      req.params.id,
+      {
+        title: req.body.title,
+        date: req.body.date,
+      },
+      { new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          _setting
+        )
+      );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.deleteReminder = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    await Reminder.findByIdAndRemove(req.params.id);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getSingleReminder = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    const StaticPages = await Reminder.findById(req.params.id);
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          StaticPages
+        )
+      );
+    return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getWishReminder = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+    const total = await Reminder.countDocuments({ user_id: req.user._id });
+    const items = await Reminder.find({ user_id: req.user._id })
+      .populate({path: "user_id"})
+      .skip(page * limit)
+      .limit(limit)
+      .sort({ _id: -1 });
+
+      reply.code(200).send(
+        success(
+          language, 
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          items,
+          {
+            size: items.length,
+            totalElements: total,
+            totalPages: Math.floor(total / limit),
+            pageNumber: page,
+         })
+      );
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+
+///////////////Forms/////////////
+exports.addVip = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+      let user = new VIP({
+        event_id: req.user._id,
+        event_id: req.body.event_id,
+        gender: req.body.gender,
+        lat: req.body.lat,
+        lng: req.body.lng,
+        address: req.body.address,
+        date: req.body.date,
+        time: req.body.time,
+        note: req.body.note,
+        images: req.body.images,
+        reciver_phone: req.body.reciver_phone,
+        extra_note: req.body.extra_note,
+        total: req.body.total,
+        isNeedOffer: req.body.isNeedOffer,
+        offer: 0,
+        createAt:getCurrentDateTime(),
+      });
+      let rs = await user.save();  
+      reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.FROMADMIN,
+            MESSAGE_STRING_ENGLISH.FROMADMIN,
+            rs
+          )
+        );
+  } catch (err) {
+    console.log(err)
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+exports.addProductRequest = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+      let user = new ProductRequest({
+        user_id: req.user._id,
+        title: req.body.title,
+        note: req.body.note,
+        images: req.body.images,
+        total: req.body.total,
+        name: req.body.name,
+        iban: req.body.iban,
+        createAt:getCurrentDateTime(),
+      });
+      let rs = await user.save();  
+      reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.FROMADMIN,
+            MESSAGE_STRING_ENGLISH.FROMADMIN,
+            rs
+          )
+        );
+  } catch (err) {
+    console.log(err)
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
 };

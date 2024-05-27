@@ -33,7 +33,7 @@ const { getCurrentDateTime } = require("../models/Constant");
 const { coupon } = require("../models/Coupon");
 const { tokens } = require("../models/Constant");
 // const { companyCommision } = require("../models/companyCommision");
-const { Users, User_Address, User_Uncovered } = require("../models/User");
+const { Users, User_Address, User_Uncovered, Wish } = require("../models/User");
 const { Cart } = require("../models/Cart");
 const {
   MESSAGE_STRING_ENGLISH,
@@ -312,8 +312,9 @@ exports.addOrder = async (req, reply) => {
         }
 
         var admin_percentage = 0; //provider.orderPercentage;
-
+        var by = ""
         for await (const data of arr) {
+          by = data.supplier_id
           var Product_Price_Object = await Product.findOne({
             $and: [
               // { place_id: newPlaceId },
@@ -335,7 +336,6 @@ exports.addOrder = async (req, reply) => {
             //     )
             //   );
             // return;
-
             let object = {
               cartId: data._id,
               product_id: data.product_id,
@@ -366,7 +366,6 @@ exports.addOrder = async (req, reply) => {
 
         // if (personalDiscount != 0)
         //   deliverycost = Number(deliverycost) - Number(personalDiscount * deliverycost);
-
         if (couponRate != 0.0) {
           deliverycost = deliverycost //- Number(deliverycost * couponRate);
           var sub_total = total - totalDiscount;
@@ -434,6 +433,7 @@ exports.addOrder = async (req, reply) => {
           // supplier_id: supplier_id,
           is_address_book: req.body.is_address_book,
           address_book: req.body.address_book,
+          supplier_id: by,
           // isExpress:req.body.isExpress
         });
 
@@ -490,264 +490,159 @@ exports.addOrder = async (req, reply) => {
   }
 };
 
-// exports.addOrder = async (req, reply) => {
-//   const language = req.headers["accept-language"];
-//   try {
-//       var total = 0
-//       var total_discount = 0
-//       var total_tax = 0
-//       var provider_total = 0;
-//       var admin_total = 0;
+exports.addWishOrder = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+      var userId = req.user._id;
+      const userObj = await Users.findById(userId);
+      const tax = await setting.findOne({ code: "TAX" });
 
-//       var validationArray = [
-//         { name: "couponCode" },
-//         { name: "paymentType" },
-//         { name: "category_id" },
-//         { name: "sub_category_id" },
-//         { name: "dt_date" },
-//         { name: "dt_time" },
-//       ];
+      const raduis = 1000;
+      var cart_place_id = "";
+      var supplier_id = "";
+      var items = [];
+      var total = 0.0;
+      var totalDiscount = 0.0;
+      var provider_Total = 0.0;
+      var net_total = 0.0;
+      var deliverycost = 0.0;
+      var lat = 0.0;
+      var lng = 0.0;
+      var remain = 0.0;
+      var gTax = 0.0;
+      var address = "";
+      var couponRate = 0.0;
+      var sp = null;
+      var personalDiscount = 0.0;
 
-//       validationArray.push({ name: "lat" });
-//       validationArray.push({ name: "lng" });
-//       check_request_params(req.body, validationArray, async function (response) {
-//         if (response.success) {
-//           var address = req.body.address;
-//           var userId = req.user._id;
-//           const userObj = await Users.findById(userId);
-//           const tax = await setting.findOne({ code: "TAX" });
-//           const sub_category = await SubCategory.findById(req.body.sub_category_id);
-//           var orderNo = `${makeOrderNumber(6)}`;
-//           var _supplier = null;
-//           var _employee = null;
-//           var lat = Number(req.body.lat);
-//           var lng = Number(req.body.lng);
+      var ar_msg = MESSAGE_STRING_ARABIC.SUCCESSNEW;
+      var en_msg = MESSAGE_STRING_ENGLISH.SUCCESSNEW;
+      var statusCode = 200;
+      var employee_ids = [];
 
-//           if(req.body.address && req.body.address != ""){
-//             let objAddress = await User_Address.findById(req.body.address)
-//             if(objAddress){
-//               lat = Number(objAddress.lat);
-//               lng = Number(objAddress.lng);
-//             }
-//           }
 
-//           var PoinInPolygon = await place.find({
-//             $and: [
-//               {
-//                 loc: {
-//                   $geoIntersects: {
-//                     $geometry: {
-//                       type: "Point",
-//                       coordinates: [Number(lng), Number(lat)],
-//                     },
-//                   },
-//                 },
-//               },
-//               { isDeleted: false },
-//             ],
-//           });
-//           if (PoinInPolygon.length == 0) {
-//             let rs = new User_Uncovered({
-//               user_id: userId,
-//               user_type: "",
-//               lat: lat,
-//               lng: lng,
-//               address: req.body.address,
-//             });
-//             await rs.save();
+      if (String(req.body.is_address_book) == "true" && req.body.address_book && req.body.address_book != "") {
+        var newAddress = await User_Address.findById(req.body.address_book);
+        if (newAddress) {
+          lat = Number(newAddress.lat);
+          lng = Number(newAddress.lng);
+          if (newAddress.discount != 0)
+            personalDiscount = Number(newAddress.discount);
+        } else {
+          reply
+            .code(200)
+            .send(
+              errorAPI(
+                language,
+                400,
+                MESSAGE_STRING_ARABIC.ERROR,
+                MESSAGE_STRING_ENGLISH.ERROR
+              )
+            );
+          return;
+        }
+      } else {
+        lat = Number(req.body.lat);
+        lng = Number(req.body.lng);
+      }
 
-//             reply
-//               .code(200)
-//               .send(
-//                 errorAPI(
-//                   language,
-//                   400,
-//                   MESSAGE_STRING_ARABIC.NOT_COVERED,
-//                   MESSAGE_STRING_ENGLISH.NOT_COVERED,
-//                   {}
-//                 )
-//               );
-//             return;
-     
-//           } 
+      if (lat == 0.0  || lng == 0.0) {
+        reply
+          .code(200)
+          .send(
+            errorAPI(
+              language,
+              400,
+              MESSAGE_STRING_ARABIC.ERROR,
+              MESSAGE_STRING_ENGLISH.ERROR
+            )
+          );
+        return;
+      } 
 
-//           let check_category= await Product_Price.findOne({$and:[{place_id:PoinInPolygon[0]._id}, {category_id:req.body.category_id}]})
-//           if(!check_category){
-//             let rs = new User_Uncovered({
-//               user_id: userId,
-//               user_type: "",
-//               lat: lat,
-//               lng: lng,
-//               address: req.body.address,
-//             });
-//             await rs.save();
+      var wish = await Wish.findById(req.body.wish_id)
+      gTax = Number(wish.total) * Number(tax.value);
+      net_total = Number(wish.total);
+      total = Number(wish.total);
 
-//             reply
-//               .code(200)
-//               .send(
-//                 errorAPI(
-//                   language,
-//                   400,
-//                   MESSAGE_STRING_ARABIC.NOT_COVERED,
-//                   MESSAGE_STRING_ENGLISH.NOT_COVERED,
-//                   {}
-//                 )
-//               );
-//             return;
-//           }
+      var orderNo = `${makeOrderNumber(6)}`;
+      let Orders = new Order({
+        Order_no: orderNo,
+        Tax: Number(gTax),
+        DeliveryCost: Number(deliverycost),
+        NetTotal: net_total,
+        Total: total,
+        TotalDiscount: totalDiscount,
+        Remain: parseFloat(remain).toFixed(2),
+        Admin_Total: 0.0,//adminValue,
+        provider_Total: provider_Total,
+        Status: ORDER_STATUS.new,
+        dt_date: req.body.dt_date,
+        dt_time: req.body.dt_time,
+        lat: lat,
+        lng: lng,
+        PaymentType: req.body.PaymentType,
+        couponCode: req.body.couponCode,
+        user_id: userId,
+        createAt: getCurrentDateTime(),
+        items: items,
+        address: req.body.address,
+        user_id: userId,
+        OrderType: req.body.OrderType,
+        // place_id: newPlaceId,
+        // supplier_id: supplier_id,
+        is_address_book: req.body.is_address_book,
+        address_book: req.body.address_book,
+        // isExpress:req.body.isExpress
+      });
 
-//           _supplier = check_category.supplier_id 
+      let rs = await Orders.save();
+      let itemsId = items.map((x) => x.cartId);
+      console.log(itemsId)
+      Cart.deleteMany({ _id: { $in: itemsId } }, function (err) {});
+
+      let msg = "لديك طلب جديد";
+      if (employee_ids.length > 0) {
+        var current_employee = await employee.find({_id:{$in:employee_ids}});
+      }
+
+      var notifications_arr = []
+      // current_employee.forEach(element => {
+      //   let _Notification2 = new Notifications({
+      //     fromId: userId,
+      //     user_id: element._id,
+      //     title: NOTIFICATION_TITILES.ORDERS,
+      //     msg: msg,
+      //     dt_date: getCurrentDateTime(),
+      //     type: NOTIFICATION_TYPE.ORDERS,
+      //     body_parms: rs._id,
+      //     isRead: false,
+      //     fromName: userObj.full_name,
+      //     toName: element.full_name,
+      //   });
+      //   notifications_arr.push(_Notification2)
+      // });
+      //CreateNotificationMultiple(current_employee.map(x=>x.fcmToken),NOTIFICATION_TITILES.ORDERS,msg,rs._id)
+      // await Notifications.insertMany(notifications_arr, (err, _docs) => {
+      //   if (err) {
+      //     return console.error(err);
+      //   } else {
+      //     console.log("Multiple documents inserted to Collection");
+      //   }
+      // });
  
-//           if(req.body.couponCode && req.body.couponCode != ""){
-//             let obj =  await check_coupon(req.user._id, req.body.couponCode, req.body.sub_category_id)
-//             if(obj == null){
-//               reply
-//               .code(200)
-//               .send(
-//                 errorAPI(
-//                   language,
-//                   400,
-//                   MESSAGE_STRING_ARABIC.COUPON_ERROR,
-//                   MESSAGE_STRING_ENGLISH.COUPON_ERROR,
-//                   null
-//                 )
-//               );
-//               return;
-//             }
-//             total = obj.final_total;
-//             total_discount = obj.discount;
-//             total_tax = obj.total_tax
-//           }else{
-//             total = (Number(sub_category.price) * Number(tax.value)) + Number(sub_category.price)
-//             total_tax = (Number(sub_category.price) * Number(tax.value))
-//           }
-//           // if(!req.body.address || req.body.address == ""){
-//           //   let rs = new User_Address({
-//           //     title: req.body.title,
-//           //     lat: req.body.lat,
-//           //     lng: req.body.lng,
-//           //     address: req.body.address,
-//           //     user_id: userId,
-//           //     isDefault: false,
-//           //     discount: 0,
-//           //     streetName: req.body.streetName,
-//           //     floorNo: req.body.floorNo,
-//           //     buildingNo: req.body.buildingNo,
-//           //     flatNo: req.body.flatNo,
-//           //     type: 'home'
-//           //   });
-        
-//           //   let _rs = await rs.save();
-//           //   address = _rs._id;
-//           // }
+      // if (place_id != newPlaceId) {
+      //   ar_msg = MESSAGE_STRING_ARABIC.CHANGE_PLACE_OR_SUPPLIER;
+      //   en_msg = MESSAGE_STRING_ENGLISH.CHANGE_PLACE_OR_SUPPLIER;
+      //   statusCode = 300;
+      // }
 
-//           if(req.body.paymentType == 'wallet' && Number(userObj.wallet) < total){
-//             reply
-//             .code(200)
-//             .send(
-//               errorAPI(
-//                 language,
-//                 400,
-//                 MESSAGE_STRING_ARABIC.WALLET,
-//                 MESSAGE_STRING_ENGLISH.WALLET
-//               )
-//             );
-//             return;
-//           }
-
-          
-//           let _supplierObj = await Supplier.findById(_supplier);
-//           if(_supplierObj){
-//             admin_total = Number(_supplierObj.orderPercentage) * Number(total);
-//           }
-//           provider_total = Number(total) - Number(admin_total);
-
-//           if(req.body.paymentType == 'wallet'){
-//             await NewPayment(userId, orderNo , ` سحب رصيد لطلب جديد ${orderNo}` , '-' , total , 'Online');
-//           }
-
-//           let Orders = new Order({
-//             payment_id: req.body.payment_id,
-//             provider_total: provider_total,
-//             admin_total: admin_total,
-//             lat: lat,
-//             lng: lng,           
-//             price: sub_category.price,
-//             address: (address && address != "") ? address : null,
-//             order_no: orderNo,
-//             tax: Number(total_tax),
-//             total: total,
-//             totalDiscount: total_discount,
-//             netTotal: total,
-//             status: ORDER_STATUS.new,
-//             createAt: getCurrentDateTime(),
-//             period: 0,
-//             dt_date: req.body.dt_date,
-//             dt_time: req.body.dt_time,
-//             sub_category_id: req.body.sub_category_id,
-//             category_id: req.body.category_id,
-//             addressType: req.body.addressType,
-//             couponCode: req.body.couponCode,
-//             paymentType: req.body.paymentType,
-//             user: userId,
-//             notes: req.body.notes,
-//             canceled_note:"",
-//             employee: null,
-//             provider: _supplier,
-//             supervisor: null,
-//             place: PoinInPolygon[0]._id,
-//             extra: [],
-//             loc: {
-//               type: "Point",
-//               coordinates: [lat, lng],
-//             },
-//           });
-//           let rs = await Orders.save();
-
-//           const currentTimestamp = Date.now();
-//           const currentTimestampInSeconds = Math.floor(currentTimestamp);
-          
-//           firebaseRef
-//             .child("orders")
-//             .child(String(rs._id))
-//             .once("value", (snapshot) => {
-//               if (!snapshot.exists()) {
-//                 firebaseRef
-//                   .child("orders")
-//                   .child(String(rs._id))
-//                   .set({
-//                       order_id: String(rs._id),
-//                       order_no: orderNo,
-//                       status: ORDER_STATUS.new,
-//                       timestamp: currentTimestampInSeconds,
-//                       user_id: userId,
-//                       employee_id: "",
-//                       msg: "هناك طلب جديد برقم " + orderNo
-//                    });
-//               }
-//             });
-
-//           reply
-//           .code(200)
-//           .send(
-//             success(
-//               language,
-//               200,
-//               MESSAGE_STRING_ARABIC.SUCCESS,
-//               MESSAGE_STRING_ENGLISH.SUCCESS,
-//               {_id: rs._id}
-//             )
-//           );
-//         return;
-//         } else {
-//           reply.send(response);
-//         }
-//       });
-//   } catch (err) {
-//       reply.code(200).send(errorAPI(language, 400, err.message, err.message));
-//       return;
-//   }
-// };
+      reply.code(200).send(success(language, statusCode, ar_msg, en_msg, sp));
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
 
 exports.addOffer = async (req, reply) => {
   try {
@@ -1392,7 +1287,7 @@ exports.updateOrder = async (req, reply) => {
         .remove();    
       }
 
-      await Order.findByIdAndUpdate( req.params.id, { status: req.body.status, period:period },{ new: true })  
+      await Order.findByIdAndUpdate( req.params.id, { Status: req.body.status, period:period },{ new: true })  
       reply
       .code(200)
       .send(
@@ -1420,11 +1315,11 @@ exports.updateOrderCode = async (req, reply) => {
       var msg = ""
       if(check.Status == ORDER_STATUS.updated) {
         if(String(req.body.update_code) == String(check.update_code)) {
-          await Order.findByIdAndUpdate(req.params.id, { status: ORDER_STATUS.progress },{ new: true } )
-          firebaseRef
-          .child("orders")
-          .child(String(req.params.id))
-          .update({ timestamp: currentTimestampInSeconds, status: ORDER_STATUS.progress , msg: "تم تعديل الطلب رقم " + check.order_no}); 
+          await Order.findByIdAndUpdate(req.params.id, { Status: ORDER_STATUS.progress },{ new: true } )
+          // firebaseRef
+          // .child("orders")
+          // .child(String(req.params.id))
+          // .update({ timestamp: currentTimestampInSeconds, status: ORDER_STATUS.progress , msg: "تم تعديل الطلب رقم " + check.order_no}); 
           // send notification to employee 
         }else {
           reply
@@ -1442,17 +1337,17 @@ exports.updateOrderCode = async (req, reply) => {
       }
       else if(check.Status == ORDER_STATUS.prefinished) {
         if(String(req.body.update_code) == String(check.update_code)) {
-          await Order.findByIdAndUpdate(req.params.id, { status: ORDER_STATUS.finished },{ new: true } )
-          firebaseRef
-          .child("orders")
-          .child(String(req.params.id))
-          .update({ timestamp: currentTimestampInSeconds, status: ORDER_STATUS.finished , msg: "تم انهاء الطلب رقم " + check.order_no}); 
+          await Order.findByIdAndUpdate(req.params.id, { Status: ORDER_STATUS.finished },{ new: true } )
+          // firebaseRef
+          // .child("orders")
+          // .child(String(req.params.id))
+          // .update({ timestamp: currentTimestampInSeconds, status: ORDER_STATUS.finished , msg: "تم انهاء الطلب رقم " + check.order_no}); 
 
 
-          firebaseRef
-          .child("orders")
-          .child(String(req.params.id))
-          .remove();
+          // firebaseRef
+          // .child("orders")
+          // .child(String(req.params.id))
+          // .remove();
 
           // send notification to employee 
           await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg_finished, NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");
@@ -1728,7 +1623,7 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
   try {
     let userId = req.user._id
     const ord = await Order.findById(req.params.id)
-    var driver_id = ord.employee_id
+    var supplier_id = ord.supplier_id
       if (!ord) {
       reply
         .code(200)
@@ -1743,7 +1638,7 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       return;
     }
     if (ord.Status == ORDER_STATUS.finished) {
-      var checkBefore = await Rate.findOne({ $and: [{ order_id: ord._id }, { driver_id: driver_id }, { type: 1 }] });
+      var checkBefore = await Rate.findOne({ $and: [{ order_id: ord._id }, { supplier_id: supplier_id }, { type: 1 }] });
       if (checkBefore) {
         reply
           .code(200)
@@ -1758,46 +1653,49 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
         return;
       }
 
-      if (!req.body.rate_from_user) {
-        reply
-          .code(200)
-          .send(
-            errorAPI(
-              language,
-              400,
-              VALIDATION_MESSAGE_ARABIC.ALL_REQUIRED,
-              VALIDATION_MESSAGE_ENGLISH.ALL_REQUIRED
-            )
-          );
-        return;
-      }
+      // if (!req.body.rate_from_user) {
+      //   reply
+      //     .code(200)
+      //     .send(
+      //       errorAPI(
+      //         language,
+      //         400,
+      //         VALIDATION_MESSAGE_ARABIC.ALL_REQUIRED,
+      //         VALIDATION_MESSAGE_ENGLISH.ALL_REQUIRED
+      //       )
+      //     );
+      //   return;
+      // }
 
       let Rates = new Rate({
         order_id: ord._id,
         user_id: userId,
-        driver_id: driver_id,
-        rate_from_user: req.body.rate_from_user,
-        note_from_user: req.body.note_from_user,
+        supplier_id: supplier_id,
+        rate_from_user: req.body.provider.rate,
+        note_from_user: req.body.provider.note,
         createAt: getCurrentDateTime(),
         type: 1,
+        products: req.body.products
       });
 
       let rs = await Rates.save();
-      var totalRates = await Rate.countDocuments({$and: [{ driver_id: driver_id }, { type: 1 }] });
-      var summation = await Rate.find({ $and: [{ driver_id: driver_id }, { type: 1 }] });
+      var totalRates = await Rate.countDocuments({$and: [{ supplier_id: supplier_id }, { type: 1 }] });
+      var summation = await Rate.find({ $and: [{ supplier_id: supplier_id }, { type: 1 }] });
       let sum = lodash.sumBy(summation, function (o) { return o.rate_from_user; });
-      let driver = await employee.findByIdAndUpdate(driver_id, { rate: Number(sum / totalRates).toFixed(1)},{new:true});
+      let driver = await Supplier.findByIdAndUpdate(supplier_id, { rate: Number(sum / totalRates).toFixed(1)},{new:true});
       
-      // let all_supplier_employees_count = await employee.countDocuments({supplier_id: driver.supplier_id});
-      // let all_supplier_employees = await employee.find({supplier_id: driver.supplier_id});
-      // let all_supplier_employees_summation = lodash.sumBy(all_supplier_employees, function (o) { return o.rate; });   
-      // let supp = await Supplier.findByIdAndUpdate(driver.supplier_id, { rate: Number(all_supplier_employees_summation / all_supplier_employees_count).toFixed(1)},{new:true});
-      
-      // let all_supervisor_employees_count = await employee.countDocuments({supervisor_id: driver.supervisor_id});
-      // let all_supervisor_employees = await employee.find({supervisor_id: driver.supervisor_id});
-      // let all_supervisor_employees_summation = lodash.sumBy(all_supervisor_employees, function (o) { return o.rate; });   
-      // let _supervisor = await Supervisor.findByIdAndUpdate(driver.supervisor_id, { rate: Number(all_supervisor_employees_summation / all_supervisor_employees_count).toFixed(1)},{new:true});
-      
+
+      for await(const i of req.body.products){
+        var totalRates = await Rate.countDocuments({ products: { $elemMatch: { product_id: i. product_id }}});
+        var summation = await Rate.find({ products: { $elemMatch: { product_id: i. product_id }}});
+        var product_sum = 0;
+        for await(const it of summation){
+          product_sum += lodash.sumBy(it.products, function (o) { return o.rate; });
+        }
+        console.log(product_sum)
+        console.log(totalRates)
+        await Product.findByIdAndUpdate(i.product_id, { rate: Number(product_sum / totalRates).toFixed(1)},{new:true});
+      }
 
       await Order.findByIdAndUpdate(ord._id, { status: ORDER_STATUS.rated });
       var msg = `تمت اضافة تقييم جديد على طلب رقم: ${ord.order_no}`;
@@ -1808,7 +1706,7 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
         NOTIFICATION_TYPE.ORDERS,
         ord._id,
         userId,
-        driver_id,
+        supplier_id,
         "",
         ""
       );
@@ -2599,16 +2497,16 @@ exports.getEmployeeOrder = async (req, reply) => {
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
 
-    var query = {$and:[{employee: userId}]};
+    var query = {$and:[{employee_id: userId}]};
     if (req.body.status && req.body.status != "") {
       if(req.body.status == ORDER_STATUS.finished) {
-        query.$and.push({status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}})
+        query.$and.push({Status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}})
       }
       else if(req.body.status == 'canceled' ){
-        query.$and.push({status: {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}})
+        query.$and.push({Status: {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}})
       }
       else{
-        query.$and.push({status: req.body.status})
+        query.$and.push({Status: req.body.status})
       }
     }
     if (req.body.order_no && req.body.order_no != "")
@@ -2616,65 +2514,58 @@ exports.getEmployeeOrder = async (req, reply) => {
 
     const total = await Order.find(query).countDocuments();
     const item = await Order.find(query)
-      .sort({ _id: -1 })
-      .populate("user_id", "-token")
-      .populate("employee_id", "-token")
-      .populate("supplier_id")
-      .populate("address_book")
-      .populate({ path: "items.product_id", populate: { path: "product_id" } })
-      .skip(page * limit)
-      .limit(limit)
-      .select("-couponCode");
+    .populate("user_id", "-token")
+    .populate("employee_id", "-token")
+    .populate("supplier_id")
+    .populate("address_book")
+    .populate({ path: "items.product_id", populate: { path: "product_id" } })
+    .skip(page * limit)
+    .limit(limit)
+    .sort({ createAt: -1 });
 
-
-      var items = []
-    item.forEach(element => {
-      var arr = []
-      var obj = element.toObject();
-      delete obj.sub_category_id;
-      delete obj.category_id;
-      delete obj.extra;
-      obj.sub_category_id = {
-        _id: element.sub_category_id._id,
-        title: element.sub_category_id[`${language}Name`],
-        description: element.sub_category_id[`${language}Description`],
-        price: element.sub_category_id.price,
-        image: element.sub_category_id.image
-      }
-      obj.category_id = {
-        _id: element.category_id._id,
-        title: element.category_id[`${language}Name`],
-        description: element.category_id[`${language}Description`],
-        image: element.category_id.image
-      }
-      element.extra.forEach(_element => {
-        var _obj = {
-          _id: _element._id,
-          title: _element[`${language}Name`],
-          price: _element.price
-        }
-        arr.push(_obj)
+    var arr = [];
+    var products = []
+    item.forEach((element) => {
+      element.items.forEach(elm => {
+        var el = elm.product_id.toObject();
+        delete el.arName;
+        delete el.enName;
+        delete el.arDescription;
+        delete el.enDescription;
+        el.name = el[`${language}Name`];
+        el.description = el[`${language}Description`];
+        products.push(el);
       });
-      obj.extra = arr;
-      items.push(obj);
+      let obj = {
+        _id: element._id,
+        OrderType: element.OrderType,
+        Order_no: element.Order_no,
+        Total: element.Total,
+        Status: element.Status,
+        dt_date: element.dt_date,
+        dt_time: element.dt_time,
+        address: element.address,
+        address_book: element.address_book != null ? element.address_book : null,
+        User_id: element.user_id != null ? element.user_id : null,
+        items: products,
+      };
+      arr.push(obj);
     });
-
-    reply.code(200).send(
-      success(
-        language,
-        200,
-        MESSAGE_STRING_ARABIC.SUCCESS,
-        MESSAGE_STRING_ENGLISH.SUCCESS,
-        items,
-        {
-          size: item.length,
-          totalElements: total,
-          totalPages: Math.floor(total / limit),
-          pageNumber: page,
-        }
-      )
-    );
-    return;
+    
+    const response = {
+      items: arr,
+      status_code: 200,
+      message: "تمت العملية بنجاح",
+      messageAr: "تمت العملية بنجاح",
+      messageEn: "Done Successfully",
+      pagenation: {
+        size: item.length,
+        totalElements: total,
+        totalPages: Math.floor(total / limit),
+        pageNumber: page,
+      },
+    };
+    reply.send(response);
   } catch (err) {
     reply.code(200).send(errorAPI(language, 400, err.message, err.message));
     return;

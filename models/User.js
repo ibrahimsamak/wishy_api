@@ -267,7 +267,6 @@ const UnCoveredSchema = mongoose.Schema(
   { versionKey: false }
 );
 
-
 const ComnpanySchema = mongoose.Schema(
   {
     company_name: {
@@ -296,157 +295,123 @@ const ComnpanySchema = mongoose.Schema(
   { versionKey: false }
 );
 
-// var users = new Schema(Joigoose.convert(joiSchema));
+const WishGroupSchema = mongoose.Schema(
+  {
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
+    name:{ type: String },
+    createAt: { type: Date },
+  },
+  { versionKey: false }
+);
+
+const WishSchema = mongoose.Schema(
+  {
+    title: { type: String },
+    description: { type: String },
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
+    product_id: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
+    group_id: { type: mongoose.Schema.Types.ObjectId, ref: "wish_group" },
+    total: { type: Number },
+    all_pays: { type: Number },
+    isShare: { type: Boolean },
+    type: { type: String },
+    pays: {
+      type: [
+        {
+          user_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
+          total: { type: Number },
+          createAt: { type: Date },
+        },
+      ],
+    },
+    isComplete: { type: Boolean, default: false },
+    createAt: { type: Date },
+  },
+  { versionKey: false }
+);
+
+const ReminderSchema = mongoose.Schema(
+  {
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
+    title: { type: String },
+    date: { type: String },
+    createAt: { type: Date },
+  },
+  { versionKey: false }
+);
+const VIPSchema = mongoose.Schema(
+  {
+    event_id: { type: mongoose.Schema.Types.ObjectId, ref: "event" },
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
+    gender: { type: String },
+    lat: { type: Number },
+    lng: { type: Number },
+    address: { type: String },
+    date: { type: String },
+    time: { type: String },
+    note: { type: String },
+    images: {
+      type: [
+        {
+          url: { type: String },
+        },
+      ],
+    },
+    reciver_phone:{type: String},
+    extra_note: { type: String },
+    total: { type: Number },
+    isNeedOffer: { type: Boolean },
+    offer: { type: Number },
+    createAt: { type: Date },
+  },
+  { versionKey: false }
+);
+const ProductRequestSchema = mongoose.Schema(
+  {
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
+    title: { type: String },
+    note: { type: String },
+    images: {
+      type: [
+        {
+          url: { type: String },
+        },
+      ],
+    },
+    total: { type: Number },
+    name: { type: String},
+    iban: { type: String},
+    createAt: { type: Date },
+    createAt: { type: Date },
+  },
+  { versionKey: false }
+);
+
+WishSchema.index({ user_id: 1 });
+WishGroupSchema.index({ user_id: 1 })
+ReminderSchema.index({ user_id: 1 })
+
+const Wish = mongoose.model("wish", WishSchema);
+const WishGroup = mongoose.model("wish_group", WishGroupSchema);
 const Users = mongoose.model("Users", UserSchema);
 const Companies = mongoose.model("Companies", ComnpanySchema);
 const User_Address = mongoose.model("user_address", UserAddressSchema);
 const User_Uncovered = mongoose.model("user_uncovered", UnCoveredSchema);
+const Reminder = mongoose.model("reminder", ReminderSchema);
+const VIP = mongoose.model("vip", VIPSchema);
+const ProductRequest = mongoose.model("product_request", ProductRequestSchema);
 
 exports.Users = Users;
 exports.Companies = Companies;
 exports.User_Address = User_Address;
 exports.User_Uncovered = User_Uncovered;
+exports.Wish = Wish;
+exports.WishGroup = WishGroup;
+exports.Reminder = Reminder;
+exports.VIP = VIP;
+exports.ProductRequest = ProductRequest;
+
 exports.validateUsers = validatieUsers;
 exports.getErrors = getErrors;
 exports.setLanguage = setLanguage;
 exports.getLanguage = getLanguage;
-// var joiSchema = Joi.object()
-//   .keys({
-//     phone_number: Joi.string()
-//       .length(12)
-//       .empty()
-//       .required()
-//       .error((errors) => {
-//         errors.forEach((err) => {
-//           console.log(err.code);
-//           switch (err.code) {
-//             case "any.required":
-//             case "string.base":
-//             case "string.empty":
-//               if (currentLanguage == LANGUAGE_ENUM.EN) {
-//                 err.message = VALIDATION_MESSAGE_ENGLISH.PHONE_REQUIRED;
-//               } else {
-//                 err.message = VALIDATION_MESSAGE_ARABIC.PHONE_REQUIRED;
-//               }
-//               break;
-//             case "string.length":
-//               if (currentLanguage == LANGUAGE_ENUM.EN) {
-//                 err.message = VALIDATION_MESSAGE_ENGLISH.PHONE_MAX;
-//               } else {
-//                 err.message = VALIDATION_MESSAGE_ARABIC.PHONE_MAX;
-//               }
-//               break;
-//             default:
-//               break;
-//           }
-//         });
-//         return errors;
-//       }),
-//     os: Joi.string()
-//       .required()
-//       .empty()
-//       .error((errors) => {
-//         errors.forEach((err) => {
-//           switch (err.code) {
-//             case "any.required":
-//             case "string.base":
-//             case "string.empty":
-//               if (currentLanguage == LANGUAGE_ENUM.EN) {
-//                 err.message = VALIDATION_MESSAGE_ENGLISH.OS_REQUIRED;
-//               } else {
-//                 err.message = VALIDATION_MESSAGE_ARABIC.OS_REQUIRED;
-//               }
-//               break;
-//             default:
-//               break;
-//           }
-//         });
-//         return errors;
-//       }),
-//     lat: Joi.number()
-//       .required()
-//       .empty()
-//       .error((errors) => {
-//         errors.forEach((err) => {
-//           switch (err.code) {
-//             case "any.required":
-//             case "number.base":
-//             case "number.empty":
-//               if (currentLanguage == LANGUAGE_ENUM.EN) {
-//                 err.message = VALIDATION_MESSAGE_ENGLISH.LAT_REQUIRED;
-//               } else {
-//                 err.message = VALIDATION_MESSAGE_ARABIC.LAT_REQUIRED;
-//               }
-//               break;
-//             default:
-//               break;
-//           }
-//         });
-//         return errors;
-//       }),
-//     lng: Joi.number()
-//       .required()
-//       .empty()
-//       .error((errors) => {
-//         errors.forEach((err) => {
-//           console.log(err.code);
-//           switch (err.code) {
-//             case "any.required":
-//             case "number.base":
-//             case "number.empty":
-//               if (currentLanguage == LANGUAGE_ENUM.EN) {
-//                 err.message = VALIDATION_MESSAGE_ENGLISH.LNG_REQUIRED;
-//               } else {
-//                 err.message = VALIDATION_MESSAGE_ARABIC.LNG_REQUIRED;
-//               }
-//               break;
-//             default:
-//               break;
-//           }
-//         });
-//         return errors;
-//       }),
-//     fcmToken: Joi.string()
-//       .required()
-//       .empty()
-//       .error((errors) => {
-//         errors.forEach((err) => {
-//           switch (err.code) {
-//             case "any.required":
-//             case "string.base":
-//             case "string.empty":
-//               if (currentLanguage == LANGUAGE_ENUM.EN) {
-//                 err.message = VALIDATION_MESSAGE_ENGLISH.FCMTOKEN_REQUIRED;
-//               } else {
-//                 err.message = VALIDATION_MESSAGE_ARABIC.FCMTOKEN_REQUIRED;
-//               }
-//               break;
-//             default:
-//               break;
-//           }
-//         });
-//         return errors;
-//       }),
-//     address: Joi.string()
-//       .required()
-//       .empty()
-//       .error((errors) => {
-//         errors.forEach((err) => {
-//           switch (err.code) {
-//             case "any.required":
-//             case "string.base":
-//             case "string.empty":
-//               if (currentLanguage == LANGUAGE_ENUM.EN) {
-//                 err.message = VALIDATION_MESSAGE_ENGLISH.ADDRESS_REQUIRED;
-//               } else {
-//                 err.message = VALIDATION_MESSAGE_ARABIC.ADDRESS_REQUIRED;
-//               }
-//               break;
-//             default:
-//               break;
-//           }
-//         });
-//         return errors;
-//       }),
-//   })
-//   .unknown(true);

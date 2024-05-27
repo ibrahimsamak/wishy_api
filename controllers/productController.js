@@ -74,7 +74,7 @@ exports.getProductsByCategoryId = async (req, reply) => {
 
     var total = await Product.countDocuments(query1);
     var item = await Product.find(query1)
-    // .populate("category_id")
+    .populate("by")
     // .populate("special_id")
     .sort({ _id: -1 })
     .skip(page * limit)
@@ -297,6 +297,7 @@ exports.addProduct = async (req, reply) => {
         category_id: req.raw.body.category_id,
         special_id: req.raw.body.special_id,
         isOffer: req.raw.body.isOffer,
+        by: req.raw.body.by,
         isDeleted: false,
       });
       var _return = handleError(rs.validateSync());
@@ -366,6 +367,7 @@ exports.updateProduct = async (req, reply) => {
           special_id: req.raw.body.special_id,
           isOffer: req.raw.body.isOffer,
           price:req.raw.body.price,
+          by: req.raw.body.by,
         },
         { new: true, runValidators: true },
         function (err, model) {
@@ -400,6 +402,7 @@ exports.updateProduct = async (req, reply) => {
           special_id: req.raw.body.special_id,
           isOffer: req.raw.body.isOffer,
           price:req.raw.body.price,
+          by: req.raw.body.by,
         },
         { new: true }
       );
@@ -418,13 +421,34 @@ exports.updateProduct = async (req, reply) => {
 };
 
 exports.getSingleProduct = async (req, reply) => {
+  const language = req.headers["accept-language"];
   try {
-    const prod = await Product.findById(req.params.id);
+    const prod = await Product.findById(req.params.id).populate("by");
+    const checkFavorite = await Favorite.findOne({
+      $and: [
+        { user_id: req.user._id },
+        { product_id: req.params.id },
+      ],
+    });
+    const newObj = prod.toObject();
+    if (checkFavorite) {
+      newObj.favorite_id = checkFavorite._id;
+    } else {
+      newObj.favorite_id = null;
+    }
+
+    delete newObj.arName;
+    delete newObj.enName;
+    delete newObj.arDescription;
+    delete newObj.enDescription;
+    newObj.name = newObj[`${language}Name`];
+    newObj.description = newObj[`${language}Description`];
+
     const response = {
       status_code: 200,
       status: true,
       message: "تمت العملية بنجاح",
-      items: prod,
+      items: newObj,
     };
     reply.code(200).send(response);
   } catch (err) {

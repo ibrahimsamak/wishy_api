@@ -5,6 +5,7 @@ const CartSchema = mongoose.Schema(
   {
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
     product_id: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
+    supplier_id: { type: mongoose.Schema.Types.ObjectId, ref: "supplier" },
     qty: { type: Number },
     Total: { type: Number },
     TotalDiscount: { type: Number },
