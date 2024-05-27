@@ -441,8 +441,8 @@ exports.getSingleProduct = async (req, reply) => {
     delete newObj.enName;
     delete newObj.arDescription;
     delete newObj.enDescription;
-    newObj.name = newObj[`${language}Name`];
-    newObj.description = newObj[`${language}Description`];
+    newObj.name = prod[`${language}Name`];
+    newObj.description = prod[`${language}Description`];
 
     const response = {
       status_code: 200,
