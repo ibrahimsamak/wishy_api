@@ -561,6 +561,14 @@ exports.addWishOrder = async (req, reply) => {
       } 
 
       var wish = await Wish.findById(req.body.wish_id)
+      let objProd ={
+        product_id: wish.product_id,
+        qty:1,
+        Total: wish.total,
+        TotalDiscount: 0,
+        createAt: getCurrentDateTime(),
+      }
+      items.push(objProd);
       gTax = Number(wish.total) * Number(tax.value);
       net_total = Number(wish.total);
       total = Number(wish.total);
@@ -589,10 +597,10 @@ exports.addWishOrder = async (req, reply) => {
         address: req.body.address,
         user_id: userId,
         OrderType: req.body.OrderType,
-        // place_id: newPlaceId,
-        // supplier_id: supplier_id,
         is_address_book: req.body.is_address_book,
         address_book: req.body.address_book,
+        // place_id: newPlaceId,
+        // supplier_id: supplier_id,
         // isExpress:req.body.isExpress
       });
 

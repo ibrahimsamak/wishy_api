@@ -2551,8 +2551,8 @@ exports.getWishByUserId = async (req, reply) => {
     var returnArr = []
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
-    const total = await Wish.countDocuments({ user_id: req.query.user_id });
-    const items = await Wish.find({ user_id: req.query.user_id })
+    const total = await Wish.countDocuments({ $and:[{user_id: req.query.user_id}, {group_id: req.query.group_id}] });
+    const items = await Wish.find({ $and:[{user_id: req.query.user_id}, {group_id: req.query.group_id}] })
     .populate({path: "user_id"})
     .populate({path: "product_id"})
     .populate({path: "group_id"})
