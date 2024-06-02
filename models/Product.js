@@ -50,6 +50,10 @@ const Productschema = mongoose.Schema(
     isDeleted: {
       type: Boolean,
     },
+    isFromUser: {
+      type: Boolean,
+      default:false
+    },
     by: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "supplier",

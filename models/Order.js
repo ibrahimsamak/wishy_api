@@ -50,7 +50,7 @@ const Orderschema = mongoose.Schema(
 const RateSchema = mongoose.Schema(
   {
     order_id: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
-    supplier_id: { type: mongoose.Schema.Types.ObjectId, ref: "supplier" },
+    // supplier_id: { type: mongoose.Schema.Types.ObjectId, ref: "supplier" },
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
     rate_from_user: { type: Number },
     note_from_user: { type: String },

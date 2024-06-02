@@ -132,11 +132,6 @@ exports.getCartTotalsUserId = async (req, reply) => {
         //   ],
         // });
 
-        if (data.supplier_id != supplier_id || data.place_id != place_id) {
-          ar_msg = MESSAGE_STRING_ARABIC.CHANGE_PLACE_OR_SUPPLIER;
-          en_msg = MESSAGE_STRING_ENGLISH.CHANGE_PLACE_OR_SUPPLIER;
-          statusCode = 300;
-        }
       }
     }
 
@@ -281,20 +276,20 @@ exports.addProduct = async (req, reply) => {
             { user_id: req.user._id },
           ],
         });
-        var supliers_ids = checkSupplierBefore.map(x=>String(x.supplier_id))
-        if(!supliers_ids.includes(String(provider.by)) && userCart.length > 0) {
-          reply
-          .code(200)
-          .send(
-            errorAPI(
-              language,
-              400,
-              MESSAGE_STRING_ARABIC.MULTISPUPPLIER,
-              MESSAGE_STRING_ENGLISH.MULTISPUPPLIER
-            )
-          );
-        return;
-        }
+        // var supliers_ids = checkSupplierBefore.map(x=>String(x.supplier_id))
+        // if(!supliers_ids.includes(String(provider.by)) && userCart.length > 0) {
+        //   reply
+        //   .code(200)
+        //   .send(
+        //     errorAPI(
+        //       language,
+        //       400,
+        //       MESSAGE_STRING_ARABIC.MULTISPUPPLIER,
+        //       MESSAGE_STRING_ENGLISH.MULTISPUPPLIER
+        //     )
+        //   );
+        // return;
+        // }
         if (provider.price && provider.price != 0) {
           total = Number(provider.price) * req.body.qty;
         } 
@@ -337,7 +332,7 @@ exports.addProduct = async (req, reply) => {
           let _Cart = new Cart({
             user_id: req.user._id,
             product_id: req.body.product_id,
-            supplier_id: provider.by,
+            // supplier_id: provider.by,
             qty: req.body.qty,
             Total: total,
             TotalDiscount: totalDiscount,

@@ -1,4 +1,5 @@
 // Require the fastify framework and instantiate it
+const path = require("path")
 const auth = require("./controllers/auth");
 const jwt = require("jsonwebtoken");
 const config = require("config");
@@ -27,6 +28,10 @@ fastify.register(require("fastify-formbody"));
 fastify.register(require("fastify-file-upload"));
 fastify.register(require("fastify-cors"), {});
 
+fastify.register(require('fastify-static'), {
+  root: path.join(__dirname, 'firebase'),
+  prefix: '/',
+})
 // Connect to DB
 mongoose
   .connect("mongodb+srv://ibrahim:GgQfcQ7MYt8hz7Q0@cluster0.ddrmy.mongodb.net/wishy?retryWrites=true&w=majority", {

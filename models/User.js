@@ -326,6 +326,7 @@ const WishSchema = mongoose.Schema(
     },
     isComplete: { type: Boolean, default: false },
     createAt: { type: Date },
+    finishAt: { type: Date }
   },
   { versionKey: false }
 );
@@ -335,6 +336,7 @@ const ReminderSchema = mongoose.Schema(
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
     title: { type: String },
     date: { type: String },
+    before: { type:Number },
     createAt: { type: Date },
   },
   { versionKey: false }
@@ -387,6 +389,26 @@ const ProductRequestSchema = mongoose.Schema(
   { versionKey: false }
 );
 
+
+const FriendSchema = mongoose.Schema(
+  {
+    user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Users",
+    },
+    friend_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Users",
+    },
+    createAt: {
+      type: Date,
+      default: getCurrentDateTime(),
+    },
+  },
+  { versionKey: false }
+);
+
+FriendSchema.index({ user_id: 1 });
 WishSchema.index({ user_id: 1 });
 WishGroupSchema.index({ user_id: 1 })
 ReminderSchema.index({ user_id: 1 })
@@ -400,6 +422,7 @@ const User_Uncovered = mongoose.model("user_uncovered", UnCoveredSchema);
 const Reminder = mongoose.model("reminder", ReminderSchema);
 const VIP = mongoose.model("vip", VIPSchema);
 const ProductRequest = mongoose.model("product_request", ProductRequestSchema);
+const Friend = mongoose.model("friend", FriendSchema);
 
 exports.Users = Users;
 exports.Companies = Companies;
@@ -410,6 +433,7 @@ exports.WishGroup = WishGroup;
 exports.Reminder = Reminder;
 exports.VIP = VIP;
 exports.ProductRequest = ProductRequest;
+exports.Friend = Friend;
 
 exports.validateUsers = validatieUsers;
 exports.getErrors = getErrors;

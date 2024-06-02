@@ -43,6 +43,7 @@ const NOTIFICATION_TYPE = Object.freeze({
   COUPON: 2,
   GENERAL: 3,
   REMINDER: 4,
+  FRIEND: 5
 });
 
 const NOTIFICATION_TITILES = Object.freeze({
@@ -50,6 +51,7 @@ const NOTIFICATION_TITILES = Object.freeze({
   COUPON: "كوبون",
   GENERAL: "الادارة",
   REMINDER: "تذكير",
+  FRIEND: "أصدقاء",
 });
 
 const ACTORS = Object.freeze({

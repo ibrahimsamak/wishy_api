@@ -28,6 +28,7 @@ const {
   VIP,
   Product_Request,
   ProductRequest,
+  Friend,
 } = require("../models/User");
 const {
   getCurrentDateTime,
@@ -68,11 +69,21 @@ const { coupon_usage } = require("../models/Coupon");
 
 exports.Reminders = async function PendingCronOrders() {
   cron.schedule(`0 9 * * *`, async () => {
-    var today = moment().tz("Asia/Riyadh").startOf('day').format(moment.HTML5_FMT.DATE);
-    let orders = await Reminder.find({ date: today}).populate('user_id');
-    for await (const doc of orders) {
-      var msg = `عزيزي المشترك نود تذكيرك بمناسبتك: : ${doc.title}`;
-      await CreateGeneralNotification(doc.user.fcmToken, NOTIFICATION_TITILES.REMINDER, msg, NOTIFICATION_TYPE.REMINDER, doc._id, "", doc.user._id, "", "");  
+    var cond = moment().tz("Asia/Riyadh").startOf('day').format(moment.HTML5_FMT.DATE);
+    let orders = await Reminder.find({ date: { $gte: cond } }).populate('user_id');
+    for await(const i of orders) {
+      //.format(moment.HTML5_FMT.DATE);
+      var today = moment().tz("Asia/Riyadh").startOf('day')
+      var reminder = moment(i.date).tz("Asia/Riyadh").startOf('day');
+      var reminder_date = today.add(Number(i.before), "days")
+      console.log(reminder_date)
+      console.log(reminder)
+      var minutes = today.diff(reminder_date, "days");
+      console.log(minutes)
+      if(minutes == 0) {
+          var msg = `عزيزي المشترك نود تذكيرك بمناسبتك: : ${i.title}`;
+          await CreateGeneralNotification(i.user_id.fcmToken, NOTIFICATION_TITILES.REMINDER, msg, NOTIFICATION_TYPE.REMINDER, i._id, "", i.user_id._id, "", "");  
+      }
     }
   });
 };
@@ -181,8 +192,7 @@ exports.getSingleUsers = async (req, reply) => {
   try {
     const user_id = req.user._id;
     const _Users = await Users.findById(user_id).select();
-    const address = await User_Address.find({
-      $and: [{ user_id: user_id }],
+    const address = await User_Address.find({$and: [{ user_id: user_id }],
     });
     var newUser = _Users.toObject();
     const orders = await Order.find({
@@ -2412,6 +2422,9 @@ exports.addWish = async (req, reply) => {
       );
     return;
     } else {
+      var EXP = await setting.findOne({code: "EXP_TIME"});
+      var today = moment().tz("Asia/Riyadh").startOf('day')
+      var finish = req.body.type == 'public' ? today.add(Number(EXP.value), 'days') : today
       let user = new Wish({
         product_id: req.body.product_id,
         group_id: req.body.group_id,
@@ -2424,6 +2437,7 @@ exports.addWish = async (req, reply) => {
         title: req.body.title,
         description: req.body.description,
         createAt: getCurrentDateTime(),
+        finishAt: finish
       });
       let rs = await user.save();
       //send sms to pays if private
@@ -2451,6 +2465,9 @@ exports.addWish = async (req, reply) => {
 exports.updateWish = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
+    var EXP = await setting.findOne({code: "EXP_TIME"});
+    var today = moment().tz("Asia/Riyadh").startOf('day')
+    var finish = req.body.type == 'public' ? today.add(Number(EXP.value), 'days') : today
     const _setting = await Wish.findByIdAndUpdate(
       req.params.id,
       {
@@ -2461,6 +2478,7 @@ exports.updateWish = async (req, reply) => {
         total: req.body.total,
         title: req.body.title,
         description: req.body.description,
+        finishAt: finish
       },
       { new: true, runValidators: true },
       function (err, model) {
@@ -2551,8 +2569,16 @@ exports.getWishByUserId = async (req, reply) => {
     var returnArr = []
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
-    const total = await Wish.countDocuments({ $and:[{user_id: req.query.user_id}, {group_id: req.query.group_id}] });
-    const items = await Wish.find({ $and:[{user_id: req.query.user_id}, {group_id: req.query.group_id}] })
+    var query = {$and:[{user_id: req.query.user_id}]}
+    if (req.query.group_id && req.query.group_id != ""){
+      query.$and.push({group_id: req.query.group_id})
+    }
+    if (req.query.isShare && req.query.isShare != ""){
+      query.$and.push({isShare: req.query.isShare})
+    }
+    
+    const total = await Wish.countDocuments(query);
+    const items = await Wish.find(query)
     .populate({path: "user_id"})
     .populate({path: "product_id"})
     .populate({path: "group_id"})
@@ -2591,6 +2617,55 @@ exports.getWishByUserId = async (req, reply) => {
   }
 };
 
+exports.getExploreWish = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var returnArr = []
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+    var end =  moment().tz("Asia/Riyadh").startOf('day')
+    var query = {$and:[{type: "public"}, { finishAt: {$gte: end} }]}
+    
+    const total = await Wish.countDocuments(query);
+    const items = await Wish.find(query)
+    .populate({path: "user_id"})
+    .populate({path: "product_id"})
+    .populate({path: "group_id"})
+    .skip(page * limit)
+    .limit(limit)
+    .sort({ _id: -1 });
+
+    items.forEach(element => {
+      const newObj = element.toObject();
+      delete newObj.product_id.arName;
+      delete newObj.product_id.enName;
+      delete newObj.product_id.arDescription;
+      delete newObj.product_id.enDescription;
+      newObj.product_id.name = newObj.product_id[`${language}Name`];
+      newObj.product_id.description = newObj.product_id[`${language}Description`];
+      returnArr.push(newObj);
+    });
+
+    reply.code(200).send(
+      success(
+        language, 
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        returnArr,
+        {
+          size: items.length,
+          totalElements: total,
+          totalPages: Math.floor(total / limit),
+          pageNumber: page,
+        })
+    );
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
 exports.paywish = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
@@ -2612,7 +2687,7 @@ exports.paywish = async (req, reply) => {
       //notification to user 
       await Wish.findByIdAndUpdate(req.params.id, { isComplete:true },{ new: true });
       let user = await Users.findById(req.user._id)
-      await CreateGeneralNotification(user.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم اكتمال مبلغ القطة الخاص بأمنيتك", NOTIFICATION_TYPE.ORDERS, _setting._id, "", user._id, "", "");
+      await CreateGeneralNotification(user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم اكتمال مبلغ القطة الخاص بأمنيتك", NOTIFICATION_TYPE.ORDERS, _setting._id, "", user._id, "", "");
     }
     reply
       .code(200)
@@ -2630,11 +2705,120 @@ exports.paywish = async (req, reply) => {
   }
 };
 
+
+//////////////Friend///////////////
+
+exports.addCheckFriend = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const _user = await Friend.findOne({ $and:[{user_id: req.user._id}, {fiend_id: req.body.fiend_id}] });
+    if (_user) {
+      reply
+      .code(200)
+      .send(
+        errorAPI(
+          language,
+          405,
+          MESSAGE_STRING_ARABIC.EXIT,
+          MESSAGE_STRING_ENGLISH.EXIT,
+          {}
+        )
+      );
+    return;
+    } else {
+      var check = await Users.findOne({phone_number: req.body.phone_number})
+      if(!check){
+        reply
+        .code(200)
+        .send(
+          errorAPI(
+            language,
+            405,
+            MESSAGE_STRING_ARABIC.USER_NOT_FOUND,
+            MESSAGE_STRING_ENGLISH.USER_NOT_FOUND,
+            {}
+          )
+        );
+      return;
+      }
+      let user = new Friend({
+        user_id: req.user._id,
+        friend_id: check._id,
+        createAt: getCurrentDateTime(),
+      });
+      let rs = await user.save();
+
+      let user2 = new Friend({
+        user_id: check._id,
+        friend_id: req.user._id,
+        createAt: getCurrentDateTime(),
+      });
+      let rs2 = await user2.save();
+      var current = await Users.findById(req.user._id)
+
+      await CreateGeneralNotification(check.fcmToken, NOTIFICATION_TITILES.FRIEND, "اصبحت صديق لدى "+current.full_name,NOTIFICATION_TYPE.FRIEND, check._id, current._id, check._id,"","")
+      //send notification to friend 
+
+      reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.SUCCESS,
+            MESSAGE_STRING_ENGLISH.SUCCESS,
+            rs
+          )
+        );
+      return;
+    }
+  } catch (err) {
+    console.log(err)
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+
+exports.getFriends = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var returnArr = []
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10); 
+    const total = await Friend.countDocuments({user_id: req.user._id});
+    const items = await Friend.find({user_id: req.user._id})
+    .populate({path: "user_id"})
+    .populate({path: "friend_id"})
+    .skip(page * limit)
+    .limit(limit)
+    .sort({ _id: -1 });
+
+      reply.code(200).send(
+        success(
+          language, 
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          items,
+          {
+            size: items.length,
+            totalElements: total,
+            totalPages: Math.floor(total / limit),
+            pageNumber: page,
+         })
+      );
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
 ///////////////Reminder/////////////
 exports.addReminder = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
-    const _user = await Reminder.findOne({ title: req.body.title });
+    const _user = await Reminder.findOne({ $and:[{title: req.body.title }, {user_id: req.user._id}]});
     if (_user) {
       reply
       .code(200)
@@ -2653,6 +2837,7 @@ exports.addReminder = async (req, reply) => {
         title: req.body.title,
         date: req.body.date,
         user_id: req.user._id,
+        before: req.body.before,
         createAt: getCurrentDateTime(),
       });
       let rs = await user.save();  
@@ -2684,6 +2869,7 @@ exports.updateReminder = async (req, reply) => {
       {
         title: req.body.title,
         date: req.body.date,
+        before: req.body.before,
       },
       { new: true, runValidators: true },
       function (err, model) {

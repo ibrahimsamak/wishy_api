@@ -1074,6 +1074,25 @@ const mobile_routes = [
       beforeHandler: [auth.getToken],
       handler: userController.getWishByUserId,
     },
+    {
+      method: "GET",
+      url: "/api/mobile/wish/explore",
+      beforeHandler: [auth.getToken],
+      handler: userController.getExploreWish,
+    },
+    {
+      method: "POST",
+      url: "/api/mobile/friend/add",
+      beforeHandler: [auth.getToken],
+      handler: userController.addCheckFriend,
+    },
+    {
+      method: "GET",
+      url: "/api/mobile/friend/list",
+      beforeHandler: [auth.getToken],
+      handler: userController.getFriends,
+    },
+    
     //Reminder
     {
     method: "POST",

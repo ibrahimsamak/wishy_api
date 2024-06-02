@@ -70,11 +70,13 @@ exports.getProductsByCategoryId = async (req, reply) => {
     if (req.query.isOffer && req.query.isOffer != "") {
         query1.$and.push({isOffer: req.query.isOffer});
     }
-
+    if (req.query.from_user && req.query.from_user != "") {
+      query1.$and.push({isFromUser: req.query.from_user});
+  }
 
     var total = await Product.countDocuments(query1);
     var item = await Product.find(query1)
-    .populate("by")
+    // .populate("by")
     // .populate("special_id")
     .sort({ _id: -1 })
     .skip(page * limit)
@@ -423,7 +425,8 @@ exports.updateProduct = async (req, reply) => {
 exports.getSingleProduct = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
-    const prod = await Product.findById(req.params.id).populate("by");
+    const prod = await Product.findById(req.params.id)
+    // .populate("by");
     const checkFavorite = await Favorite.findOne({
       $and: [
         { user_id: req.user._id },

@@ -128,7 +128,7 @@ exports.PendingCronOrders = async function PendingCronOrders() {
         if(doc.paymentType == PAYMENT_TYPE.WALLET){
           await NewPayment(doc.user._id, doc.order_no , ` ارجاع مبلغ الطلب ${doc.order_no}` , '+' , doc.total , 'Online');
         }
-        await CreateGeneralNotification(doc.user.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, doc._id, "", doc.user._id, "", "");  
+        await CreateGeneralNotification(doc.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, doc._id, "", doc.user._id, "", "");  
       }
     }
   });
@@ -1678,7 +1678,7 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       let Rates = new Rate({
         order_id: ord._id,
         user_id: userId,
-        supplier_id: supplier_id,
+        // supplier_id: supplier_id,
         rate_from_user: req.body.provider.rate,
         note_from_user: req.body.provider.note,
         createAt: getCurrentDateTime(),
@@ -1687,10 +1687,10 @@ exports.addRateFromUserToEmployee = async (req, reply) => {
       });
 
       let rs = await Rates.save();
-      var totalRates = await Rate.countDocuments({$and: [{ supplier_id: supplier_id }, { type: 1 }] });
-      var summation = await Rate.find({ $and: [{ supplier_id: supplier_id }, { type: 1 }] });
-      let sum = lodash.sumBy(summation, function (o) { return o.rate_from_user; });
-      let driver = await Supplier.findByIdAndUpdate(supplier_id, { rate: Number(sum / totalRates).toFixed(1)},{new:true});
+      // var totalRates = await Rate.countDocuments({$and: [{ supplier_id: supplier_id }, { type: 1 }] });
+      // var summation = await Rate.find({ $and: [{ supplier_id: supplier_id }, { type: 1 }] });
+      // let sum = lodash.sumBy(summation, function (o) { return o.rate_from_user; });
+      // let driver = await Supplier.findByIdAndUpdate(supplier_id, { rate: Number(sum / totalRates).toFixed(1)},{new:true});
       
 
       for await(const i of req.body.products){

@@ -9,6 +9,8 @@ const NodeGeocoder = require("node-geocoder");
 const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 var xhr = new XMLHttpRequest();
 const moment = require("moment");
+const admin = require('firebase-admin');
+const serviceAccount = require('../firebase/wishy-bd623-firebase-adminsdk-l5ukf-a9bf82a438.json');
 
 const { Notifications } = require("../models/Notifications");
 const { Admin } = require("../models/Admin");
@@ -19,6 +21,10 @@ const { Transactions, Order } = require("../models/Order");
 const utils = require("../utils/utils");
 const { coupon } = require("../models/Coupon");
 const { SubCategory } = require("../models/Product");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 cloudinary.config({
   cloud_name: "dfrogfdqd",
@@ -250,8 +256,7 @@ exports.sendSMS = async function(number, from, to, code){
   // });
 }
 
-exports.sendWhatsApp = async function(number, from, to, code){
-  
+exports.sendWhatsApp = async function(number, from, to, code){ 
   var url = `hhttps://cartat.net/api/whatsapp/send`
   let _config = {
     headers: {
@@ -299,49 +304,68 @@ exports.CreateGeneralNotification = function (
   toName
 ) {
   return new Promise(function (resolve, reject) {
-    let _Notification = new Notifications({
-      fromId: fromId,
-      user_id: to_user_id,
-      title: title,
-      msg: msg,
-      dt_date: getCurrentDateTime(),
-      type: type,
-      body_parms: params,
-      isRead: false,
-      fromName: fromName,
-      toName: toName,
-    });
-    let rs = _Notification.save();
-
-    let postModel = {
+    const message = {
       notification: {
         title: title,
         body: msg,
-        sound: "default",
-        badge: 1,
       },
-      data: null,
-      to: deviceId,
+      token: deviceId,
     };
-    var data = JSON.stringify(postModel);
-    var xhr = new XMLHttpRequest();
-    //xhr.withCredentials = true;
+    
+    admin.messaging().send(message)
+      .then((response) => {
+        let _Notification = new Notifications({
+          fromId: fromId,
+          user_id: to_user_id,
+          title: title,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: type,
+          body_parms: params,
+          isRead: false,
+          fromName: fromName,
+          toName: toName,
+        });
+        let rs = _Notification.save();
+        console.log(response)
+        resolve(response);
+      })
+      .catch((error) => {
+        console.log(error)
+        reject("");
+      });
 
-    xhr.addEventListener("readystatechange", function () {
-      if (this.readyState === 4) {
-        console.log("send" + this.responseText);
-      }
-    });
 
-    xhr.open("POST", "https://fcm.googleapis.com/fcm/send");
-    xhr.setRequestHeader(
-      "Authorization",
-      "key=AAAALj3M_AA:APA91bHkzRCHZ4duGpT9hCn0L0MvyvDJN6XD5FgMYvJN0WRjHqY9Lj2IaiUkY4p3J6pI9SLxGWlR8bU478xr1Y7YnY1lnw11JOW-Hj8srllLFdvlmDqzIHljKRXRP42Mt65saXA0umFv"
-    );
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.send(data);
-    resolve(data);
-    reject("");
+
+    // let postModel = {
+    //   notification: {
+    //     title: title,
+    //     body: msg,
+    //     sound: "default",
+    //     badge: 1,
+    //   },
+    //   data: null,
+    //   to: deviceId,
+    // };
+    // var data = JSON.stringify(postModel);
+    // var xhr = new XMLHttpRequest();
+    // //xhr.withCredentials = true;
+
+    // xhr.addEventListener("readystatechange", function () {
+    //   if (this.readyState === 4) {
+    //     console.log("send" + this.responseText);
+    //   }
+    // });
+
+    // xhr.open("POST", "https://fcm.googleapis.com/fcm/send");
+    // xhr.setRequestHeader(
+    //   "Authorization",
+    //   "key=AAAALj3M_AA:APA91bHkzRCHZ4duGpT9hCn0L0MvyvDJN6XD5FgMYvJN0WRjHqY9Lj2IaiUkY4p3J6pI9SLxGWlR8bU478xr1Y7YnY1lnw11JOW-Hj8srllLFdvlmDqzIHljKRXRP42Mt65saXA0umFv"
+    // );
+    // xhr.setRequestHeader("Content-Type", "application/json");
+    // xhr.send(data);
+
+   
   });
 };
 
@@ -358,45 +382,34 @@ exports.makeid = function (number) {
 
 exports.CreateNotificationMultiple = function (deviceId, title, msg, order_id) {
   return new Promise(function (resolve, reject) {
-    let postModel = {
+    const message = {
       notification: {
         title: title,
         body: msg,
-        sound: "default",
-        icon: "assets/images/logo.png",
-        badge: 1,
       },
-      data: {
-        data: order_id,
-        notification: {
-          title: title,
-          body: msg,
-          sound: "default",
-          icon: "assets/images/logo.png",
-          badge: 1,
-        },
-      },
-      registration_ids: deviceId,
+      tokens: deviceId,
     };
-    var data = JSON.stringify(postModel);
-    var xhr = new XMLHttpRequest();
-    //xhr.withCredentials = true;
-
-    xhr.addEventListener("readystatechange", function () {
-      if (this.readyState === 4) {
-        console.log("send" + this.responseText);
-      }
-    });
-
-    xhr.open("POST", "https://fcm.googleapis.com/fcm/send");
-    xhr.setRequestHeader(
-      "Authorization",
-      "key=AAAALj3M_AA:APA91bHkzRCHZ4duGpT9hCn0L0MvyvDJN6XD5FgMYvJN0WRjHqY9Lj2IaiUkY4p3J6pI9SLxGWlR8bU478xr1Y7YnY1lnw11JOW-Hj8srllLFdvlmDqzIHljKRXRP42Mt65saXA0umFv"
-    );
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.send(data);
-    resolve(data);
-    reject("");
+    
+    admin.messaging().sendMulticast(message)
+      .then((response) => {
+        let _Notification = new Notifications({
+          fromId: fromId,
+          user_id: to_user_id,
+          title: title,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: type,
+          body_parms: order_id,
+          isRead: false,
+          fromName: fromName,
+          toName: toName,
+        });
+        let rs = _Notification.save();
+        resolve(response);
+      })
+      .catch((error) => {
+        reject("");
+      });
   });
 };
 
