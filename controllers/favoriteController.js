@@ -40,7 +40,6 @@ exports.getFavoriteByUserId = async (req, reply) => {
       ],
       })
       .populate({ path: "product_id" })
-
       .skip(page * limit)
       .limit(limit)
       .sort({ _id: -1 });

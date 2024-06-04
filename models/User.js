@@ -353,11 +353,7 @@ const VIPSchema = mongoose.Schema(
     time: { type: String },
     note: { type: String },
     images: {
-      type: [
-        {
-          url: { type: String },
-        },
-      ],
+      type: [{ type: String }]
     },
     reciver_phone:{type: String},
     extra_note: { type: String },
@@ -374,11 +370,7 @@ const ProductRequestSchema = mongoose.Schema(
     title: { type: String },
     note: { type: String },
     images: {
-      type: [
-        {
-          url: { type: String },
-        },
-      ],
+      type: [{ type: String }],
     },
     total: { type: Number },
     name: { type: String},
