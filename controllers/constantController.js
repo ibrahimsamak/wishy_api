@@ -834,7 +834,25 @@ exports.getSingleSpecial = async (req, reply) => {
     throw boom.boomify(err);
   }
 };
-
+exports.getAdminSettings = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const _settings = await setting.find().sort({ _id: -1 });
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _settings
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
 exports.getSettings = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {

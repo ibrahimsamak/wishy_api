@@ -29,22 +29,21 @@ exports.getTop10NewUsers = async (req, reply) => {
 
 exports.getTop10Orders = async (req, reply) => {
   try {
-    var query = {$and:[{status: ORDER_STATUS.new}]};
-    query["status"] = ORDER_STATUS.new
+    var query = {$and:[{Status: ORDER_STATUS.new}]};
+    query["Status"] = ORDER_STATUS.new
     if(req.user.userType == ACTORS.STORE){
       query.$and.push({provider: req.user._id}) 
     }
     console.log(query)
     const item = await Order.find(query)
       .populate("user", "-token")
-      .populate({ path: "extra", populate: { path: "subcategory" } })
-      .populate("employee", "-token")
-      .populate("supervisor", "-token")
-      .populate("provider")
-      .populate("sub_category_id")
-      .populate("category_id")
-      .populate("address")
-      .limit(10)
+      // .populate({ path: "extra", populate: { path: "subcategory" } })
+      // .populate("employee", "-token")
+      // .populate("supervisor", "-token")
+      // .populate("provider")
+      // .populate("sub_category_id")
+      // .populate("category_id")
+      // .limit(10)
       .sort({ _id: -1 });
     const response = {
       status_code: 200,
@@ -225,7 +224,7 @@ exports.UsersproviderPerYear = async (req, reply) => {
     const response = {
       items: [
         { name: "مستخدم جديد", series: orderedResult },
-        { name: "فني جديد", series: orderedResult2 },
+        { name: "سائق جديد", series: orderedResult2 },
       ],
     };
     reply.send(response);
@@ -305,21 +304,30 @@ exports.getTopProductsPlace = async (req, reply) => {
     // if (req.user.userType != USER_TYPE.ADMIN)
     //   query["provider_id"] = req.user._id;
     // query["isDeleted"] = false;
-    query["status"] = {$in:[ORDER_STATUS.finished,ORDER_STATUS.prefinished, ORDER_STATUS.rated]};
+    query["Status"] = {$in:[ORDER_STATUS.finished,ORDER_STATUS.prefinished, ORDER_STATUS.rated]};
     var products = [];
     const item = await Order.find(query)
-      .populate("place")
     item.forEach((element) => {
       products.push(element);
     });
 
     console.log(item)
     var _result = lodash(item)
-      .groupBy("place._id")
+      .groupBy("OrderType")
       .map(function (items, _name) {
         if (items.length > 0) {
-        if(items[0].place){
-          return { name: items[0].place.arName, value: items.length };
+        if(items[0].OrderType){
+          var name= "";
+          if(items[0].OrderType == 1){
+            name = "طلب عادي"
+          }
+          if(items[0].OrderType == 2){
+            name = "طلب هدية"
+          }
+          if(items[0].OrderType == 3){
+            name = "طلب امنية"
+          }
+          return { name: name, value: items.length };
         }
       }
       })
@@ -346,21 +354,31 @@ exports.getProviderOrdersPerYear = async (req, reply) => {
     // if (req.user.userType != USER_TYPE.ADMIN)
     //   query["provider_id"] = req.user._id;
     // query["isDeleted"] = false;
-    query["status"] = {$in:[ORDER_STATUS.finished,ORDER_STATUS.prefinished, ORDER_STATUS.rated]};
+    query["Status"] = {$in:[ORDER_STATUS.finished,ORDER_STATUS.prefinished, ORDER_STATUS.rated]};
     var products = [];
     const item = await Order.find(query)
-      .populate("sub_category_id")
+    .populate({
+      path: "items",
+      populate: {
+        path: "product_id",
+        populate: {
+          path: "category_id",
+        },
+      },
+    });
     item.forEach((element) => {
-      products.push(element);
+      element.items.forEach(el => {
+        products.push(el.product_id);
+      });
     });
 
-    console.log(item)
-    var _result = lodash(item)
-      .groupBy("sub_category_id._id")
+    console.log(products)
+    var _result = lodash(products)
+      .groupBy("category_id._id")
       .map(function (items, _name) {
         if (items.length > 0) {
-        if(items[0].place){
-          return { name: items[0].sub_category_id.arName, value: items.length };
+        if(items[0].category_id){
+          return { name: items[0].category_id.arName, value: items.length };
         }
       }
       })

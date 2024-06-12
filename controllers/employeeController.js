@@ -833,7 +833,7 @@ exports.updateEmploye = async (req, reply) => {
         );
       return;
     } else {
-      let supervisor = await Supervisor.findById(req.raw.body.supervisor_id)
+      // let supervisor = await Supervisor.findById(req.raw.body.supervisor_id)
 
       if (req.raw.files) {
         const files = req.raw.files;
@@ -871,10 +871,10 @@ exports.updateEmploye = async (req, reply) => {
               email: String(req.raw.body.email).toLowerCase(),
               address: req.raw.body.address,
               full_name: req.raw.body.full_name,
-              supervisor_id: req.raw.body.supervisor_id,
+              // supervisor_id: req.raw.body.supervisor_id,
               password: encryptPassword(req.raw.body.password),
-              supplier_id: supervisor ? supervisor.supplier_id : null,
-              special_id: req.raw.body.special_id,
+              // supplier_id: supervisor ? supervisor.supplier_id : null,
+              // special_id: req.raw.body.special_id,
               
             },
             { new: true, runValidators: true },
@@ -920,10 +920,10 @@ exports.updateEmploye = async (req, reply) => {
               email: String(req.raw.body.email).toLowerCase(),
               address: req.raw.body.address,
               full_name: req.raw.body.full_name,
-              supervisor_id: req.raw.body.supervisor_id,
+              // supervisor_id: req.raw.body.supervisor_id,
               password: encryptPassword(req.raw.body.password),
-              supplier_id: supervisor ? supervisor.supplier_id : null,
-              special_id: req.raw.body.special_id
+              // supplier_id: supervisor ? supervisor.supplier_id : null,
+              // special_id: req.raw.body.special_id
             },
             { new: true, runValidators: true },
             function (err, model) {
@@ -1076,17 +1076,17 @@ exports.addEmployee = async (req, reply) => {
         img = x;
       });
 
-      let supervisor = await Supervisor.findById(req.raw.body.supervisor_id)
+      // let supervisor = await Supervisor.findById(req.raw.body.supervisor_id)
       const _newUser = new employee({
         image: img,
         email: String(req.raw.body.email).toLowerCase(),
         phone_number: req.raw.body.phone_number,
         password: encryptPassword(req.raw.body.password),
         full_name: req.raw.body.full_name,
-        supervisor_id: req.raw.body.supervisor_id,
+        // supervisor_id: req.raw.body.supervisor_id,
         address: req.raw.body.address,
-        supplier_id: supervisor ? supervisor.supplier_id : null,
-        special_id: req.raw.body.special_id,
+        // supplier_id: supervisor ? supervisor.supplier_id : null,
+        // special_id: req.raw.body.special_id,
         lat: 0.0,
         lng: 0.0,
         licenseNo: "",

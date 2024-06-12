@@ -377,6 +377,10 @@ const ProductRequestSchema = mongoose.Schema(
     iban: { type: String},
     createAt: { type: Date },
     createAt: { type: Date },
+    category_id: {  
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "category"
+    },
   },
   { versionKey: false }
 );

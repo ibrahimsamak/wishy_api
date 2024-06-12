@@ -66,6 +66,7 @@ const {
   NOTIFICATION_TYPE,
 } = require("../utils/constants");
 const { coupon_usage } = require("../models/Coupon");
+const { Product } = require("../models/Product");
 
 exports.Reminders = async function PendingCronOrders() {
   cron.schedule(`0 9 * * *`, async () => {
@@ -1665,10 +1666,12 @@ exports.getUsers = async (req, reply) => {
     var newArr = [];
     for await (const data of item) {
       var newUser = data.toObject();
-      var _order = await Order.countDocuments({$and: [{ user: newUser._id }]});
-      var referal = await Users.countDocuments({by:data._id})
-      newUser.favorites = referal
+      var _order = await Order.countDocuments({$and: [{ user_id: newUser._id }]});
+      var _favorite = await Favorite.countDocuments({$and: [{ user_id: newUser._id }]});
+      var _referal = await Friend.countDocuments({user_id:data._id})
+      newUser.referal = _referal
       newUser.orders = _order;
+      newUser.favorite = _favorite;
       newArr.push(newUser);
     }
 
@@ -2252,7 +2255,7 @@ exports.refund_test = async (req, reply) => {
 exports.addWishGroup = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
-    const _user = await WishGroup.findOne({ name: req.body.name });
+    const _user = await WishGroup.findOne({ $and:[{name: req.body.name},{user_id: req.user._id}] });
     if (_user) {
       reply
       .code(200)
@@ -2377,27 +2380,82 @@ exports.getWishGroupByUserId = async (req, reply) => {
   try {
     var page = parseFloat(req.query.page, 10);
     var limit = parseFloat(req.query.limit, 10);
-    const total = await WishGroup.countDocuments({ user_id: req.query.user_id });
-    const items = await WishGroup.find({ user_id: req.query.user_id })
-      .populate({path: "user_id"})
-      .skip(page * limit)
-      .limit(limit)
-      .sort({ _id: -1 });
-
+    console.log(req.query.page);
+    console.log(req.query.limit);
+    
+    if(req.query.page != null && req.query.limit != null){
+      const total = await WishGroup.countDocuments({ user_id: req.query.user_id });
+      const items = await WishGroup.find({ user_id: req.query.user_id })
+        .populate({path: "user_id"})
+        .skip(page * limit)
+        .limit(limit)
+        .sort({ _id: -1 });
+  
+      var arr = []
+      for await(const i of items){
+        var obj = i.toObject();
+        var prods = []
+        var products = await Wish.find({$and:[{group_id: i._id},{user_id: req.query.user_id}]}).populate("product_id");
+        for await (const p of products) {
+          var el = p.product_id.toObject();
+          delete el.arName;
+          delete el.enName;
+          delete el.arDescription;
+          delete el.enDescription;
+          el.name = el[`${language}Name`];
+          el.description = el[`${language}Description`];
+          prods.push(el)
+        }
+        obj.items = prods
+        arr.push(obj)
+      }
       reply.code(200).send(
         success(
           language, 
           200,
           MESSAGE_STRING_ARABIC.SUCCESS,
           MESSAGE_STRING_ENGLISH.SUCCESS,
-          items,
+          arr,
           {
             size: items.length,
             totalElements: total,
             totalPages: Math.floor(total / limit),
             pageNumber: page,
-         })
+          })
       );
+    }else{
+      const items = await WishGroup.find({ user_id: req.query.user_id })
+        .populate({path: "user_id"})
+        .sort({ _id: -1 });
+  
+      var arr = []
+      for await(const i of items){
+        var obj = i.toObject();
+        var prods = []
+        var products = await Wish.find({$and:[{group_id: i._id},{user_id: req.query.user_id}]}).populate("product_id");
+        for await (const p of products) {
+          var el = p.product_id.toObject();
+          delete el.arName;
+          delete el.enName;
+          delete el.arDescription;
+          delete el.enDescription;
+          el.name = el[`${language}Name`];
+          el.description = el[`${language}Description`];
+          prods.push(el)
+        }
+        obj.items = prods
+        arr.push(obj)
+      }
+      reply.code(200).send(
+        success(
+          language, 
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          arr)
+      );
+    }
+
   } catch (err) {
     reply.code(200).send(errorAPI(language, 400, err.message, err.message));
     return;
@@ -2543,8 +2601,8 @@ exports.getSingleWish = async (req, reply) => {
     delete newObj.product_id.enName;
     delete newObj.product_id.arDescription;
     delete newObj.product_id.enDescription;
-    newObj.product_id.name = newObj.product_id[`${language}Name`];
-    newObj.product_id.description = newObj.product_id[`${language}Description`];
+    newObj.product_id.name = StaticPages.product_id[`${language}Name`];
+    newObj.product_id.description = StaticPages.product_id[`${language}Description`];
 
     reply
       .code(200)
@@ -2592,8 +2650,8 @@ exports.getWishByUserId = async (req, reply) => {
         delete newObj.product_id.enName;
         delete newObj.product_id.arDescription;
         delete newObj.product_id.enDescription;
-        newObj.product_id.name = newObj.product_id[`${language}Name`];
-        newObj.product_id.description = newObj.product_id[`${language}Description`];
+        newObj.product_id.name = element.product_id[`${language}Name`];
+        newObj.product_id.description = element.product_id[`${language}Description`];
         returnArr.push(newObj);
       });
 
@@ -2641,8 +2699,8 @@ exports.getExploreWish = async (req, reply) => {
       delete newObj.product_id.enName;
       delete newObj.product_id.arDescription;
       delete newObj.product_id.enDescription;
-      newObj.product_id.name = newObj.product_id[`${language}Name`];
-      newObj.product_id.description = newObj.product_id[`${language}Description`];
+      newObj.product_id.name = element.product_id[`${language}Name`];
+      newObj.product_id.description = element.product_id[`${language}Description`];
       returnArr.push(newObj);
     });
 
@@ -2711,21 +2769,7 @@ exports.paywish = async (req, reply) => {
 exports.addCheckFriend = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
-    const _user = await Friend.findOne({ $and:[{user_id: req.user._id}, {fiend_id: req.body.fiend_id}] });
-    if (_user) {
-      reply
-      .code(200)
-      .send(
-        errorAPI(
-          language,
-          405,
-          MESSAGE_STRING_ARABIC.EXIT,
-          MESSAGE_STRING_ENGLISH.EXIT,
-          {}
-        )
-      );
-    return;
-    } else {
+
       var check = await Users.findOne({phone_number: req.body.phone_number})
       if(!check){
         reply
@@ -2740,6 +2784,21 @@ exports.addCheckFriend = async (req, reply) => {
           )
         );
       return;
+      }
+      const _user = await Friend.findOne({ $and:[{user_id: req.user._id}, {fiend_id: check._id}] });
+      if(_user){
+        reply
+        .code(200)
+        .send(
+          errorAPI(
+            language,
+            405,
+            MESSAGE_STRING_ARABIC.EXIT,
+            MESSAGE_STRING_ENGLISH.EXIT,
+            {}
+          )
+        );
+        return
       }
       let user = new Friend({
         user_id: req.user._id,
@@ -2771,7 +2830,6 @@ exports.addCheckFriend = async (req, reply) => {
           )
         );
       return;
-    }
   } catch (err) {
     console.log(err)
     reply.code(200).send(errorAPI(language, 400, err.message, err.message));
@@ -2980,7 +3038,7 @@ exports.addVip = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
       let user = new VIP({
-        event_id: req.user._id,
+        user_id: req.user._id,
         event_id: req.body.event_id,
         gender: req.body.gender,
         lat: req.body.lat,
@@ -3016,6 +3074,96 @@ exports.addVip = async (req, reply) => {
   }
 };
 
+exports.listVip = async (req, reply) => {
+    const language = req.headers["accept-language"];
+    try {
+      var page = parseFloat(req.query.page, 10);
+      var limit = parseFloat(req.query.limit, 10);
+  
+      var query = {};
+      if (
+        req.body.dt_from &&
+        req.body.dt_from != "" &&
+        req.body.dt_to &&
+        req.body.dt_to != ""
+      ) {
+        query = {
+          createAt: {
+            $gte: moment(req.body.dt_from).tz("Asia/Riyadh").startOf("day"),
+            $lt: moment(req.body.dt_to).tz("Asia/Riyadh").endOf("day"),
+          },
+        };
+      }
+      
+
+      const total = await VIP.find(query).countDocuments();
+      const item = await VIP.find(query)
+        .sort({ _id: -1 })
+        .populate("event_id")
+        .populate("user_id", "-token")
+        .skip(page * limit)
+        .limit(limit)
+        .select();
+  
+      const response = {
+        status: true,
+        code: 200,
+        message: "تمت العملية بنجاح",
+        items: item,
+        pagination: {
+          size: item.length,
+          totalElements: total,
+          totalPages: Math.floor(total / limit),
+          pageNumber: page,
+        },
+      };
+      reply.code(200).send(response);
+    } catch (err) {
+      reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+      return;
+    }  
+};
+
+exports.listExcelVip = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+
+    var query = {};
+    if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query = {
+        createAt: {
+          $gte: moment(req.body.dt_from).tz("Asia/Riyadh").startOf("day"),
+          $lt: moment(req.body.dt_to).tz("Asia/Riyadh").endOf("day"),
+        },
+      };
+    }
+
+    const item = await VIP.find(query)
+      .sort({ _id: -1 })
+      .populate("event_id")
+      .populate("user_id", "-token")
+      .select();
+
+    const response = {
+      status: true,
+      code: 200,
+      message: "تمت العملية بنجاح",
+      items: item,
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }  
+};
+
 exports.addProductRequest = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
@@ -3027,6 +3175,7 @@ exports.addProductRequest = async (req, reply) => {
         total: req.body.total,
         name: req.body.name,
         iban: req.body.iban,
+        category_id: req.body.category_id,
         createAt:getCurrentDateTime(),
       });
       let rs = await user.save();  
@@ -3043,6 +3192,254 @@ exports.addProductRequest = async (req, reply) => {
         );
   } catch (err) {
     console.log(err)
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+exports.listVipProductRequest = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+
+    var query = {};
+    if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query = {
+        createAt: {
+          $gte: moment(req.body.dt_from).tz("Asia/Riyadh").startOf("day"),
+          $lt: moment(req.body.dt_to).tz("Asia/Riyadh").endOf("day"),
+        },
+      };
+    }
+    
+
+    const total = await ProductRequest.find(query).countDocuments();
+    const item = await ProductRequest.find(query)
+      .sort({ _id: -1 })
+      .populate("user_id", "-token")
+      .populate("category_id")
+      .skip(page * limit)
+      .limit(limit)
+      .select();
+
+    const response = {
+      status: true,
+      code: 200,
+      message: "تمت العملية بنجاح",
+      items: item,
+      pagination: {
+        size: item.length,
+        totalElements: total,
+        totalPages: Math.floor(total / limit),
+        pageNumber: page,
+      },
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }  
+};
+
+exports.listExcelProductRequest = async (req, reply) => {
+const language = req.headers["accept-language"];
+try {
+  var page = parseFloat(req.query.page, 10);
+  var limit = parseFloat(req.query.limit, 10);
+
+  var query = {};
+  if (
+    req.body.dt_from &&
+    req.body.dt_from != "" &&
+    req.body.dt_to &&
+    req.body.dt_to != ""
+  ) {
+    query = {
+      createAt: {
+        $gte: moment(req.body.dt_from).tz("Asia/Riyadh").startOf("day"),
+        $lt: moment(req.body.dt_to).tz("Asia/Riyadh").endOf("day"),
+      },
+    };
+  }
+  
+
+  const item = await ProductRequest.find(query)
+    .sort({ _id: -1 })
+    .populate("user_id", "-token")
+    .select();
+
+  const response = {
+    status: true,
+    code: 200,
+    message: "تمت العملية بنجاح",
+    items: item,
+  };
+  reply.code(200).send(response);
+} catch (err) {
+  reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+  return;
+}  
+};
+
+exports.addProductRequestToProduct = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var check = await ProductRequest.findById(req.params.id);
+    let rs = new Product({
+        arName: check.title,
+        enName: check.title,
+        arDescription: check.title,
+        enDescription: check.title,
+        rate: 0,
+        price: check.total,
+        image: check.images[0],
+        createat: getCurrentDateTime(),
+        category_id: check.category_id,
+        special_id: "6649ba3d7f7ad0728c62ab3b",
+        isOffer: false,
+        by: check.user_id,
+        isDeleted: false,
+        isFromUser: true,
+      });
+      var sp = await rs.save();  
+      await ProductRequest.findByIdAndRemove(req.params.id);
+      var userObj = await Users.findById(check.user_id)
+      var msg = "تم تقييم منتجكم من قبل الادارة وقبوله يمكنكم البدء في بيع المنتج في تطبيق wishy"
+      console.log(userObj.fcmToken)
+      await CreateGeneralNotification(
+        userObj.fcmToken,
+        NOTIFICATION_TITILES.GENERAL,
+        msg,
+        NOTIFICATION_TYPE.ORDERS,
+        sp._id,
+        "",
+        userObj._id,
+        "",
+        userObj.full_name
+      );
+      reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.SUCCESS,
+            MESSAGE_STRING_ENGLISH.SUCCESS,
+            rs
+          )
+        );
+  } catch (err) {
+    console.log(err)
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+exports.removeProductRequest = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+      var check = await ProductRequest.findById(req.params.id);
+      var userObj = await Users.findById(check.user_id)
+      var msg = "تم رفض منتجكم من قبل الادارة"
+      await CreateGeneralNotification(
+        userObj.fcmToken,
+        NOTIFICATION_TITILES.GENERAL,
+        msg,
+        NOTIFICATION_TYPE.ORDERS,
+        check._id,
+        "",
+        userObj._id,
+        "",
+        userObj.full_name
+      );
+      await ProductRequest.findByIdAndRemove(req.params.id);     
+      reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.SUCCESS,
+            MESSAGE_STRING_ENGLISH.SUCCESS,
+            {}
+          )
+        );
+  } catch (err) {
+    console.log(err)
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+////////Admin//////
+exports.getAllWishByUserId = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var returnArr = []
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+    var query = {$and:[{ product_id:{ $ne: null } }]}
+    if (req.body.user_id && req.body.user_id != ""){
+      query.$and.push({user_id: req.body.user_id})
+    }
+    if (req.body.isShare && req.body.isShare != ""){
+      query.$and.push({isShare: req.body.isShare})
+    }
+    if (req.body.type && req.body.type != ""){
+      query.$and.push({type: req.body.type})
+    }
+        if (
+      req.body.dt_from &&
+      req.body.dt_from != "" &&
+      req.body.dt_to &&
+      req.body.dt_to != ""
+    ) {
+      query = {
+        createAt: {
+          $gte: moment(req.body.dt_from).tz("Asia/Riyadh").startOf("day"),
+          $lt: moment(req.body.dt_to).tz("Asia/Riyadh").endOf("day"),
+        },
+      };
+    }
+    const total = await Wish.countDocuments(query);
+    const items = await Wish.find(query)
+    .populate({path: "user_id"})
+    .populate({path: "product_id"})
+    .populate({path: "group_id"})
+    .skip(page * limit)
+    .limit(limit)
+    .sort({ _id: -1 });
+
+      items.forEach(element => {
+        const newObj = element.toObject();
+        delete newObj.product_id.arName;
+        delete newObj.product_id.enName;
+        delete newObj.product_id.arDescription;
+        delete newObj.product_id.enDescription;
+        newObj.product_id.name = element.product_id[`${language}Name`];
+        newObj.product_id.description = element.product_id[`${language}Description`];
+        returnArr.push(newObj);
+      });
+
+      reply.code(200).send(
+        success(
+          language, 
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          returnArr,
+          {
+            size: items.length,
+            totalElements: total,
+            totalPages: Math.floor(total / limit),
+            pageNumber: page,
+         })
+      );
+  } catch (err) {
     reply.code(200).send(errorAPI(language, 400, err.message, err.message));
     return;
   }

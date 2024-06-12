@@ -21,6 +21,54 @@ const fastify = require("fastify")({
 // const documentation = require('./documentation/carApi')
 const admin_routes = [
   {
+    method: "POST",
+    url: "/api/admin/reject-product-request/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: userController.removeProductRequest,
+  },
+  {
+    method: "POST",
+    url: "/api/admin/accepet-product-request/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: userController.addProductRequestToProduct,
+  },
+  {
+    method: "POST",
+    url: "/api/admin/product-request",
+    beforeHandler: [auth.getAdminToken],
+    handler: userController.listVipProductRequest,
+  },
+  {
+    method: "POST",
+    url: "/api/admin/product-request/excel",
+    beforeHandler: [auth.getAdminToken],
+    handler: userController.listExcelProductRequest,
+  },
+  {
+    method: "POST",
+    url: "/api/admin/vip-excel",
+    beforeHandler: [auth.getAdminToken],
+    handler: userController.listExcelVip,
+  },
+  {
+    method: "POST",
+    url: "/api/admin/orders/vip",
+    beforeHandler: [auth.getAdminToken],
+    handler: userController.listVip,
+  },
+  {
+    method: "POST",
+    url: "/api/wish/get-all",
+    beforeHandler: [auth.getAdminToken],
+    handler: userController.getAllWishByUserId,
+  },
+  {
+    method: "GET",
+    url: "/api/wish/get",
+    beforeHandler: [auth.getAdminToken],
+    handler: userController.getWishByUserId,
+  },
+  {
     method: "GET",
     url: "/api/company/list",
     beforeHandler: [auth.getAdminToken],
@@ -87,6 +135,12 @@ const admin_routes = [
     handler: adminController.login,
   },
   //constant
+  
+  {
+    method: "GET",
+    url: "/api/constant/admmin-settings",
+    handler: constantController.getAdminSettings,
+  },
   {
     method: "GET",
     url: "/api/constant/settings",
@@ -805,7 +859,7 @@ const admin_routes = [
       method: "GET",
       url: "/api/products/details/:id",
       beforeHandler: [auth.getAdminToken],
-      handler: productController.getSingleProduct,
+      handler: productController.getAdminSingleProduct,
     },
     {
       method: "POST",

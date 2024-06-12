@@ -975,15 +975,15 @@ exports.updateOrder = async (req, reply) => {
       let userId = req.user._id
       const check = await Order.findById(req.params.id).populate("user_id")
       const tax = await setting.findOne({ code: "TAX" });
-      var msg_started = `الفني استلم الطلب بنجاح`;
+      var msg_started = `السائق استلم الطلب بنجاح`;
       var msg_progress = `تم البدء في تنفيذ الطلب بنجاح`;
       var msg_way = `الفي في الطريق اليك`;
       var msg_accpet = `تم قبول طلبكم بنجاح وسوف يتم التنفيذ في اقرب وقت ممكن`;
       var msg_accpet2 = `تم تعينك لتقديم خدمة`;
-      var msg_updated = `تم التعديل على الطلب من قبل الفني يرجى تأكيد العملية`;
+      var msg_updated = `تم التعديل على الطلب من قبل السائق يرجى تأكيد العملية`;
       var msg_prefinished = `تم تنفيذ الخدمة من قبل العميل يرجى تأكيد العملية`;
       var msg_finished = `تم الانتهاء من تنفيذ الطلب بنجاح`;
-      var msg_canceled_by_driver = `تم الالغاء من قبل الفني`;
+      var msg_canceled_by_driver = `تم الالغاء من قبل السائق`;
       var msg_canceled_by_user = `تم الغاء الطلب من قبل الزبون`;
       var msg_canceled_by_admin = `تم الغاء الطلب من قبل الادارة`;
       

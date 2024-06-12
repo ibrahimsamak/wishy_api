@@ -67,15 +67,15 @@ exports.decryptPasswordfunction = function (password) {
 
 exports.mail_reset_password = function (req, to, sub, text, data) {
   try {
-    email = "info@wishy-ويشيapp.online";
-    psw = "Ha@1020300";
+    email = "Info@lascent.sa";
+    psw = "Admin@123";
     var transporter = nodemailer.createTransport({
-      host: "",
+      host: "smtp.hostinger.com",
       port: 465,
       secure: true,
       auth: {
-        user: "info@wishy-ويشيapp.online",
-        pass: "Ha@1020300",
+        user: "Info@lascent.sa",
+        pass: "Admin@123",
       },
     });
 
@@ -122,15 +122,15 @@ exports.mail_reset_password = function (req, to, sub, text, data) {
 
 exports.mail_welcome = function (req, to, sub, text, data) {
   try {
-    email = "info@wishy-ويشيapp.online";
-    psw = "Ha@1020300";
+    email = "Info@lascent.sa";
+    psw = "Admin@123";
     var transporter = nodemailer.createTransport({
-      host: "",
+      host: "smtp.hostinger.com",
       port: 465,
       secure: true,
       auth: {
-        user: "info@wishy-ويشيapp.online",
-        pass: "Ha@1020300",
+        user: "Info@lascent.sa",
+        pass: "Admin@123",
       },
     });
 
@@ -178,15 +178,15 @@ exports.mail_welcome = function (req, to, sub, text, data) {
 
 exports.mail_general = function (req, to, sub, text, data) {
   try {
-    email = "info@wishy-ويشيapp.online";
-    psw = "Ha@1020300";
+    email = "Info@lascent.sa";
+    psw = "Admin@123";
     var transporter = nodemailer.createTransport({
       host: "smtp.hostinger.com",
       port: 465,
       secure: true,
       auth: {
-        user: "info@wishy-ويشيapp.online",
-        pass: "Ha@1020300",
+        user: "Info@lascent.sa",
+        pass: "Admin@123",
       },
     });
 
@@ -238,11 +238,11 @@ exports.sendSMS = async function(number, from, to, code){
   let _config = {
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Bearer " + "aS1v2wbaF43MMY1txF5i"
+      Authorization: "Bearer " + "oGd9dsguMYpzCgxsMpNQ"
     },
   };
   let body = {
-    "src": "wishy-ويشيCOM",
+    "src": "Lascent",
     "body": "1234", //code,
     "dests": [number]
   }
@@ -392,19 +392,6 @@ exports.CreateNotificationMultiple = function (deviceId, title, msg, order_id) {
     
     admin.messaging().sendMulticast(message)
       .then((response) => {
-        let _Notification = new Notifications({
-          fromId: fromId,
-          user_id: to_user_id,
-          title: title,
-          msg: msg,
-          dt_date: getCurrentDateTime(),
-          type: type,
-          body_parms: order_id,
-          isRead: false,
-          fromName: fromName,
-          toName: toName,
-        });
-        let rs = _Notification.save();
         resolve(response);
       })
       .catch((error) => {

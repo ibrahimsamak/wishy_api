@@ -71,8 +71,8 @@ exports.getProductsByCategoryId = async (req, reply) => {
         query1.$and.push({isOffer: req.query.isOffer});
     }
     if (req.query.from_user && req.query.from_user != "") {
-      query1.$and.push({isFromUser: req.query.from_user});
-  }
+       query1.$and.push({isFromUser: req.query.from_user});
+     }
 
     var total = await Product.countDocuments(query1);
     var item = await Product.find(query1)
@@ -293,7 +293,7 @@ exports.addProduct = async (req, reply) => {
         arDescription: req.raw.body.arDescription,
         enDescription: req.raw.body.enDescription,
         rate: 0,
-        price:req.raw.body.price,
+        price: req.raw.body.price,
         image: img,
         createat: getCurrentDateTime(),
         category_id: req.raw.body.category_id,
@@ -301,6 +301,9 @@ exports.addProduct = async (req, reply) => {
         isOffer: req.raw.body.isOffer,
         by: req.raw.body.by,
         isDeleted: false,
+        isOffer: req.raw.body.isOffer,
+        by: req.raw.body.by,
+        isFromUser: req.raw.body.isFromUser,
       });
       var _return = handleError(rs.validateSync());
       if (_return.length > 0) {
@@ -367,10 +370,11 @@ exports.updateProduct = async (req, reply) => {
           image: img,
           category_id: req.raw.body.category_id,
           special_id: req.raw.body.special_id,
-          isOffer: req.raw.body.isOffer,
           price:req.raw.body.price,
+          isOffer: req.raw.body.isOffer,
           by: req.raw.body.by,
-        },
+          isFromUser: req.raw.body.isFromUser,
+          },
         { new: true, runValidators: true },
         function (err, model) {
           var _return = handleError(err);
@@ -405,6 +409,8 @@ exports.updateProduct = async (req, reply) => {
           isOffer: req.raw.body.isOffer,
           price:req.raw.body.price,
           by: req.raw.body.by,
+          isOffer: req.raw.body.isOffer,
+          isFromUser: req.raw.body.isFromUser,
         },
         { new: true }
       );
@@ -459,6 +465,22 @@ exports.getSingleProduct = async (req, reply) => {
   }
 };
 
+exports.getAdminSingleProduct = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    const prod = await Product.findById(req.params.id)
+    
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      items: prod,
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
 
 exports.getAllProductPlaceByAdmin = async (req, reply) => {
   try {
