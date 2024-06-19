@@ -795,7 +795,7 @@ exports.updateOrder = async (req, reply) => {
         var new_total = (Number(price) * Number(tax.value)) + Number(price)
         var new_tax = (Number(price) * Number(tax.value)) 
 
-        await Order.findByIdAndUpdate( req.params.id, { update_code: code , extra: req.body.extra , period: period, tax: Number(new_tax)+Number(check.tax), new_total: new_total, new_tax: new_tax, total: Number(/* The above code is declaring a variable called "new_total" in JavaScript. However, the code is incomplete and does not provide any further information about what the variable is intended to be used for or how it is being assigned a value. */
+        await Order.findByIdAndUpdate( req.params.id, { update_code: code , extra: req.body.extra , period: period, tax: Number(new_tax)+Number(check.tax), new_total: new_total, new_tax: new_tax, Total: Number(/* The above code is declaring a variable called "new_total" in JavaScript. However, the code is incomplete and does not provide any further information about what the variable is intended to be used for or how it is being assigned a value. */
         new_total)+Number(check.total), netTotal: Number(new_total)+Number(check.total)},{ new: true })       
         await sendSMS(check.user_id.phone_number, "", "", msg)
         await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");
@@ -819,7 +819,7 @@ exports.updateOrder = async (req, reply) => {
         // .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم تعديل حالة الطلب رقم " + check.order_no}); 
       }
       if(req.body.status == ORDER_STATUS.prefinished) {
-        var code =  makeid(6)
+        var code =  "1234" //makeid(6)
         msg = msg_prefinished + " كود العملية هو: " + code;
 
         await Order.findByIdAndUpdate( req.params.id, { update_code: code, period},{ new: true })

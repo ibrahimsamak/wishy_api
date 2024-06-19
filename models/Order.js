@@ -8,6 +8,7 @@ const Orderschema = mongoose.Schema(
     DeliveryCost: { type: Number },
     Total: { type: Number, required: false },
     TotalDiscount: { type: Number },
+    new_total: { type: Number },
     Admin_Total: { type: Number, required: false },
     provider_Total: { type: Number, required: false },
     NetTotal: { type: Number, required: false },
@@ -40,7 +41,8 @@ const Orderschema = mongoose.Schema(
     // place_id: { type: mongoose.Schema.Types.ObjectId, ref: "place" },
     is_address_book: { type: Boolean },
     address_book: { type: mongoose.Schema.Types.ObjectId, ref: "user_address" },
-    isExpress:{type:Boolean}
+    isExpress:{type:Boolean},
+    update_code:{ type: String }
 
   },
   { versionKey: false }
