@@ -60,13 +60,13 @@ exports.getTop10Orders = async (req, reply) => {
 exports.getCounterOrdersWithStatus = async (req, reply) => {
   try {
     if (req.user.userType == ACTORS.ADMIN) {
-      const NewOrder = await Order.countDocuments({ status: ORDER_STATUS.new })
-      const ProccessingOrder = await Order.countDocuments({$or: [{ status: ORDER_STATUS.started }, { status: ORDER_STATUS.accpeted }, { status: ORDER_STATUS.updated }, { status: ORDER_STATUS.progress }]});
-      const DoneOrder = await Order.countDocuments({ $or:[{status: ORDER_STATUS.prefinished }, {status: ORDER_STATUS.finished }, {status: ORDER_STATUS.rated }]})
-      const CancelOrder = await Order.countDocuments({$or: [{ status: ORDER_STATUS.canceled_by_driver }, { status: ORDER_STATUS.canceled_by_admin }, { status: ORDER_STATUS.canceled_by_user }]})
+      const NewOrder = await Order.countDocuments({ Status: ORDER_STATUS.new })
+      const ProccessingOrder = await Order.countDocuments({$or: [{ Status: ORDER_STATUS.started }, { Status: ORDER_STATUS.accpeted }, { Status: ORDER_STATUS.updated }, { Status: ORDER_STATUS.progress }]});
+      const DoneOrder = await Order.countDocuments({ $or:[{Status: ORDER_STATUS.prefinished }, {Status: ORDER_STATUS.finished }, {Status: ORDER_STATUS.rated }]})
+      const CancelOrder = await Order.countDocuments({$or: [{ Status: ORDER_STATUS.canceled_by_driver }, { Status: ORDER_STATUS.canceled_by_admin }, { Status: ORDER_STATUS.canceled_by_user }]})
       const AllOrder = await Order.countDocuments({});
-      const Accepted = await Order.countDocuments({ $and: [{ status: ORDER_STATUS.accpeted }],});
-      const Updated = await Order.countDocuments({ $and: [{ status: ORDER_STATUS.updated }],});
+      const Accepted = await Order.countDocuments({ $and: [{ Status: ORDER_STATUS.accpeted }],});
+      const Updated = await Order.countDocuments({ $and: [{ Status: ORDER_STATUS.updated }],});
 
       const response = {
         status_code: 200,
@@ -84,13 +84,13 @@ exports.getCounterOrdersWithStatus = async (req, reply) => {
     }
     else if (req.user.userType == ACTORS.STORE){
       let provider_id = req.user._id;
-      const NewOrder = await Order.countDocuments({ $and: [{ status: ORDER_STATUS.new }, { provider: provider_id }],});
-      const ProccessingOrder = await Order.countDocuments({ $or:[{status: ORDER_STATUS.accpeted }, {status: ORDER_STATUS.progress }, {status: ORDER_STATUS.updated }, {status: ORDER_STATUS.started }]});
-      const DoneOrder = await Order.countDocuments({$and: [{$or: [{status: ORDER_STATUS.prefinished }, {status: ORDER_STATUS.finished }, {status: ORDER_STATUS.rated }]}, { provider: provider_id }]});
-      const CancelOrder = await Order.countDocuments({$and: [{$or: [{status: ORDER_STATUS.canceled_by_admin }, {status: ORDER_STATUS.canceled_by_driver }, {status: ORDER_STATUS.canceled_by_user }]}, { provider: provider_id }]});
+      const NewOrder = await Order.countDocuments({ $and: [{ Status: ORDER_STATUS.new }, { provider: provider_id }],});
+      const ProccessingOrder = await Order.countDocuments({ $or:[{Status: ORDER_STATUS.accpeted }, {Status: ORDER_STATUS.progress }, {Status: ORDER_STATUS.updated }, {Status: ORDER_STATUS.started }]});
+      const DoneOrder = await Order.countDocuments({$and: [{$or: [{Status: ORDER_STATUS.prefinished }, {Status: ORDER_STATUS.finished }, {Status: ORDER_STATUS.rated }]}, { provider: provider_id }]});
+      const CancelOrder = await Order.countDocuments({$and: [{$or: [{Status: ORDER_STATUS.canceled_by_admin }, {Status: ORDER_STATUS.canceled_by_driver }, {Status: ORDER_STATUS.canceled_by_user }]}, { provider: provider_id }]});
       const AllOrder = await Order.countDocuments({provider: provider_id});
-      const Accepted = await Order.countDocuments({ $and: [{ status: ORDER_STATUS.accpeted }, { provider: provider_id }],});
-      const Updated = await Order.countDocuments({ $and: [{ status: ORDER_STATUS.updated }, { provider: provider_id }],});
+      const Accepted = await Order.countDocuments({ $and: [{ Status: ORDER_STATUS.accpeted }, { provider: provider_id }],});
+      const Updated = await Order.countDocuments({ $and: [{ Status: ORDER_STATUS.updated }, { provider: provider_id }],});
 
       const response = {
         status_code: 200,

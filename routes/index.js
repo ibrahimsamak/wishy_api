@@ -1555,18 +1555,6 @@ const mobile_routes = [
   },
   {
     method: "POST",
-    url: "/api/mobile/order/offer/:id",
-    beforeHandler: [auth.getToken],
-    handler: orderController.addOffer,
-  },
-  {
-    method: "POST",
-    url: "/api/mobile/order/offer/update/:id",
-    beforeHandler: [auth.getToken],
-    handler: orderController.updateOffer,
-  },
-  {
-    method: "POST",
     url: "/api/mobile/order/add",
     beforeHandler: [auth.getToken],
     handler: orderController.addOrder,

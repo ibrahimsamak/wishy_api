@@ -332,7 +332,7 @@ exports.CreateGeneralNotification = function (
       })
       .catch((error) => {
         console.log(error)
-        reject("");
+        resolve("");
       });
 
 
@@ -395,7 +395,7 @@ exports.CreateNotificationMultiple = function (deviceId, title, msg, order_id) {
         resolve(response);
       })
       .catch((error) => {
-        reject("");
+        resolve("");
       });
   });
 };

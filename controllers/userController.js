@@ -2499,7 +2499,7 @@ exports.addWish = async (req, reply) => {
       });
       let rs = await user.save();
       //send sms to pays if private
-
+      
       reply
         .code(200)
         .send(

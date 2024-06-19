@@ -452,7 +452,6 @@ exports.logout = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
     const User_id = req.params.id;
-    const checkUser = await employee.findById(req.params.id);
     const user = await employee.findByIdAndUpdate(
       User_id,
       {
@@ -551,7 +550,7 @@ exports.getStoresEmployees = async (req, reply) => {
     if(req.user.userType == ACTORS.ADMIN || req.user.userType == ACTORS.ADMIN){
       supplier_id = req.params.id
       const item = await employee
-        .find({$and:[{supplier_id: supplier_id},{isAvailable:true}] })
+        .find({$and:[{isDeleted:false},{isBlock:false}] })
         .sort({ _id: -1 });
 
       const response = {
@@ -564,7 +563,7 @@ exports.getStoresEmployees = async (req, reply) => {
     }
     if(req.user.userType == ACTORS.SUPERVISOR){
       const item = await employee
-      .find({$and:[{supplier_id: req.user._id},{isAvailable:true}] })
+      .find({$and:[{isDeleted:false},{isBlock:false}] })
       .sort({ _id: -1 });
 
       const response = {
