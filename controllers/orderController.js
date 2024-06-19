@@ -2194,7 +2194,7 @@ exports.getEmployeeOrder = async (req, reply) => {
     var query = {$and:[{employee_id: userId}]};
     if (req.body.status && req.body.status != "") {
       if(req.body.status == ORDER_STATUS.finished) {
-        query.$and.push({Status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}})
+        query.$and.push({Status: {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated]}})
       }
       else if(req.body.status == 'canceled' ){
         query.$and.push({Status: {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}})
