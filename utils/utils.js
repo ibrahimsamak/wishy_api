@@ -333,6 +333,8 @@ exports.CreateGeneralNotification = function (
       .catch((error) => {
         console.log(error)
         resolve("");
+      }).finally((e)=>{
+        resolve("");
       });
 
 
