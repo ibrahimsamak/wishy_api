@@ -2271,10 +2271,10 @@ exports.getEmployeeCountOrder = async (req, reply) => {
   try {
     let userId = req.user._id;
 
-    const accpeted = await Order.countDocuments({$and:[{employee: userId},{Status:ORDER_STATUS.accpeted}]});
-    const progress = await Order.find({$and:[{employee: userId},{Status:{$in:[ORDER_STATUS.progress, ORDER_STATUS.started, ORDER_STATUS.updated]}}]}).countDocuments();
-    const finished = await Order.find({$and:[{employee: userId},{Status:{$in:[ORDER_STATUS.finished, ORDER_STATUS.prefinished, ORDER_STATUS.rated]}}]}).countDocuments();
-    const cancelded = await Order.find({$and:[{employee: userId},{Status:{$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}}]}).countDocuments();
+    const accpeted = await Order.countDocuments({$and:[{employee_id: userId},{Status:ORDER_STATUS.accpeted}]});
+    const progress = await Order.find({$and:[{employee_id: userId},{Status:{$in:[ORDER_STATUS.progress, ORDER_STATUS.started, ORDER_STATUS.updated]}}]}).countDocuments();
+    const finished = await Order.find({$and:[{employee_id: userId},{Status:{$in:[ORDER_STATUS.finished, ORDER_STATUS.prefinished, ORDER_STATUS.rated]}}]}).countDocuments();
+    const cancelded = await Order.find({$and:[{employee_id: userId},{Status:{$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}}]}).countDocuments();
      var obj = {
         accpeted:accpeted,
         progress:progress,
