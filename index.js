@@ -59,7 +59,7 @@ const start = async () => {
   await fastify.listen(process.env.PORT || 3000, "0.0.0.0");
   fastify.swagger();
   fastify.log.info(`server listening on ${fastify.server.address().port}`);
-  orderController.PendingCronOrders();
+  // orderController.PendingCronOrders();
   userController.Reminders();
 
 };
