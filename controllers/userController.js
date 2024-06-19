@@ -2741,7 +2741,7 @@ exports.paywish = async (req, reply) => {
       { new: true },
     );
 
-    if(Number(_setting.total) == Number(_setting.all_pays)){
+    if(Number(_setting.all_pays) >= Number(_setting.total)){
       //notification to user 
       await Wish.findByIdAndUpdate(req.params.id, { isComplete:true },{ new: true });
       let user = await Users.findById(req.user._id)
