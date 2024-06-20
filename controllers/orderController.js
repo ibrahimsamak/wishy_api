@@ -665,10 +665,10 @@ exports.updateOrder = async (req, reply) => {
       var msg_progress = `تم البدء في تنفيذ الطلب بنجاح`;
       var msg_way = `الفي في الطريق اليك`;
       var msg_accpet = `تم قبول طلبكم بنجاح وسوف يتم التنفيذ في اقرب وقت ممكن`;
-      var msg_accpet2 = `تم تعينك لتقديم خدمة`;
+      var msg_accpet2 = `تم تعينك على طلب جدبد`;
       var msg_updated = `تم التعديل على الطلب من قبل السائق يرجى تأكيد العملية`;
-      var msg_prefinished = `تم تنفيذ الخدمة من قبل العميل يرجى تأكيد العملية`;
-      var msg_finished = `تم الانتهاء من تنفيذ الطلب بنجاح`;
+      var msg_prefinished = `تم توصيل اللى العميل يرجى تأكيد العملية`;
+      var msg_finished = `تم الانتهاء من توثيل الطلب بنجاح`;
       var msg_canceled_by_driver = `تم الالغاء من قبل السائق`;
       var msg_canceled_by_user = `تم الغاء الطلب من قبل الزبون`;
       var msg_canceled_by_admin = `تم الغاء الطلب من قبل الادارة`;
@@ -2535,7 +2535,7 @@ exports.addRateFromProviderToUser = async (req, reply) => {
       const response = {
         status_code: 400,
         status: false,
-        messageAr: "عذرا .. لا يمكن التقييم حتى الانتهاء من الخدمة",
+        messageAr: "عذرا .. لا يمكن التقييم حتى الانتهاء من توصيل الطلب",
         messageEn: "Sorry .. you can't rate righ now",
         items: null,
       };
