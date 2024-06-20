@@ -248,7 +248,7 @@ exports.MESSAGE_STRING_ARABIC = {
   RATE_BEFORE: "عذرا .. تم تقييم الطلب مسبقا",
   NOT_COVERED:
     "عذرا .. منطقتك غير مغطاة نسعى جاهدين لتغطية جميع المناطق في أقرب وقت ممكن",
-  CANCEL_ORDER_FAILED: "عذرا .. لا يمكنك إلغاء الطلب أثناء التنفيذ",
+  CANCEL_ORDER_FAILED: "عذرا .. لا يمكنك إلغاء الطلب أثناء التوصيل",
 
   USER_NOT_FOUND: "المستخدم غير موجود",
   CHANGE_PLACE_OR_SUPPLIER:

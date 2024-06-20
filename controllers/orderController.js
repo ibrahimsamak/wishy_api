@@ -662,9 +662,9 @@ exports.updateOrder = async (req, reply) => {
       const check = await Order.findById(req.params.id).populate("user_id")
       const tax = await setting.findOne({ code: "TAX" });
       var msg_started = `السائق استلم الطلب بنجاح`;
-      var msg_progress = `تم البدء في تنفيذ الطلب بنجاح`;
+      var msg_progress = `تم بدء تسليم الطلب بنجاح`;
       var msg_way = `الفي في الطريق اليك`;
-      var msg_accpet = `تم قبول طلبكم بنجاح وسوف يتم التنفيذ في اقرب وقت ممكن`;
+      var msg_accpet = `تم قبول طلبكم بنجاح وسوف يتم التوصيل في اقرب وقت ممكن`;
       var msg_accpet2 = `تم تعينك على طلب جدبد`;
       var msg_updated = `تم التعديل على الطلب من قبل السائق يرجى تأكيد العملية`;
       var msg_prefinished = `تم توصيل اللى العميل يرجى تأكيد العملية`;
@@ -1004,7 +1004,7 @@ exports.updateOrderCode = async (req, reply) => {
     const currentTimestamp = Date.now();
     const currentTimestampInSeconds = Math.floor(currentTimestamp);
      let userId = req.user._id
-     var msg_finished = `تم الانتهاء من تنفيذ الطلب بنجاح`;
+     var msg_finished = `تم الانتهاء من توصيل الطلب بنجاح`;
      const check = await Order.findById(req.params.id).populate("user_id")
       var msg = ""
       if(check.Status == ORDER_STATUS.updated) {
