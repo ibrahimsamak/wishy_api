@@ -122,13 +122,13 @@ exports.PendingCronOrders = async function PendingCronOrders() {
           }
         }
 
-        if(doc.paymentType == PAYMENT_TYPE.ONLINE){
-          await refund(doc.payment_id, doc.total).then((x) => { response = x });
-        }
-        if(doc.paymentType == PAYMENT_TYPE.WALLET){
-          await NewPayment(doc.user._id, doc.order_no , ` ارجاع مبلغ الطلب ${doc.order_no}` , '+' , doc.total , 'Online');
-        }
-        await CreateGeneralNotification(doc.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, doc._id, "", doc.user._id, "", "");  
+        // if(doc.paymentType == PAYMENT_TYPE.ONLINE){
+        //   await refund(doc.payment_id, doc.total).then((x) => { response = x });
+        // }
+        // if(doc.paymentType == PAYMENT_TYPE.WALLET){
+        //   await NewPayment(doc.user._id, doc.order_no , ` ارجاع مبلغ الطلب ${doc.order_no}` , '+' , doc.total , 'Online');
+        // }
+        await CreateGeneralNotification(doc.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم الغاء الطلب بنجاح", NOTIFICATION_TYPE.ORDERS, doc._id, "", doc.user._id, "", "");  
       }
     }
   });
@@ -883,13 +883,13 @@ exports.updateOrder = async (req, reply) => {
         });
         let rs = _Notification.save();
 
-        if(check.paymentType == PAYMENT_TYPE.ONLINE){
-          await refund(check.payment_id, check.total).then((x) => { response = x });
-        }
-        if(check.paymentType == PAYMENT_TYPE.WALLET){
-          await NewPayment(check.user_id._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
-        }
-        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");  
+        // if(check.paymentType == PAYMENT_TYPE.ONLINE){
+        //   await refund(check.payment_id, check.total).then((x) => { response = x });
+        // }
+        // if(check.paymentType == PAYMENT_TYPE.WALLET){
+        //   await NewPayment(check.user_id._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
+        // }
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم الغاء الطلب بنجاح", NOTIFICATION_TYPE.ORDERS, check._id, check.employee_id, check.user_id._id, "", "");  
 
         // firebaseRef
         // .child("orders")
