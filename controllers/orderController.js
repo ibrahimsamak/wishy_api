@@ -913,14 +913,14 @@ exports.updateOrder = async (req, reply) => {
         });
         let rs = _Notification.save();
 
-        if(check.paymentType == PAYMENT_TYPE.ONLINE){
-          await refund(check.payment_id, check.total).then((x) => { response = x });
-        }
-        if(check.paymentType == PAYMENT_TYPE.WALLET){
-          await NewPayment(check.user_id._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
-        }
+        // if(check.paymentType == PAYMENT_TYPE.ONLINE){
+        //   await refund(check.payment_id, check.total).then((x) => { response = x });
+        // }
+        // if(check.paymentType == PAYMENT_TYPE.WALLET){
+        //   await NewPayment(check.user_id._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
+        // }
 
-        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, check.empemployee_idloyee, check.user_id._id, "", "");
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم الغاء الطلب بنجاح", NOTIFICATION_TYPE.ORDERS, check._id, check.empemployee_idloyee, check.user_id._id, "", "");
       
         // firebaseRef
         // .child("orders")
@@ -960,14 +960,15 @@ exports.updateOrder = async (req, reply) => {
           });
           let rs = _Notification.save();
 
-          if(check.paymentType == PAYMENT_TYPE.ONLINE){
-            await refund(check.payment_id, check.total).then((x) => { response = x });
-          }
-          if(check.paymentType == PAYMENT_TYPE.WALLET){
-            await NewPayment(check.user_id._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
-          }
+          // if(check.paymentType == PAYMENT_TYPE.ONLINE){
+          //   await refund(check.payment_id, check.total).then((x) => { response = x });
+          // }
+          // if(check.paymentType == PAYMENT_TYPE.WALLET){
+          //   await NewPayment(check.user_id._id, check.order_no , ` ارجاع مبلغ الطلب ${check.order_no}` , '+' , check.total , 'Online');
+          // }
 
-          await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, "", check.user_id._id, "", "");
+          //await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم ارجاع مبلغ الطلب", NOTIFICATION_TYPE.ORDERS, check._id, "", check.user_id._id, "", "");
+          await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, "تم الغاء الطلب بنجاح", NOTIFICATION_TYPE.ORDERS, check._id, "", check.user_id._id, "", "");
          
           firebaseRef
           .child("orders")
@@ -981,7 +982,7 @@ exports.updateOrder = async (req, reply) => {
         .remove();    
       }
 
-      await Order.findByIdAndUpdate( req.params.id, { Status: req.body.status, period:period },{ new: true })  
+      await Order.findByIdAndUpdate( req.params.id, { Status: req.body.status, period:period, canceled_note: req.body.canceled_note },{ new: true })  
       reply
       .code(200)
       .send(
