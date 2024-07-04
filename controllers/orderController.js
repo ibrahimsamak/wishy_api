@@ -434,6 +434,7 @@ exports.addOrder = async (req, reply) => {
           is_address_book: req.body.is_address_book,
           address_book: req.body.address_book,
           supplier_id: by,
+          notes: req.body.notes,
           // isExpress:req.body.isExpress
         });
 
@@ -599,6 +600,8 @@ exports.addWishOrder = async (req, reply) => {
         OrderType: req.body.OrderType,
         is_address_book: req.body.is_address_book,
         address_book: req.body.address_book,
+        notes: req.body.notes,
+
         // place_id: newPlaceId,
         // supplier_id: supplier_id,
         // isExpress:req.body.isExpress

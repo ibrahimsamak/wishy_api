@@ -2806,7 +2806,6 @@ exports.addCheckFriend = async (req, reply) => {
         createAt: getCurrentDateTime(),
       });
       let rs = await user.save();
-
       let user2 = new Friend({
         user_id: check._id,
         friend_id: req.user._id,
@@ -2814,7 +2813,6 @@ exports.addCheckFriend = async (req, reply) => {
       });
       let rs2 = await user2.save();
       var current = await Users.findById(req.user._id)
-
       await CreateGeneralNotification(check.fcmToken, NOTIFICATION_TITILES.FRIEND, "اصبحت صديق لدى "+current.full_name,NOTIFICATION_TYPE.FRIEND, check._id, current._id, check._id,"","")
       //send notification to friend 
 
