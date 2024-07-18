@@ -2785,7 +2785,7 @@ exports.addCheckFriend = async (req, reply) => {
         );
       return;
       }
-      const _user = await Friend.findOne({ $and:[{user_id: req.user._id}, {friend_id: check._id}] });
+      const _user = await Friend.findOne({ $and:[{ user_id: req.user._id }, { friend_id: check._id }] });
       if(_user){
         reply
         .code(200)

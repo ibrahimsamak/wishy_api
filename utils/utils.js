@@ -243,17 +243,17 @@ exports.sendSMS = async function(number, from, to, code){
   };
   let body = {
     "src": "Lascent",
-    "body": "1234", //code,
+    "body": code,
     "dests": [number]
   }
 
-  // axios
-  // .post(url,body, _config)
-  // .then((response) => {
-  // })
-  // .catch((error) => {
-  //   console.log(error)
-  // });
+  axios
+  .post(url,body, _config)
+  .then((response) => {
+  })
+  .catch((error) => {
+    console.log(error)
+  });
 }
 
 exports.sendWhatsApp = async function(number, from, to, code){ 
