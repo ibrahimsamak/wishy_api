@@ -53,7 +53,8 @@ exports.getHomeRequest = async (req, reply) => {
     const language = req.headers["accept-language"];
     const cats = await special.find({isDeleted: false}).sort({ sort: 1 });
     var arr2 = [];
-    const slider = await Adv.find({}).sort({ _id: -1 });
+    const slider = await Adv.find({ ads_for: 1 }).sort({ _id: -1 });
+    const whatsApp = await Adv.findOne({ ads_for: 2 }).sort({ _id: -1 });
     for await(const element of slider){
       var newObject = element.toObject();
       var obj = {
@@ -67,7 +68,8 @@ exports.getHomeRequest = async (req, reply) => {
 
     var res_obj = {
       category: cats,
-      slider: arr2
+      slider: arr2,
+      whatsApp: whatsApp
     }
     reply
       .code(200)
