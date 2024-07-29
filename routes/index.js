@@ -20,6 +20,44 @@ const fastify = require("fastify")({
 // Import Swagger documentation
 // const documentation = require('./documentation/carApi')
 const admin_routes = [
+  //// m5azen ////
+  {
+    method: "GET",
+    url: "/api/products/all",
+    beforeHandler: [auth.getAdminToken],
+    handler: productController.getAllProductPlaceByAdmin,
+  },
+  {
+    method: "GET",
+    url: "/api/products/get/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: productController.getSingleProduct,
+  },
+  {
+    method: "POST",
+    url: "/api/products/new",
+    beforeHandler: [auth.getAdminToken],
+    handler: productController.newProduct,
+  },
+  {
+    method: "POST",
+    url: "/api/products/edit/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: productController.editProduct,
+  },
+  {
+    method: "POST",
+    url: "/api/products/bulk-edit",
+    beforeHandler: [auth.getAdminToken],
+    handler: productController.editBulkProduct,
+  },
+  
+  {
+    method: "POST",
+    url: "/api/products/remove/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: productController.deleteProduct,
+  },
   {
     method: "POST",
     url: "/api/admin/reject-product-request/:id",

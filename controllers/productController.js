@@ -489,23 +489,24 @@ exports.getAllProductPlaceByAdmin = async (req, reply) => {
     var limit = parseFloat(req.query.limit, 10);
     // var query = {};
     var query = { $and: [] };
-    if (String(req.body.name) != "") {
+    if (req.query.name && String(req.query.name) != "") {
       query.$and.push({
         $or: [
-          { arName: { $regex: new RegExp(req.body.name, "i") } },
-          { arDescription: { $regex: new RegExp(req.body.name, "i") } },
-          { enName: { $regex: new RegExp(req.body.name, "i") } },
-          { enDescription: { $regex: new RegExp(req.body.name, "i") } },
+          { arName: { $regex: new RegExp(req.query.name, "i") } },
+          { arDescription: { $regex: new RegExp(req.query.name, "i") } },
+          { enName: { $regex: new RegExp(req.query.name, "i") } },
+          { enDescription: { $regex: new RegExp(req.query.name, "i") } },
         ],
       });
     }
-    if (req.body.category_id != "") {
-        query.$and.push({ category_id: req.body.category_id });
+    if (req.query.category_id && req.query.category_id != "") {
+        query.$and.push({ category_id: req.query.category_id });
     }
-    if (req.body.special_id != "") {
-        query.$and.push({ special_id: req.body.special_id });
+    if (req.query.special_id  && req.query.special_id != "") {
+        query.$and.push({ special_id: req.query.special_id });
     }
   
+    console.log(query)
     query.$and.push({ isDeleted: false });
     const total = await Product.find(query).countDocuments();
     const item = await Product.find(query)
@@ -883,6 +884,147 @@ exports.getSingleSupplierPlace = async (req, reply) => {
       );
     return;
   } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+
+//////////// m5azen ////////////
+
+exports.newProduct = async (req, reply) => {
+  try {
+      let rs = new Product({
+        arName: req.body.arName,
+        enName: req.body.enName,
+        arDescription: req.body.arDescription,
+        enDescription: req.body.enDescription,
+        rate: 0,
+        price: req.body.price,
+        image: req.body.image,
+        createat: getCurrentDateTime(),
+        category_id: req.body.category_id,
+        special_id: req.body.special_id,
+        quantity: req.body.quantity,
+        cost_price: req.body.cost_price,
+        isDeleted: false,
+        isOffer: false,
+        by: req.user._id,
+        isFromUser: false,
+      });
+      var _return = handleError(rs.validateSync());
+      if (_return.length > 0) {
+        reply.code(200).send({
+          status_code: 400,
+          status: false,
+          message: _return[0],
+          items: _return,
+        });
+        return;
+      }
+      let saved = await rs.save();
+
+      const response = {
+        status_code: 200,
+        status: true,
+        message: "تمت اضافة المنتج بنجاح",
+        items: saved,
+      };
+      reply.send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.editProduct = async (req, reply) => {
+  try {
+    let prod = await Product.findByIdAndUpdate(
+      { _id: req.params.id },
+      {
+          arName: req.body.arName,
+          enName: req.body.enName,
+          arDescription: req.body.arDescription,
+          enDescription: req.body.enDescription,
+          image: req.body.image,
+          category_id: req.body.category_id,
+          special_id: req.body.special_id,
+          price: req.body.price,
+          quantity: req.body.quantity,
+          cost_price: req.body.cost_price,
+          isOffer: false,
+          isFromUser: false,
+      },
+      { new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تم الحفظ بنجاح",
+      items: prod,
+    };
+    reply.send(response);
+  } catch (err) {
+    console.log(err);
+    throw boom.boomify(err);
+  }
+};
+
+
+exports.editBulkProduct = async (req, reply) => {
+  try {
+     var list = req.body.list
+     for await(const item of list) {
+      let prod = await Product.findByIdAndUpdate(
+        { _id: item._id },
+        {
+            arName: item.arName,
+            enName: item.enName,
+            arDescription: item.arDescription,
+            enDescription: item.enDescription,
+            image: item.image,
+            category_id: item.category_id,
+            special_id: item.special_id,
+            price: item.price,
+            quantity: item.quantity,
+            cost_price: item.cost_price,
+            isOffer: false,
+            isFromUser: false,
+        },
+        { new: true, runValidators: true },
+        function (err, model) {
+          var _return = handleError(err);
+          if (_return.length > 0) {
+            reply.code(200).send({
+              status_code: 400,
+              status: false,
+              message: _return[0],
+              items: _return,
+            });
+            return;
+          }
+        }
+      );
+     }
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تم الحفظ بنجاح",
+      items: [],
+    };
+    reply.send(response);
+  } catch (err) {
+    console.log(err);
     throw boom.boomify(err);
   }
 };

@@ -27,6 +27,12 @@ const Productschema = mongoose.Schema(
     price: {
       type: Number,
     },
+    cost_price:{
+      type: Number,
+    },
+    quantity:{
+      type: Number,
+    },
     category_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "category",
@@ -59,6 +65,7 @@ const Productschema = mongoose.Schema(
       ref: "supplier",
       required: [true, "supplier is required"],
     },
+
   },
   { versionKey: false }
 );

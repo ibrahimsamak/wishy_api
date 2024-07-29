@@ -377,7 +377,7 @@ exports.login = async (req, reply) => {
             { _id: Admins._id, userType: ACTORS.ADMIN },
             config.get("jwtPrivateKey"),
             {
-              expiresIn: "30d",
+              expiresIn: "365d",
             }
           ),
         },
