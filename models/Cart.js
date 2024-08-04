@@ -9,7 +9,7 @@ const CartSchema = mongoose.Schema(
     qty: { type: Number },
     Total: { type: Number },
     TotalDiscount: { type: Number },
-    createAt: { type: Date },
+    createAt: { type: Date }
   },
   { versionKey: false }
 );

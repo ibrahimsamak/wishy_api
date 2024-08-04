@@ -59,6 +59,31 @@ const admin_routes = [
     handler: productController.deleteProduct,
   },
   {
+    method: "GET",
+    url: "/api/order/list",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getAdminOrders,
+  },
+  {
+    method: "GET",
+    url: "/api/order/details",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getSingleOrders,
+  },
+  {
+    method: "GET",
+    url: "/api/order/status",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.getOrderStatus,
+  },
+  {
+    method: "POST",
+    url: "/api/order/update/:id",
+    beforeHandler: [auth.getAdminToken],
+    handler: orderController.updateMa5azenOrder,
+  },
+  
+  {
     method: "POST",
     url: "/api/admin/reject-product-request/:id",
     beforeHandler: [auth.getAdminToken],

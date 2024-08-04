@@ -565,18 +565,11 @@ exports.check_coupon = async function check_coupon(user_id, _coupon, sub_categor
   return returnObject
 }
 
-exports.refund = async function(paymen_id, amount){
+exports.postM5azen = async function(body){
   return new Promise(function (resolve, reject) {
-    var username = 'sk_live_bx2oCe3W1sUweFnrqeZjgEZhEVGNiNDNE1o38MKY'
-    var url = `https://api.moyasar.com/v1/payments/${paymen_id}/refund`
-    let auth = {
-      auth: { username: username, password: '' }
-    }
-    let body = {
-      "amount": Number(amount) * 100
-    }
+    var url = `https://m5azn.com/api/services/wishy/orders/3FePK7ozhbZ9kIWqxUnqCZaBHb75omAPggtuP0TGhTE4RJkFx02OFdUss7bxKNRVbVGTWgkWkMRREUkE`
     axios
-    .post(url,body, auth)
+    .post(url,body)
     .then((response) => {
       resolve(response.data)
     })

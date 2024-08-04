@@ -63,12 +63,14 @@ const {
   NewPayment,
   check_coupon,
   refund,
+  postM5azen,
 } = require("../utils/utils");
 const { success, errorAPI } = require("../utils/responseApi");
 const { string, number } = require("@hapi/joi");
 const { employee } = require("../models/Employee");
 const { Firebase } = require("../utils/firebase");
 const e = require("cors");
+const { util } = require("config");
 var database = Firebase.database();
 var geoFire = new GeoFire(database.ref("userLocation"));
 var language = "ar"
@@ -343,6 +345,7 @@ exports.addOrder = async (req, reply) => {
               Total: data.Total,
               TotalDiscount: data.TotalDiscount,
               createAt: data.createAt,
+              by: Product_Price_Object.by
             };
 
             if (
@@ -440,9 +443,21 @@ exports.addOrder = async (req, reply) => {
 
         let rs = await Orders.save();
         let itemsId = items.map((x) => x.cartId);
-        console.log(itemsId)
         Cart.deleteMany({ _id: { $in: itemsId } }, function (err) {});
-
+        let check_by = items.filter((x) => x.by == "Ma5azen");
+        if(check_by.length > 0) {
+          // submit order to Ma5azen
+          const item = await Order.findById(rs._id)
+          .sort({ _id: -1 })
+          .populate("user_id", "-token")
+          .populate("employee_id", "-token")
+          .populate("supplier_id")
+          .populate("address_book")
+          .populate({ path: "items.product_id", populate: { path: "product_id" } })
+          .select();
+          console.log(item)
+          await postM5azen(item);
+        }
         let msg = "لديك طلب جديد";
         if (employee_ids.length > 0) {
           var current_employee = await employee.find({_id:{$in:employee_ids}});
@@ -3666,6 +3681,240 @@ exports.getOrdersMap = async (req, reply) => {
     };
     reply.send(response);
   } catch(err) {
+    throw boom.boomify(err);
+  }
+};
+
+
+///////// m5azen /////////
+exports.getAdminOrders = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var page = parseFloat(req.query.page, 10);
+    var limit = parseFloat(req.query.limit, 10);
+
+    var query = {};
+    if (
+      req.query.dt_from &&
+      req.query.dt_from != "" &&
+      req.query.dt_to &&
+      req.query.dt_to != ""
+    ) {
+      query = {
+        createAt: {
+          $gte: moment(req.query.dt_from).tz("Asia/Riyadh").startOf("day"),
+          $lt: moment(req.query.dt_to).tz("Asia/Riyadh").endOf("day"),
+        },
+      };
+    }
+    if (req.query.Status && req.query.Status != ""){
+      if(req.query.Status == ORDER_STATUS.finished){
+        query["Status"] = {$in:[ORDER_STATUS.finished, ORDER_STATUS.rated, ORDER_STATUS.prefinished]}
+      }
+      else if(req.query.Status == 'canceled' ){
+        query["Status"] = {$in:[ORDER_STATUS.canceled_by_admin, ORDER_STATUS.canceled_by_driver, ORDER_STATUS.canceled_by_user]}
+      }
+      else{
+        query["Status"] = req.query.Status;
+      }
+    }
+    if (req.query.Order_no && req.query.Order_no != "")
+      query["Order_no"] = req.query.Order_no;
+
+    const total = await Order.find(query).countDocuments();
+    const item = await Order.find(query)
+      .sort({ _id: -1 })
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .skip(page * limit)
+      .limit(limit)
+      .select();
+
+    const response = {
+      status: true,
+      code: 200,
+      message: "تمت العملية بنجاح",
+      items: item,
+      pagination: {
+        size: item.length,
+        totalElements: total,
+        totalPages: Math.floor(total / limit),
+        pageNumber: page,
+      },
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    reply.code(200).send(errorAPI(language, 400, err.message, err.message));
+    return;
+  }
+};
+
+exports.getOrderStatus = async (req, reply) => {
+  var status = [
+    ORDER_STATUS.new,
+    ORDER_STATUS.accpeted, 
+    ORDER_STATUS.canceled,
+    ORDER_STATUS.canceled_by_admin,
+    ORDER_STATUS.canceled_by_driver,
+    ORDER_STATUS.canceled_by_user,
+    ORDER_STATUS.finished,
+    ORDER_STATUS.prefinished,
+    ORDER_STATUS.progress,
+    ORDER_STATUS.rated, 
+    ORDER_STATUS.started,
+    ORDER_STATUS.updated, 
+    ORDER_STATUS.way
+  ]
+
+  const response = {
+    status_code: 200,
+    status: true,
+    message: "تمت العملية بنجاح",
+    items: status,
+  };
+  reply.send(response);
+}
+
+exports.updateMa5azenOrder = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+      var msg = ""
+      const check = await Order.findById(req.params.id).populate("user_id")
+      const tax = await setting.findOne({ code: "TAX" });
+      var msg_started = `السائق استلم الطلب بنجاح`;
+      var msg_progress = `تم بدء تسليم الطلب بنجاح`;
+      var msg_way = `الفي في الطريق اليك`;
+      var msg_accpet = `تم قبول طلبكم بنجاح وسوف يتم التوصيل في اقرب وقت ممكن`;
+      var msg_accpet2 = `تم تعينك على طلب جدبد`;
+      var msg_finished = `تم الانتهاء من توثيل الطلب بنجاح`;
+     
+      var today = getCurrentDateTime();
+      var createAt = moment(check.createAt)
+      var period = moment(today).diff(createAt,"minutes")
+      const currentTimestamp = Date.now();
+      const currentTimestampInSeconds = Math.floor(currentTimestamp);
+
+      if(req.body.status == ORDER_STATUS.started) {
+        msg = msg_started; 
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, "", check.user_id._id, "", "");
+        let _Notification = new Notifications({
+          fromId: check.user_id._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
+      }
+      if(req.body.status == ORDER_STATUS.progress) {
+        msg = msg_progress;
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, "", check.user_id._id, "", "");
+        let _Notification = new Notifications({
+          fromId: check.user_id._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
+        
+        // firebaseRef
+        // .child("orders")
+        // .child(String(req.params.id))
+        // .update({ timestamp: currentTimestampInSeconds, status: req.body.status , msg: "تم البدء في تنفيذ الطلب رقم " + check.order_no}); 
+      }
+      if(req.body.status == ORDER_STATUS.way) {
+        msg = msg_way;
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, "", check.user_id._id, "", "");
+        let _Notification = new Notifications({
+          fromId: check.user_id._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
+      }
+      if(req.body.status == ORDER_STATUS.accpeted) {
+        msg = msg_accpet;
+        msg2 = msg_accpet2;
+        var emp = await employee.findById(req.body.employee_id);
+        await Order.findByIdAndUpdate(
+          req.params.id,
+          {
+            Status: req.body.status,
+            employee_id: null,
+            canceled_note: "",
+            period: period
+          },
+          { new: true }
+        )
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, "", check.user_id._id, "", "");
+      
+        let _Notification = new Notifications({
+          fromId: check.user_id._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
+      }
+      if(req.body.status == ORDER_STATUS.finished) {
+        msg = msg_finished;
+        await CreateGeneralNotification(check.user_id.fcmToken, NOTIFICATION_TITILES.ORDERS, msg, NOTIFICATION_TYPE.ORDERS, check._id, "", check.user_id._id, "", "");
+        let _Notification = new Notifications({
+          fromId: check.user_id._id,
+          user_id: USER_TYPE.PANEL,
+          title: NOTIFICATION_TITILES.ORDERS,
+          msg: msg,
+          dt_date: getCurrentDateTime(),
+          type: NOTIFICATION_TYPE.ORDERS,
+          body_parms: check._id,
+          isRead: false,
+          fromName: "",
+          toName: "",
+        });
+        let rs = _Notification.save();
+      }
+
+      await Order.findByIdAndUpdate( req.params.id, { Status: req.body.status, period:period, canceled_note: req.body.canceled_note },{ new: true })  
+      reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          null
+        )
+      );
+    
+  } catch (err) {
     throw boom.boomify(err);
   }
 };

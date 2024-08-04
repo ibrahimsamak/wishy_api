@@ -299,10 +299,9 @@ exports.addProduct = async (req, reply) => {
         category_id: req.raw.body.category_id,
         special_id: req.raw.body.special_id,
         isOffer: req.raw.body.isOffer,
-        by: req.raw.body.by,
         isDeleted: false,
         isOffer: req.raw.body.isOffer,
-        by: req.raw.body.by,
+        by: "Admin",
         isFromUser: req.raw.body.isFromUser,
       });
       var _return = handleError(rs.validateSync());
@@ -372,7 +371,7 @@ exports.updateProduct = async (req, reply) => {
           special_id: req.raw.body.special_id,
           price:req.raw.body.price,
           isOffer: req.raw.body.isOffer,
-          by: req.raw.body.by,
+          by: "Admin",
           isFromUser: req.raw.body.isFromUser,
           },
         { new: true, runValidators: true },
@@ -903,12 +902,12 @@ exports.newProduct = async (req, reply) => {
         image: req.body.image,
         createat: getCurrentDateTime(),
         category_id: req.body.category_id,
-        special_id: req.body.special_id,
+        special_id: null,//req.body.special_id,
         quantity: req.body.quantity,
         cost_price: req.body.cost_price,
         isDeleted: false,
         isOffer: false,
-        by: req.user._id,
+        by: "Ma5azen",
         isFromUser: false,
       });
       var _return = handleError(rs.validateSync());
@@ -946,12 +945,13 @@ exports.editProduct = async (req, reply) => {
           enDescription: req.body.enDescription,
           image: req.body.image,
           category_id: req.body.category_id,
-          special_id: req.body.special_id,
+          special_id: null,//req.body.special_id,
           price: req.body.price,
           quantity: req.body.quantity,
           cost_price: req.body.cost_price,
           isOffer: false,
           isFromUser: false,
+          by:"Ma5azen"
       },
       { new: true, runValidators: true },
       function (err, model) {
@@ -994,12 +994,13 @@ exports.editBulkProduct = async (req, reply) => {
             enDescription: item.enDescription,
             image: item.image,
             category_id: item.category_id,
-            special_id: item.special_id,
+            special_id: null,//item.special_id,
             price: item.price,
             quantity: item.quantity,
             cost_price: item.cost_price,
             isOffer: false,
             isFromUser: false,
+            by:"Ma5azen"
         },
         { new: true, runValidators: true },
         function (err, model) {

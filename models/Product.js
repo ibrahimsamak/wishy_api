@@ -41,7 +41,7 @@ const Productschema = mongoose.Schema(
     special_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "special",
-      required: [true, "special is required"],
+      required: [false, "special is required"],
     },
     owner: {
       type: String,
@@ -61,9 +61,10 @@ const Productschema = mongoose.Schema(
       default:false
     },
     by: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "supplier",
-      required: [true, "supplier is required"],
+      type: String
+      // type: mongoose.Schema.Types.ObjectId,
+      // ref: "supplier",
+      // required: [true, "supplier is required"],
     },
 
   },
