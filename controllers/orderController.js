@@ -445,7 +445,7 @@ exports.addOrder = async (req, reply) => {
         let itemsId = items.map((x) => x.cartId);
         Cart.deleteMany({ _id: { $in: itemsId } }, function (err) {});
         let check_by = items.filter((x) => x.by == "Ma5azen");
-        if(check_by.length > 0) {
+        // if(check_by.length > 0) {
           // submit order to Ma5azen
           const item = await Order.findById(rs._id)
           .sort({ _id: -1 })
@@ -457,7 +457,7 @@ exports.addOrder = async (req, reply) => {
           .select();
           console.log(item)
           await postM5azen(item);
-        }
+        // }
         let msg = "لديك طلب جديد";
         if (employee_ids.length > 0) {
           var current_employee = await employee.find({_id:{$in:employee_ids}});
