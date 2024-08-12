@@ -349,10 +349,10 @@ exports.addOrder = async (req, reply) => {
             };
 
             if (
-              Product_Price_Object.price &&
-              Product_Price_Object.price != 0
+              Product_Price_Object.sale_price &&
+              Product_Price_Object.sale_price != 0
             ) {
-              total += Number(Product_Price_Object.price) * data.qty;
+              total += Number(Product_Price_Object.sale_price) * data.qty;
               // totalDiscount += Number( Product_Price_Object.discountPrice * data.qty);
             } 
 
@@ -809,7 +809,7 @@ exports.updateOrder = async (req, reply) => {
         
         var subs = await SubCategory.find({_id:{$in:req.body.extra}})
         var price = 0;
-        subs.forEach(element => { price += element.price });
+        subs.forEach(element => { price += element.sale_price });
         var new_total = (Number(price) * Number(tax.value)) + Number(price)
         var new_tax = (Number(price) * Number(tax.value)) 
 
@@ -1207,10 +1207,10 @@ exports.getOrderTotal = async (req, reply) => {
     var _coupon = req.body.coupon;
     const sp = await coupon.findOne({$and: [{ coupon: _coupon }]});
     const sub_category = await SubCategory.findById(req.body.sub_category_id);
-    var total = Number(sub_category.price);
+    var total = Number(sub_category.sale_price);
     for await(var i of req.body.extra){
       const _sub_category = await SubCategory.findById(req.body.sub_category_id);
-      total += Number(_sub_category.price)
+      total += Number(_sub_category.sale_price)
     }
 
     var discount_rate = Number(total) * Number(sp ? sp.discount_rate : 0);

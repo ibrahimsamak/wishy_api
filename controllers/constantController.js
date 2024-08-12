@@ -124,7 +124,7 @@ exports.getAllCategoryAndSubCategory = async (req, reply) => {
         var _newObject = i.toObject();
         var obj = {
           _id: _newObject._id,
-          price: _newObject.price,
+          price: _newObject.sale_price,
           image: _newObject.image,
           title: _newObject[`${language}Name`],
           description: _newObject[`${language}Description`],
@@ -2621,7 +2621,7 @@ exports.packageList = async (req, reply) => {
       var obj = {
         _id: newObject._id,
         Name: newObject[`${language}Name`],
-        Price: newObject.price,
+        Price: newObject.sale_price,
       };
       arr.push(obj);
     });

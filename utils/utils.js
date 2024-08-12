@@ -551,14 +551,14 @@ exports.check_coupon = async function check_coupon(user_id, _coupon, sub_categor
   }
   
   const sub_category = await SubCategory.findById(sub_category_id);
-  var discount_rate = Number(sub_category.price) * Number(sp.discount_rate);
-  var final_total = Number(sub_category.price) - discount_rate;
+  var discount_rate = Number(sub_category.sale_price) * Number(sp.discount_rate);
+  var final_total = Number(sub_category.sale_price) - discount_rate;
   var final_total_tax = (Number(final_total) * Number(tax.value)) + Number(final_total)
   var total_tax = (Number(final_total) * Number(tax.value)) 
 
   var returnObject = {
     final_total: Number(final_total_tax),
-    total_before_tax: Number(sub_category.price),
+    total_before_tax: Number(sub_category.sale_price),
     discount: discount_rate,
     total_tax: total_tax
   };

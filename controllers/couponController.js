@@ -465,10 +465,10 @@ exports.checkCouponCart = async (req, reply) => {
           providerArr.push(productObject);
         
         if (
-          _product.price &&
-          _product.price != 0
+          _product.sale_price &&
+          _product.sale_price != 0
         ) {
-          totalPrice += Number(_product.price) * data.qty;
+          totalPrice += Number(_product.sale_price) * data.qty;
           // totalDiscount += Number( Product_Price_Object.discountPrice * data.qty);
         } 
 

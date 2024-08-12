@@ -6,6 +6,7 @@ const fs = require("fs");
 const async = require("async");
 const lodash = require("lodash");
 const moment = require("moment-timezone");
+const mongoose = require("mongoose");
 
 const {
   Category,
@@ -293,7 +294,7 @@ exports.addProduct = async (req, reply) => {
         arDescription: req.raw.body.arDescription,
         enDescription: req.raw.body.enDescription,
         rate: 0,
-        price: req.raw.body.price,
+        sale_price: req.raw.body.sale_price,
         image: img,
         createat: getCurrentDateTime(),
         category_id: req.raw.body.category_id,
@@ -303,6 +304,7 @@ exports.addProduct = async (req, reply) => {
         isOffer: req.raw.body.isOffer,
         by: "Admin",
         isFromUser: req.raw.body.isFromUser,
+        SKU: mongoose.Types.ObjectId()
       });
       var _return = handleError(rs.validateSync());
       if (_return.length > 0) {
@@ -369,7 +371,7 @@ exports.updateProduct = async (req, reply) => {
           image: img,
           category_id: req.raw.body.category_id,
           special_id: req.raw.body.special_id,
-          price:req.raw.body.price,
+          sale_price: req.raw.body.sale_price,
           isOffer: req.raw.body.isOffer,
           by: "Admin",
           isFromUser: req.raw.body.isFromUser,
@@ -406,7 +408,7 @@ exports.updateProduct = async (req, reply) => {
           category_id: req.raw.body.category_id,
           special_id: req.raw.body.special_id,
           isOffer: req.raw.body.isOffer,
-          price:req.raw.body.price,
+          sale_price: req.raw.body.sale_price,
           by: req.raw.body.by,
           isOffer: req.raw.body.isOffer,
           isFromUser: req.raw.body.isFromUser,
@@ -898,7 +900,7 @@ exports.newProduct = async (req, reply) => {
         arDescription: req.body.arDescription,
         enDescription: req.body.enDescription,
         rate: 0,
-        price: req.body.price,
+        sale_price: req.body.sale_price,
         image: req.body.image,
         createat: getCurrentDateTime(),
         category_id: req.body.category_id,
@@ -909,6 +911,7 @@ exports.newProduct = async (req, reply) => {
         isOffer: false,
         by: "Ma5azen",
         isFromUser: false,
+        SKU: mongoose.Types.ObjectId()
       });
       var _return = handleError(rs.validateSync());
       if (_return.length > 0) {
@@ -946,7 +949,7 @@ exports.editProduct = async (req, reply) => {
           image: req.body.image,
           category_id: req.body.category_id,
           special_id: null,//req.body.special_id,
-          price: req.body.price,
+          sale_price: req.body.sale_price,
           quantity: req.body.quantity,
           cost_price: req.body.cost_price,
           isOffer: false,
@@ -995,7 +998,7 @@ exports.editBulkProduct = async (req, reply) => {
             image: item.image,
             category_id: item.category_id,
             special_id: null,//item.special_id,
-            price: item.price,
+            sale_price: item.sale_price,
             quantity: item.quantity,
             cost_price: item.cost_price,
             isOffer: false,

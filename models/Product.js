@@ -4,6 +4,10 @@ const { getCurrentDateTime } = require("../models/Constant");
 
 const Productschema = mongoose.Schema(
   {
+    SKU: {
+      type: String,
+      required: [true, "SKU is required"],
+    },
     arName: {
       type: String,
       required: [true, "arabic name is required"],
@@ -29,6 +33,9 @@ const Productschema = mongoose.Schema(
     },
     cost_price:{
       type: Number,
+    },
+    sale_price:{
+      type: Number, 
     },
     quantity:{
       type: Number,

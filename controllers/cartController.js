@@ -109,10 +109,10 @@ exports.getCartTotalsUserId = async (req, reply) => {
         // return;
 
         if (
-          Product_Price_Object.price &&
-          Product_Price_Object.price != 0
+          Product_Price_Object.sale_price &&
+          Product_Price_Object.sale_price != 0
         ) {
-          totalPrice += Number(Product_Price_Object.price) * data.qty;
+          totalPrice += Number(Product_Price_Object.sale_price) * data.qty;
         } 
 
         // deliverycost +=
@@ -215,7 +215,7 @@ exports.getCartUserId = async (req, reply) => {
         providerArr.push(productObject);
       }
 
-      totalPrice += Number(_product.price) * data.qty;
+      totalPrice += Number(_product.sale_price) * data.qty;
       deliverycost += 0//Number(_product.deliveryCost) * Number(data.qty);
       // expresscost +=  Number(_product.expressCost) * Number(data.qty);
     }
@@ -290,8 +290,8 @@ exports.addProduct = async (req, reply) => {
         //   );
         // return;
         // }
-        if (provider.price && provider.price != 0) {
-          total = Number(provider.price) * req.body.qty;
+        if (provider.sale_price && provider.sale_price != 0) {
+          total = Number(provider.sale_price) * req.body.qty;
         } 
 
         const checkBefore = await Cart.findOne({
@@ -302,10 +302,10 @@ exports.addProduct = async (req, reply) => {
         });
         if (checkBefore) {
           if (
-            provider.price &&
-            provider.price != 0
+            provider.sale_price &&
+            provider.sale_price != 0
           ) {
-            total = Number(provider.price) * (req.body.qty + 1);
+            total = Number(provider.sale_price) * (req.body.qty + 1);
           } 
           const Carts = await Cart.findByIdAndUpdate(
             checkBefore._id,
@@ -415,10 +415,10 @@ exports.UpdateCart = async (req, reply) => {
           }
 
           if (
-            Product_Price_Object.price &&
-            Product_Price_Object.price != 0
+            Product_Price_Object.sale_price &&
+            Product_Price_Object.sale_price != 0
           ) {
-            total = Number(Product_Price_Object.price) * data.qty;
+            total = Number(Product_Price_Object.sale_price) * data.qty;
           } 
 
           await Cart.findByIdAndUpdate(
