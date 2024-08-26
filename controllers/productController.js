@@ -896,6 +896,17 @@ exports.getSingleSupplierPlace = async (req, reply) => {
 
 exports.newProduct = async (req, reply) => {
   try {
+    var check = await Product.findOne({SKU: req.body.SKU})
+    if(check){
+      const response = {
+        status_code: 400,
+        status: false,
+        message: "هذا المنتج موجود مسبقا",
+        items: null,
+      };
+      reply.send(response);
+      return
+    }
       let rs = new Product({
         arName: req.body.arName,
         enName: req.body.enName,
@@ -913,7 +924,7 @@ exports.newProduct = async (req, reply) => {
         isOffer: false,
         by: "Ma5azen",
         isFromUser: false,
-        SKU: mongoose.Types.ObjectId()
+        SKU: req.body.SKU//mongoose.Types.ObjectId()
       });
       var _return = handleError(rs.validateSync());
       if (_return.length > 0) {
@@ -956,7 +967,8 @@ exports.editProduct = async (req, reply) => {
           cost_price: req.body.cost_price,
           isOffer: false,
           isFromUser: false,
-          by:"Ma5azen"
+          by:"Ma5azen",
+          SKU: req.body.SKU//mongoose.Types.ObjectId()
       },
       { new: true, runValidators: true },
       function (err, model) {
@@ -1005,7 +1017,8 @@ exports.editBulkProduct = async (req, reply) => {
             cost_price: item.cost_price,
             isOffer: false,
             isFromUser: false,
-            by:"Ma5azen"
+            by:"Ma5azen",
+            SKU: req.body.SKU//mongoose.Types.ObjectId()
         },
         { new: true, runValidators: true },
         function (err, model) {
