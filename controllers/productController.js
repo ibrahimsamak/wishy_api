@@ -896,7 +896,7 @@ exports.getSingleSupplierPlace = async (req, reply) => {
 
 exports.newProduct = async (req, reply) => {
   try {
-    var check = await Product.findOne({SKU: req.body.SKU})
+    var check = await Product.findOne({$and:[{SKU: req.body.SKU}, {isDeleted: false}]})
     if(check){
       const response = {
         status_code: 400,
