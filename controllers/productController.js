@@ -1018,7 +1018,7 @@ exports.editBulkProduct = async (req, reply) => {
             isOffer: false,
             isFromUser: false,
             by:"Ma5azen",
-            SKU: req.body.SKU//mongoose.Types.ObjectId()
+            SKU: item.SKU//mongoose.Types.ObjectId()
         },
         { new: true, runValidators: true },
         function (err, model) {
