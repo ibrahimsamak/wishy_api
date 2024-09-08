@@ -1005,12 +1005,12 @@ exports.editBulkProduct = async (req, reply) => {
       let prod = await Product.findByIdAndUpdate(
         { _id: item._id },
         {
-            arName: item.arName,
-            enName: item.enName,
+            // arName: item.arName,
+            // enName: item.enName,
             arDescription: item.arDescription,
             enDescription: item.enDescription,
             image: item.image,
-            category_id: item.category_id,
+            // category_id: item.category_id,
             special_id: null,//item.special_id,
             sale_price: item.sale_price,
             quantity: item.quantity,
