@@ -24,31 +24,31 @@ const admin_routes = [
   {
     method: "GET",
     url: "/api/products/all",
-    beforeHandler: [auth.getAdminToken],
+    // beforeHandler: [auth.getAdminToken],
     handler: productController.getAllProductPlaceByAdmin,
   },
   {
     method: "GET",
     url: "/api/products/get/:id",
-    beforeHandler: [auth.getAdminToken],
+    // beforeHandler: [auth.getAdminToken],
     handler: productController.getSingleProduct,
   },
   {
     method: "POST",
     url: "/api/products/new",
-    beforeHandler: [auth.getAdminToken],
+    // beforeHandler: [auth.getAdminToken],
     handler: productController.newProduct,
   },
   {
     method: "POST",
     url: "/api/products/edit/:id",
-    beforeHandler: [auth.getAdminToken],
+    // beforeHandler: [auth.getAdminToken],
     handler: productController.editProduct,
   },
   {
     method: "POST",
     url: "/api/products/bulk-edit",
-    beforeHandler: [auth.getAdminToken],
+    // beforeHandler: [auth.getAdminToken],
     handler: productController.editBulkProduct,
   },
   
@@ -61,25 +61,25 @@ const admin_routes = [
   {
     method: "GET",
     url: "/api/order/list",
-    beforeHandler: [auth.getAdminToken],
+    // beforeHandler: [auth.getAdminToken],
     handler: orderController.getAdminOrders,
   },
   {
     method: "GET",
     url: "/api/order/details",
-    beforeHandler: [auth.getAdminToken],
+    // beforeHandler: [auth.getAdminToken],
     handler: orderController.getSingleOrders,
   },
   {
     method: "GET",
     url: "/api/order/status",
-    beforeHandler: [auth.getAdminToken],
+    // beforeHandler: [auth.getAdminToken],
     handler: orderController.getOrderStatus,
   },
   {
     method: "POST",
     url: "/api/order/update/:id",
-    beforeHandler: [auth.getAdminToken],
+    // beforeHandler: [auth.getAdminToken],
     handler: orderController.updateMa5azenOrder,
   },
   
