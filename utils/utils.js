@@ -571,6 +571,7 @@ exports.postM5azen = async function(body){
     axios
     .post(url,body)
     .then((response) => {
+      console.log(response.data)
       resolve(response.data)
     })
     .catch((error) => {
