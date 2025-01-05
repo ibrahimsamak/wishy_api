@@ -67,19 +67,22 @@ const {
 } = require("../utils/constants");
 const { coupon_usage } = require("../models/Coupon");
 const { Product } = require("../models/Product");
+const mongoose = require("mongoose");
 
 exports.Reminders = async function PendingCronOrders() {
   cron.schedule(`0 9 * * *`, async () => {
     var cond = moment().tz("Asia/Riyadh").startOf('day').format(moment.HTML5_FMT.DATE);
+    console.log(cond);
     let orders = await Reminder.find({ date: { $gte: cond } }).populate('user_id');
     for await(const i of orders) {
       //.format(moment.HTML5_FMT.DATE);
-      var today = moment().tz("Asia/Riyadh").startOf('day')
-      var reminder = moment(i.date).tz("Asia/Riyadh").startOf('day');
-      var reminder_date = today.add(Number(i.before), "days")
+      //var today = moment().tz("Asia/Riyadh").startOf('day')
+      var reminder = moment(i.date).startOf('day');
+      var before = (-1*Number(i.before))
+      var reminder_date = reminder.add(before, "days")
       console.log(reminder_date)
-      console.log(reminder)
-      var minutes = today.diff(reminder_date, "days");
+      console.log(moment().startOf('day'))
+      var minutes = reminder_date.diff(moment().startOf('day'), "days");
       console.log(minutes)
       if(minutes == 0) {
           var msg = `عزيزي المشترك نود تذكيرك بمناسبتك: : ${i.title}`;
@@ -3276,7 +3279,9 @@ exports.addProductRequestToProduct = async (req, reply) => {
   const language = req.headers["accept-language"];
   try {
     var check = await ProductRequest.findById(req.params.id);
+
     let rs = new Product({
+        SKU: mongoose.Types.ObjectId(),
         arName: check.title,
         enName: check.title,
         arDescription: check.title,
