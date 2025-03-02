@@ -23,6 +23,81 @@ const admin_routes = [
   //// m5azen ////
   {
     method: "GET",
+    url: "/api/products/variation/all",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.getAllVariation,
+  },
+  {
+    method: "POST",
+    url: "/api/products/variation/create/:id",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.addVariation,
+  },
+  {
+    method: "POST",
+    url: "/api/products/variation/update/:id",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.updateVariation,
+  },
+  {
+    method: "POST",
+    url: "/api/products/variation/delete/:id",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.deleteVariation,
+  },
+ 
+  {
+    method: "GET",
+    url: "/api/products/attribute/all",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.getAllAttribute,
+  },
+  {
+    method: "POST",
+    url: "/api/products/attribute/create",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.addAttribute,
+  },
+  {
+    method: "POST",
+    url: "/api/products/attribute/update/:id",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.updateAttributes,
+  },
+  {
+    method: "POST",
+    url: "/api/products/attribute/delete/:id",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.deleteAttribute,
+  },
+ 
+  {
+    method: "GET",
+    url: "/api/products/attribute-term/all",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.getAllAttributeTerm,
+  },
+  {
+    method: "POST",
+    url: "/api/products/attribute-term/create/:id",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.addAttributeTerms,
+  },
+  {
+    method: "POST",
+    url: "/api/products/attribute-term/update/:id",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.updateAttributesTerms,
+  },
+  {
+    method: "POST",
+    url: "/api/products/attribute-term/delete/:id",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.deleteAttributeTerm,
+  },
+  
+  {
+    method: "GET",
     url: "/api/products/all",
     // beforeHandler: [auth.getAdminToken],
     handler: productController.getAllProductPlaceByAdmin,

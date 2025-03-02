@@ -3297,6 +3297,7 @@ exports.addProductRequestToProduct = async (req, reply) => {
         by: check.user_id,
         isDeleted: false,
         isFromUser: true,
+        by: "Admin",
       });
       var sp = await rs.save();  
       await ProductRequest.findByIdAndRemove(req.params.id);

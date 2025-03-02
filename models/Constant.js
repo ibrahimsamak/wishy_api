@@ -344,6 +344,56 @@ const TimesSchema = mongoose.Schema(
   { versionKey: false }
 );
 
+const VariationSchema = mongoose.Schema(
+  {
+    regular_price: { type: Number },
+    image: { type: String },
+    attributes: {
+          type: [
+            {
+              option: { type: String },
+            },
+          ],
+    },
+    product_id: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
+  },
+  { versionKey: false }
+);
+
+const AttributeSchema = mongoose.Schema(
+  {
+    name: {
+      type: String,
+    },
+    slug: {
+      type: String,
+    },
+    type: {
+      type: String,
+    },
+    order_by: {
+      type: String,
+    },
+    has_archives:{
+      type: Boolean,
+    }
+  },
+  { versionKey: false }
+);
+
+const AttributeTermsSchema = mongoose.Schema(
+  {
+    name: {
+      type: String,
+    },
+    attribute_id:{
+      type: mongoose.Schema.Types.ObjectId, ref: "attribute",
+    }
+  },
+  { versionKey: false }
+);
+
+
 const updates = mongoose.model("updates", update);
 const setting = mongoose.model("settings", settings);
 const SocialOption = mongoose.model("SocialOption", Socialschema);
@@ -364,6 +414,11 @@ const language = mongoose.model("language", generalSchema);
 const times = mongoose.model("times", TimesSchema);
 const event = mongoose.model("event", countrySchema);
 
+const variation = mongoose.model("variation", VariationSchema);
+const attribute = mongoose.model("attribute", AttributeSchema);
+const attribute_terms = mongoose.model("attribute_terms", AttributeTermsSchema);
+
+
 function getCurrentDateTime() {
   // var utc = new Date();
   // var current = utc.setHours(utc.getHours() + 3);
@@ -377,6 +432,11 @@ function currentDate(date) {
   return current;
 }
 
+
+exports.variation = variation;
+exports.attribute = attribute;
+exports.attribute_terms = attribute_terms;
+
 exports.update = updates;
 exports.delivery_time = delivery_time;
 exports.setting = setting;
@@ -385,8 +445,7 @@ exports.place = place;
 exports.ContactOption = ContactOption;
 exports.SocialOption = SocialOption;
 exports.StaticPage = StaticPage;
-exports.getCurrentDateTime = getCurrentDateTime;
-exports.currentDate = currentDate;
+
 exports.tokens = tokens;
 exports.complains = complains;
 exports.welcome = weolcomes;
@@ -398,3 +457,6 @@ exports.languages = language;
 exports.times = times;
 exports.special = special;
 exports.event = event;
+
+exports.getCurrentDateTime = getCurrentDateTime;
+exports.currentDate = currentDate;

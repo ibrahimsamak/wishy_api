@@ -28,6 +28,9 @@ const {
   currentDate,
   special,
   event,
+  variation,
+  attribute,
+  attribute_terms,
 } = require("../models/Constant");
 const { Users } = require("../models/User");
 const { employee } = require("../models/Employee");
@@ -555,6 +558,75 @@ exports.getCity = async (req, reply) => {
   }
 };
 
+exports.getAllVariation = async (req, reply) => {
+  try {
+    var arr = [];
+    const language = req.headers["accept-language"];
+    const obj = await variation.find({});
+
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          obj
+        )
+      );
+    return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getAllAttribute = async (req, reply) => {
+  try {
+    var arr = [];
+    const language = req.headers["accept-language"];
+    const obj = await attribute.find({});
+
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          obj
+        )
+      );
+    return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getAllAttributeTerm = async (req, reply) => {
+  try {
+    var arr = [];
+    const language = req.headers["accept-language"];
+    const obj = await attribute_terms.find({});
+
+    reply
+      .code(200)
+      .send(
+        success(
+          language,
+          200,
+          MESSAGE_STRING_ARABIC.SUCCESS,
+          MESSAGE_STRING_ENGLISH.SUCCESS,
+          obj
+        )
+      );
+    return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 exports.getPlaces = async (req, reply) => {
   try {
     var arr = [];
@@ -785,6 +857,51 @@ exports.getSingleCity = async (req, reply) => {
       status: true,
       message: "تمت العملية بنجاح",
       items: cities,
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getSingleVariation = async (req, reply) => {
+  try {
+    const _var = await variation.findById(req.params.id).sort({ _id: -1 });
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      items: _var,
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getSingleAttribute = async (req, reply) => {
+  try {
+    const _var = await attribute.findById(req.params.id).sort({ _id: -1 });
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      items: _var,
+    };
+    reply.code(200).send(response);
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.getSingleAttributeTerm = async (req, reply) => {
+  try {
+    const _var = await attribute_terms.findById(req.params.id).sort({ _id: -1 });
+    const response = {
+      status_code: 200,
+      status: true,
+      message: "تمت العملية بنجاح",
+      items: _var,
     };
     reply.code(200).send(response);
   } catch (err) {
@@ -1537,6 +1654,113 @@ exports.addCity = async (req, reply) => {
   }
 };
 
+exports.addVariation = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    let _city = new variation({
+      regular_price: req.body.regular_price,
+      image: req.body.image,
+      attributes: req.body.attributes,
+      product_id: req.params.id
+    });
+    var _return = handleError(_city.validateSync());
+    if (_return.length > 0) {
+      reply.code(200).send({
+        status_code: 400,
+        status: false,
+        message: _return[0],
+        items: _return,
+      });
+      return;
+    }
+    let rs = await _city.save();
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.addAttribute = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    let _city = new attribute({
+      name: req.body.name,
+      slug: req.body.slug,
+      type: req.body.type,
+      order_by: req.body.order_by,
+      has_archives: req.body.has_archives,
+    });
+    var _return = handleError(_city.validateSync());
+    if (_return.length > 0) {
+      reply.code(200).send({
+        status_code: 400,
+        status: false,
+        message: _return[0],
+        items: _return,
+      });
+      return;
+    }
+    let rs = await _city.save();
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.addAttributeTerms = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    let _city = new attribute_terms({
+      name: req.body.name,
+      attribute_id: req.params.id
+    });
+    var _return = handleError(_city.validateSync());
+    if (_return.length > 0) {
+      reply.code(200).send({
+        status_code: 400,
+        status: false,
+        message: _return[0],
+        items: _return,
+      });
+      return;
+    }
+    let rs = await _city.save();
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        rs
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 exports.addPlace = async (req, reply) => {
   try {
     const language = req.headers["accept-language"];
@@ -1871,6 +2095,132 @@ exports.updateCity = async (req, reply) => {
   }
 };
 
+exports.updateVariation = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    const _city = await variation.findByIdAndUpdate(
+      req.params.id,
+      {
+        regular_price: req.body.regular_price,
+        image: req.body.image,
+        attributes: req.body.attributes
+      },
+      { new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _city
+      )
+    );
+
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.updateAttributes = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    const _city = await attribute.findByIdAndUpdate(
+      req.params.id,
+      {
+        name: req.body.name,
+        slug: req.body.slug,
+        type: req.body.type,
+        order_by: req.body.order_by,
+        has_archives: req.body.has_archives,
+      },
+      { new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _city
+      )
+    );
+
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.updateAttributesTerms = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    const _city = await attribute_terms.findByIdAndUpdate(
+      req.params.id,
+      {
+        name: req.body.name,
+      },
+      { new: true, runValidators: true },
+      function (err, model) {
+        var _return = handleError(err);
+        if (_return.length > 0) {
+          reply.code(200).send({
+            status_code: 400,
+            status: false,
+            message: _return[0],
+            items: _return,
+          });
+          return;
+        }
+      }
+    );
+
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _city
+      )
+    );
+
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 exports.deleteCountry = async (req, reply) => {
   try {
     const language = req.headers["accept-language"];
@@ -1996,6 +2346,66 @@ exports.deleteCity = async (req, reply) => {
         MESSAGE_STRING_ARABIC.SUCCESS,
         MESSAGE_STRING_ENGLISH.SUCCESS,
         _city
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.deleteVariation = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    const _var = await variation.findByIdAndRemove(req.params.id);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _var
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.deleteAttribute = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    const _attr = await attribute.findByIdAndRemove(req.params.id);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _attr
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.deleteAttributeTerm = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    const _attr = await attribute_terms.findByIdAndRemove(req.params.id);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _attr
       )
     );
   } catch (err) {

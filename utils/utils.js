@@ -238,12 +238,12 @@ exports.sendSMS = async function(number, from, to, code){
   let _config = {
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Bearer " + "oGd9dsguMYpzCgxsMpNQ"
+      Authorization: "Bearer " + "rEyAyIskgLRMEtIw1w4H"
     },
   };
   let body = {
-    "src": "Lascent",
-    "body": "1234", //code,
+    "src": "WISHY",
+    "body": msg,
     "dests": [number]
   }
 
@@ -378,8 +378,8 @@ exports.makeid = function (number) {
   for (var i = 0; i < number; i++)
     text += possible.charAt(Math.floor(Math.random() * possible.length));
 
-  return "1234";
-  //return text;
+  //return "1234";
+  return text;
 };
 
 exports.CreateNotificationMultiple = function (deviceId, title, msg, order_id) {
