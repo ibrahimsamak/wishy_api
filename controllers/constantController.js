@@ -1617,7 +1617,6 @@ exports.addSpecial = async (req, reply) => {
   }
 };
 
-
 exports.addCity = async (req, reply) => {
   try {
     const language = req.headers["accept-language"];
@@ -1690,9 +1689,55 @@ exports.addVariation = async (req, reply) => {
   }
 };
 
+exports.addBulkVariation = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    var objs = req.body.create;
+    var list = []
+    objs.forEach(element => {
+      let _city = new variation({
+        regular_price: element.regular_price,
+        image: element.image,
+        attributes: element.attributes,
+        product_id: req.params.id
+      });
+      list.push(_city);
+    });
+    await variation.insertMany(list);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        list
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+
 exports.addAttribute = async (req, reply) => {
   try {
     const language = req.headers["accept-language"];
+    var check_slug = await attribute.findOne({slug: req.body.slug});
+    if(check_slug){
+      reply
+      .code(400)
+      .send(
+        errorAPI(
+          language,
+          400,
+          MESSAGE_STRING_ARABIC.FAVORITE_EXSIT,
+          MESSAGE_STRING_ENGLISH.FAVORITE_EXSIT, 
+        )
+      );
+      return
+    }
     let _city = new attribute({
       name: req.body.name,
       slug: req.body.slug,
@@ -1727,6 +1772,53 @@ exports.addAttribute = async (req, reply) => {
   }
 };
 
+exports.addBulkAttribute = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    let objs = req.body.create
+    var list = []
+    for await(var element of objs)
+    {
+      var check_slug = await attribute.findOne({slug: element.slug});
+      if(check_slug){
+        reply
+        .code(400)
+        .send(
+          errorAPI(
+            language,
+            400,
+            MESSAGE_STRING_ARABIC.FAVORITE_EXSIT,
+            MESSAGE_STRING_ENGLISH.FAVORITE_EXSIT, 
+          )
+        );
+        return
+      }
+      var att = new attribute({
+        name: element.name,
+        slug: element.slug,
+        type: element.type,
+        order_by: element.order_by,
+        has_archives: element.has_archives,
+      });
+      list.push(att);
+    }
+    await attribute.insertMany(list);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        list
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 exports.addAttributeTerms = async (req, reply) => {
   try {
     const language = req.headers["accept-language"];
@@ -1754,6 +1846,35 @@ exports.addAttributeTerms = async (req, reply) => {
         MESSAGE_STRING_ARABIC.SUCCESS,
         MESSAGE_STRING_ENGLISH.SUCCESS,
         rs
+      )
+    );
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+exports.addBulkAttributeTerms = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    let objs = req.body.create;
+    var list = []
+    objs.forEach(element => {
+      let _city = new attribute_terms({
+        name: element.name,
+        attribute_id: req.params.id
+      });
+      list.push(_city);
+    });
+    await attribute_terms.insertMany(list);
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        list
       )
     );
   } catch (err) {
@@ -1909,7 +2030,6 @@ exports.updateCountry = async (req, reply) => {
     throw boom.boomify(err);
   }
 };
-
 
 exports.updateEvent = async (req, reply) => {
   try {

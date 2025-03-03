@@ -73,7 +73,20 @@ const Productschema = mongoose.Schema(
       // ref: "supplier",
       // required: [true, "supplier is required"],
     },
-
+    // attributes: {
+    //   type: {
+    //     id: { type: mongoose.Schema.Types.ObjectId },
+    //     visible:{type: Boolean},
+    //     variation:{type: Boolean},
+    //     options: {
+    //       type: [
+    //         {
+    //           option: { type: String },
+    //         },
+    //       ],
+    //     }
+    //   }
+    // }
   },
   { versionKey: false }
 );

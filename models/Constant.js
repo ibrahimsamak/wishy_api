@@ -347,7 +347,11 @@ const TimesSchema = mongoose.Schema(
 const VariationSchema = mongoose.Schema(
   {
     regular_price: { type: Number },
-    image: { type: String },
+    image: { 
+     type: {
+        name: { type: String }
+      } 
+    },
     attributes: {
           type: [
             {

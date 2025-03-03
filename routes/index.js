@@ -35,6 +35,12 @@ const admin_routes = [
   },
   {
     method: "POST",
+    url: "/api/products/variation/create-batch/:id",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.addBulkVariation,
+  },
+  {
+    method: "POST",
     url: "/api/products/variation/update/:id",
     // beforeHandler: [auth.getAdminToken],
     handler: constantController.updateVariation,
@@ -60,6 +66,12 @@ const admin_routes = [
   },
   {
     method: "POST",
+    url: "/api/products/attribute/create-batch",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.addBulkAttribute,
+  },
+  {
+    method: "POST",
     url: "/api/products/attribute/update/:id",
     // beforeHandler: [auth.getAdminToken],
     handler: constantController.updateAttributes,
@@ -82,6 +94,12 @@ const admin_routes = [
     url: "/api/products/attribute-term/create/:id",
     // beforeHandler: [auth.getAdminToken],
     handler: constantController.addAttributeTerms,
+  },
+  {
+    method: "POST",
+    url: "/api/products/attribute-term/create-batch/:id",
+    // beforeHandler: [auth.getAdminToken],
+    handler: constantController.addBulkAttributeTerms,
   },
   {
     method: "POST",
