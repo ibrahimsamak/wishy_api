@@ -310,6 +310,7 @@ const WishSchema = mongoose.Schema(
     description: { type: String },
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
     product_id: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
+    variation_id: { type: mongoose.Schema.Types.ObjectId, ref: "variation" },
     group_id: { type: mongoose.Schema.Types.ObjectId, ref: "wish_group" },
     total: { type: Number },
     all_pays: { type: Number },

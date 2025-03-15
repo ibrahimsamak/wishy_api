@@ -907,7 +907,12 @@ exports.newProduct = async (req, reply) => {
       reply.send(response);
       return
     }
+    var type = "simple";
+    if(req.body.type && req.body.type == 'variable'){
+      type = "variable";
+    }
       let rs = new Product({
+        type : type,
         arName: req.body.arName,
         enName: req.body.enName,
         arDescription: req.body.arDescription,
@@ -924,7 +929,8 @@ exports.newProduct = async (req, reply) => {
         isOffer: false,
         by: "Ma5azen",
         isFromUser: false,
-        SKU: req.body.SKU//mongoose.Types.ObjectId()
+        SKU: req.body.SKU,//mongoose.Types.ObjectId()
+        attributes: req.body.attributes
       });
       var _return = handleError(rs.validateSync());
       if (_return.length > 0) {

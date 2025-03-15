@@ -20,7 +20,7 @@ const { Admin } = require("../models/Admin");
 // const { Point } = require("../models/Point");
 // const { UserPoint } = require("../models/userPoint");
 const { Notifications } = require("../models/Notifications");
-const { setting, place } = require("../models/Constant");
+const { setting, place, variation } = require("../models/Constant");
 const {
   Product,
   Supplier,
@@ -341,6 +341,7 @@ exports.addOrder = async (req, reply) => {
             let object = {
               cartId: data._id,
               product_id: data.product_id,
+              variation_id: data.variation_id,
               qty: data.qty,
               Total: data.Total,
               TotalDiscount: data.TotalDiscount,
@@ -348,13 +349,21 @@ exports.addOrder = async (req, reply) => {
               by: Product_Price_Object.by
             };
 
-            if (
-              Product_Price_Object.sale_price &&
-              Product_Price_Object.sale_price != 0
-            ) {
-              total += Number(Product_Price_Object.sale_price) * data.qty;
-              // totalDiscount += Number( Product_Price_Object.discountPrice * data.qty);
-            } 
+            // if (Product_Price_Object.sale_price && Product_Price_Object.sale_price != 0
+            // ) {
+            //   total += Number(Product_Price_Object.sale_price) * data.qty;
+            //   // totalDiscount += Number( Product_Price_Object.discountPrice * data.qty);
+            // } 
+            if(Product_Price_Object.type && Product_Price_Object.type == 'variable'){
+              var variable_product = await variation.findById(data.variation_id);
+              if(variable_product){
+                total += Number(variable_product.regular_price) * data.qty;;
+              }
+            }else{
+              if (Product_Price_Object.sale_price && Product_Price_Object.sale_price != 0) {
+                total += Number(Product_Price_Object.sale_price) * data.qty;
+              } 
+            }
 
             // if(String(req.body.isExpress) == "true"){
             //   deliverycost += Number(Product_Price_Object.expressCost) * Number(data.qty);
@@ -454,6 +463,7 @@ exports.addOrder = async (req, reply) => {
           .populate("supplier_id")
           .populate("address_book")
           .populate({ path: "items.product_id", populate: { path: "product_id" } })
+          .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
           .select();
           console.log(item)
           await postM5azen(item);
@@ -577,8 +587,21 @@ exports.addWishOrder = async (req, reply) => {
       } 
 
       var wish = await Wish.findById(req.body.wish_id)
+      // var Product_Price_Object = await Product.findById(wish.product_id)
+      // if(Product_Price_Object.type && Product_Price_Object.type == 'variable'){
+      //   var variable_product = await variation.findById(data.variation_id);
+      //   if(variable_product){
+      //     total += Number(variable_product.regular_price) * data.qty;;
+      //   }
+      // }else{
+      //   if (Product_Price_Object.sale_price && Product_Price_Object.sale_price != 0) {
+      //     total += Number(Product_Price_Object.sale_price) * data.qty;
+      //   } 
+      // }
+
       let objProd ={
         product_id: wish.product_id,
+        variation_id: wish.variation_id,
         qty:1,
         Total: wish.total,
         TotalDiscount: 0,
@@ -626,6 +649,18 @@ exports.addWishOrder = async (req, reply) => {
       let itemsId = items.map((x) => x.cartId);
       console.log(itemsId)
       Cart.deleteMany({ _id: { $in: itemsId } }, function (err) {});
+
+      const item = await Order.findById(rs._id)
+      .sort({ _id: -1 })
+      .populate("user_id", "-token")
+      .populate("employee_id", "-token")
+      .populate("supplier_id")
+      .populate("address_book")
+      .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
+      .select();
+      console.log(item)
+      await postM5azen(item);
 
       let msg = "لديك طلب جديد";
       if (employee_ids.length > 0) {
@@ -3914,6 +3949,206 @@ exports.updateMa5azenOrder = async (req, reply) => {
         )
       );
     
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
+
+//payment getway
+exports.checkout = async (req, reply) => {
+  const language = req.headers["accept-language"];
+  try {
+    var userId = req.user._id;
+    var givenName = "";
+    var surName = "";
+    var orderNo = `${makeOrderNumber(6)}`;
+    const tax = await setting.findOne({ code: "TAX" });
+
+    // var amount = 0;
+    var _id = new mongoose.Types.ObjectId().toHexString();
+    var amount = Number(req.body.amount).toFixed(2);
+    var tax_amount = Number(amount)*Number(tax.value)
+    let userData = await Users.findById(userId);
+
+    givenName = userData.full_name.trim();
+    surName = userData.full_name.trim();
+    //tye: 1:visa , 2:mada, 3:apple
+  
+    var items = []
+    for await(var i of req.body.products) {
+      const Product_Price_Object = await Product.findById(i.product_id);
+      var enName = Product_Price_Object.enName;
+      var _total_price = 0;
+      var _tax_amount = 0;
+      if(Product_Price_Object.type && Product_Price_Object.type == 'variable'){
+        var variable_product = await variation.findById(i.variation_id);
+        if(variable_product){
+          _total_price = Number(variable_product.regular_price) * Number(i.qty)
+          _tax_amount = Number(variable_product.regular_price) * Number(tax.value)
+        }
+      }else{
+        if (Product_Price_Object.sale_price && Product_Price_Object.sale_price != 0) {
+          _total_price = Number(Product_Price_Object.sale_price) * Number(i.qty)
+          _tax_amount = Number(Product_Price_Object.sale_price) * Number(tax.value)
+        } 
+      }
+
+      var obj =   {
+        "name": enName,
+        "type": "Digital",
+        "reference_id": Product_Price_Object._id,
+        "sku": Product_Price_Object.SKU,
+        "quantity": Number(i.qty),
+        "discount_amount": {
+          "amount": 0,
+          "currency": "SAR"
+        },
+        "tax_amount": {
+          "amount": Number(_tax_amount),
+          "currency": "SAR"
+        },
+        "total_amount": {
+          "amount": Number(_total_price),
+          "currency": "SAR"
+        }
+      }
+      items.push(obj)
+    }
+
+    console.log(items)
+    var body = {
+      "total_amount": {
+        "amount": Number(amount),
+        "currency": "SAR"
+      },
+      "shipping_amount": {
+        "amount": 0,
+        "currency": "SAR"
+      },
+      "tax_amount": {
+        "amount": tax_amount,
+        "currency": "SAR"
+      },
+      "order_reference_id": orderNo,
+      "order_number": orderNo,
+      "discount": {
+        "name": "",
+        "amount": {
+          "amount": 0,
+          "currency": "SAR"
+        }
+      },
+      "items": items,
+      "consumer": {
+        "email": userData.email,
+        "first_name": givenName ,
+        "last_name": surName,
+        "phone_number": userData.phone_number
+      },
+      "country_code": "SA",
+      "description": "description",
+      "merchant_url": {
+        "cancel": "https://www.google.com",
+        "failure": "https://www.google.com",
+        "success": "https://www.wishy.com",
+        "notification": "https://www.wishy.com"
+      },
+      "payment_type": "PAY_BY_INSTALMENTS",
+      "instalments": 3,
+      "billing_address": {
+        "city": "Riyadh",
+        "country_code": "SA",
+        "first_name": givenName,
+        "last_name": surName,
+        "line1": "Riyadh",
+        "line2": "",
+        "phone_number": userData.phone_number,
+        "region": ""
+      },
+      "shipping_address": {
+        "city": "Riyadh",
+        "country_code": "SA",
+        "first_name": givenName,
+        "last_name": surName,
+        "line1": "Riyadh",
+        "line2": "",
+        "phone_number": userData.phone_number,
+        "region": ""
+      },
+      "platform": "Wishy",
+      "is_mobile": true,
+      "locale": "en_US"
+    }
+
+    console.log(body)
+    var url = `https://api.tamara.co/checkout`
+    let _config = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhY2NvdW50SWQiOiIwNDI2ZWMyMC0xOWMzLTQxNzEtOTA0Zi1mYWIyZjdlY2UzM2MiLCJ0eXBlIjoibWVyY2hhbnQiLCJzYWx0IjoiZmIzMzIyM2Y3MzFmNTQ4MGI0YzhlYTM1NDg5MTFjNTUiLCJyb2xlcyI6WyJST0xFX01FUkNIQU5UIl0sImlhdCI6MTcxMjUxNTM0OCwiaXNzIjoiVGFtYXJhIFBQIn0.doK9s4_Cp7UApXOb31Y2DBcWKLXbU4X0ju-IF7Tlh3wx2VQwm5wctUAU2-75Kdvp7XRKXew2Vx79CEE-JZZqd5qQ3D3zeFnShA-16tLrsjolpVbfI0dY6lsE8vbL7-Ge93vsIYQ9T8G4V8SzH_h7J_C532pJ-C8MW7gzTH9GRlaTA7FHWMWoR332hmTuA8L_qPuHUUY7KHtOUgGv6rhXJPGHz8Tx-rMEoxyTOmZuEM905BbR_wmpToyvAZGoJ1mxosCwBdwb1Giw5YhmXPpTUAGs13OwmqqAo-Tlm70nSNp6CwrMqNf_RRszgoNwIXQfSOT0rPQUvpiZSwmcchCKQg",
+      },
+    };
+
+  
+
+    axios
+      .post(url, body, _config)
+      .then(async (response) => {
+        console.log(response.data);
+        // let result = response.data;
+        // var obj = result;
+        // obj.payment_order_id = _id;
+        // obj.order_no = orderNo;
+        // obj.amount = final_total;
+        // var regex1 = /^(000\.000\.|000\.100\.1|000\.[36])/;
+        // var regex2 = /^(000\.400\.0[^3]|000\.400\.100)/;
+        // var regex3 = /^(000\.200)/;
+        // var regex4 = /^(800\.400\.5|100\.400\.500)/;
+        // if (
+        //   regex1.test(result.result.code) ||
+        //   regex2.test(result.result.code) ||
+        //   regex3.test(result.result.code) ||
+        //   regex4.test(result.result.code)
+        // ) {
+        //   const response = {
+        //     items: obj,
+        //     status: true,
+        //     status_code: 200,
+        //     messageAr: result.result.description,
+        //     messageEn: result.result.description,
+        //   };
+        //   reply.code(200).send(response);
+        // } else {
+        //   const response = {
+        //     items: obj,
+        //     status: false,
+        //     status_code: 400,
+        //     messageAr: result.result.description,
+        //     messageEn: result.result.description,
+        //   };
+        //   reply.code(200).send(response);
+        //   return;
+        // }
+
+        var obj = response.data;
+        obj.orderNo = orderNo
+        reply
+        .code(200)
+        .send(
+          success(
+            language,
+            200,
+            MESSAGE_STRING_ARABIC.SUCCESS,
+            MESSAGE_STRING_ENGLISH.SUCCESS,
+            obj
+          )
+        );
+      })
+      .catch((error) => {
+        reply.code(200).send(errorAPI(language, 400, MESSAGE_STRING_ARABIC.ERROR, MESSAGE_STRING_ENGLISH.ERROR));
+        return;
+      });
   } catch (err) {
     throw boom.boomify(err);
   }

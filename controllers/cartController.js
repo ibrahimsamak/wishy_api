@@ -12,7 +12,7 @@ const {
   Product_Price,
   Place_Delivery,
 } = require("../models/Product");
-const { setting } = require("../models/Constant");
+const { setting, variation } = require("../models/Constant");
 const { getCurrentDateTime } = require("../models/Constant");
 const { success, errorAPI } = require("../utils/responseApi");
 const {
@@ -108,12 +108,25 @@ exports.getCartTotalsUserId = async (req, reply) => {
         //   );
         // return;
 
-        if (
-          Product_Price_Object.sale_price &&
-          Product_Price_Object.sale_price != 0
-        ) {
-          totalPrice += Number(Product_Price_Object.sale_price) * data.qty;
-        } 
+        // if ( Product_Price_Object.sale_price && Product_Price_Object.sale_price != 0
+        // ) {
+        //   totalPrice += Number(Product_Price_Object.sale_price) * data.qty;
+        // } 
+
+        
+        if(Product_Price_Object.type && Product_Price_Object.type == 'variable'){
+          var variable_product = await variation.findById(data.variation_id);
+          console.log(variable_product)
+          if(variable_product){
+            totalPrice += Number(variable_product.regular_price) * data.qty;;
+          }
+        }else{
+          if (Product_Price_Object.sale_price && Product_Price_Object.sale_price != 0) {
+            total += Number(Product_Price_Object.sale_price) * data.qty;
+          } 
+        }
+
+
 
         // deliverycost +=
         //   Number(Product_Price_Object.deliveryCost) * Number(data.qty);
@@ -210,13 +223,29 @@ exports.getCartUserId = async (req, reply) => {
         productObject.qty = data.qty;
         productObject.Total = data.Total;
         productObject.TotalDiscount = data.TotalDiscount;
-
+        if(_product.type && _product.type == 'variable'){
+          var variable_product = await variation.findById(data.variation_id);
+          if(variable_product){
+            productObject.variation = variable_product;
+          }
+        }
         // providerobject.products.push(productObject);
         providerArr.push(productObject);
       }
 
-      totalPrice += Number(_product.sale_price) * data.qty;
-      deliverycost += 0//Number(_product.deliveryCost) * Number(data.qty);
+      if(_product.type && _product.type == 'variable'){
+        var variable_product = await variation.findById(data.variation_id);
+        if(variable_product){
+          totalPrice += Number(variable_product.regular_price) * data.qty;;
+        }
+      }else{
+        if (_product.sale_price && _product.sale_price != 0) {
+          totalPrice += Number(_product.sale_price) * data.qty;
+        } 
+      }
+
+      // totalPrice += Number(_product.sale_price) * data.qty;
+      // deliverycost += 0//Number(_product.deliveryCost) * Number(data.qty);
       // expresscost +=  Number(_product.expressCost) * Number(data.qty);
     }
 
@@ -290,9 +319,17 @@ exports.addProduct = async (req, reply) => {
         //   );
         // return;
         // }
-        if (provider.sale_price && provider.sale_price != 0) {
-          total = Number(provider.sale_price) * req.body.qty;
-        } 
+        if(provider.type && provider.type == 'variable'){
+            var variable_product = await variation.findById(req.body.variation_id);
+            if(variable_product){
+              total = Number(variable_product.regular_price) * req.body.qty;;
+            }
+        }else{
+          if (provider.sale_price && provider.sale_price != 0) {
+            total = Number(provider.sale_price) * req.body.qty;
+          } 
+        }
+ 
 
         const checkBefore = await Cart.findOne({
           $and: [
@@ -301,14 +338,17 @@ exports.addProduct = async (req, reply) => {
           ],
         });
         if (checkBefore) {
-          if (
-            provider.sale_price &&
-            provider.sale_price != 0
-          ) {
-            total = Number(provider.sale_price) * (req.body.qty + 1);
-          } 
-          const Carts = await Cart.findByIdAndUpdate(
-            checkBefore._id,
+          if(provider.type && provider.type == 'variable'){
+            var variable_product = await variation.findById(req.body.variation_id);
+            if(variable_product){
+              total = Number(variable_product.regular_price) * req.body.qty;;
+            }
+          }else{
+            if (provider.sale_price && provider.sale_price != 0) {
+              total = Number(provider.sale_price) * req.body.qty;
+            } 
+          }
+          const Carts = await Cart.findByIdAndUpdate(checkBefore._id,
             {
               $inc: { qty: 1 },
               Total: total
@@ -332,6 +372,7 @@ exports.addProduct = async (req, reply) => {
           let _Cart = new Cart({
             user_id: req.user._id,
             product_id: req.body.product_id,
+            variation_id: req.body.variation_id,
             // supplier_id: provider.by,
             qty: req.body.qty,
             Total: total,
@@ -414,12 +455,21 @@ exports.UpdateCart = async (req, reply) => {
             return;
           }
 
-          if (
-            Product_Price_Object.sale_price &&
-            Product_Price_Object.sale_price != 0
-          ) {
-            total = Number(Product_Price_Object.sale_price) * data.qty;
-          } 
+          // if (Product_Price_Object.sale_price && Product_Price_Object.sale_price != 0
+          // ) {
+          //   total = Number(Product_Price_Object.sale_price) * data.qty;
+          // } 
+
+          if(Product_Price_Object.type && Product_Price_Object.type == 'variable'){
+            var variable_product = await variation.findById(item.variation_id);
+            if(variable_product){
+              total = Number(variable_product.regular_price) * data.qty;
+            }
+          }else{
+            if (Product_Price_Object.sale_price && Product_Price_Object.sale_price != 0) {
+              total = Number(Product_Price_Object.sale_price) * data.qty;
+            } 
+          }
 
           await Cart.findByIdAndUpdate(
             data.cart_id,

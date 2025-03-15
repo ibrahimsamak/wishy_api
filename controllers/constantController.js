@@ -1658,9 +1658,11 @@ exports.addVariation = async (req, reply) => {
     const language = req.headers["accept-language"];
     let _city = new variation({
       regular_price: req.body.regular_price,
-      image: req.body.image,
+      manage_stock: req.body.manage_stock,
+      stock_quantity: req.body.stock_quantity,
+      // image: req.body.image,
       attributes: req.body.attributes,
-      product_id: req.params.id
+      sku: req.body.sku
     });
     var _return = handleError(_city.validateSync());
     if (_return.length > 0) {
@@ -1697,9 +1699,11 @@ exports.addBulkVariation = async (req, reply) => {
     objs.forEach(element => {
       let _city = new variation({
         regular_price: element.regular_price,
-        image: element.image,
+        manage_stock: element.manage_stock,
+        stock_quantity: element.stock_quantity,
+        // image: req.body.image,
         attributes: element.attributes,
-        product_id: req.params.id
+        sku: element.sku
       });
       list.push(_city);
     });

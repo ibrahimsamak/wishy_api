@@ -1237,6 +1237,12 @@ const mobile_routes = [
     //Forms
     {
       method: "POST",
+      url: "/api/mobile/checkout",
+      beforeHandler: [auth.getToken],
+      handler: orderController.checkout,
+    },
+    {
+      method: "POST",
       url: "/api/mobile/form/vip",
       beforeHandler: [auth.getToken],
       handler: userController.addVip,

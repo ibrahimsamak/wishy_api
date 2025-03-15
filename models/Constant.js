@@ -346,12 +346,15 @@ const TimesSchema = mongoose.Schema(
 
 const VariationSchema = mongoose.Schema(
   {
+    sku: { type: String },
+    manage_stock: { type: Boolean },
+    stock_quantity: { type: Number },
     regular_price: { type: Number },
-    image: { 
-     type: {
-        name: { type: String }
-      } 
-    },
+    // image: { 
+    //  type: {
+    //     name: { type: String }
+    //   } 
+    // },
     attributes: {
           type: [
             {
@@ -359,7 +362,7 @@ const VariationSchema = mongoose.Schema(
             },
           ],
     },
-    product_id: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
+    //product_id: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
   },
   { versionKey: false }
 );
