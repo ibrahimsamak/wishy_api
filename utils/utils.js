@@ -378,7 +378,7 @@ exports.makeid = function (number) {
   for (var i = 0; i < number; i++)
     text += possible.charAt(Math.floor(Math.random() * possible.length));
 
-  //return "1234";
+  return "1234";
   return text;
 };
 
