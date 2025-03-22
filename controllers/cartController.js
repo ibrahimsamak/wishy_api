@@ -122,7 +122,7 @@ exports.getCartTotalsUserId = async (req, reply) => {
           }
         }else{
           if (Product_Price_Object.sale_price && Product_Price_Object.sale_price != 0) {
-            total += Number(Product_Price_Object.sale_price) * data.qty;
+            totalPrice += Number(Product_Price_Object.sale_price) * data.qty;
           } 
         }
 
