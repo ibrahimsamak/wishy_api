@@ -436,18 +436,18 @@ exports.getSingleProduct = async (req, reply) => {
   try {
     const prod = await Product.findById(req.params.id)
     // .populate("by");
-    const checkFavorite = await Favorite.findOne({
-      $and: [
-        { user_id: req.user._id },
-        { product_id: req.params.id },
-      ],
-    });
+    // const checkFavorite = await Favorite.findOne({
+    //   $and: [
+    //     { user_id: req.user._id },
+    //     { product_id: req.params.id },
+    //   ],
+    // });
     const newObj = prod.toObject();
-    if (checkFavorite) {
-      newObj.favorite_id = checkFavorite._id;
-    } else {
-      newObj.favorite_id = null;
-    }
+    // if (checkFavorite) {
+    //   newObj.favorite_id = checkFavorite._id;
+    // } else {
+    //   newObj.favorite_id = null;
+    // }
 
     delete newObj.arName;
     delete newObj.enName;
