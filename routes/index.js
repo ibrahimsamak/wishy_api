@@ -1234,6 +1234,11 @@ const admin_routes = [
 
 //mobile client
 const mobile_routes = [
+  {
+    method: "GET",
+    url: "/api/mobile/product/variation",
+    handler: constantController.getSingleVariationWithSku,
+  },
     //Forms
     {
       method: "POST",

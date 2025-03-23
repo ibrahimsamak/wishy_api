@@ -879,6 +879,40 @@ exports.getSingleVariation = async (req, reply) => {
   }
 };
 
+exports.getSingleVariationWithSku = async (req, reply) => {
+  try {
+    const language = req.headers["accept-language"];
+    const _var = await variation.find({sku:req.query.sku}).sort({ _id: -1 });
+    if(!_var){
+      reply
+      .code(200)
+      .send(
+        errorAPI(
+          language,
+          400,
+          MESSAGE_STRING_ARABIC.ERROR,
+          MESSAGE_STRING_ENGLISH.ERROR
+        )
+      );
+    return;
+    }
+    reply
+    .code(200)
+    .send(
+      success(
+        language,
+        200,
+        MESSAGE_STRING_ARABIC.SUCCESS,
+        MESSAGE_STRING_ENGLISH.SUCCESS,
+        _var
+      )
+    );
+  return;
+  } catch (err) {
+    throw boom.boomify(err);
+  }
+};
+
 exports.getSingleAttribute = async (req, reply) => {
   try {
     const _var = await attribute.findById(req.params.id).sort({ _id: -1 });

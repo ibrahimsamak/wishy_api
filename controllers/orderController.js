@@ -1182,6 +1182,7 @@ exports.getUserOrder = async (req, reply) => {
     .populate("supplier_id")
     .populate("address_book")
     .populate({ path: "items.product_id", populate: { path: "product_id" } })
+    .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
     .skip(page * limit)
     .limit(limit)
     .sort({ createAt: -1 });
@@ -1295,6 +1296,7 @@ exports.getOrderDetails = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .lean();
 
     if (!item) {
@@ -2146,6 +2148,7 @@ exports.getOrdersSeacrhExcel = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
     const response = {
       items: item,
       status_code: 200,
@@ -2217,6 +2220,7 @@ exports.getOrdersSeacrh = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .skip(page * limit)
       .limit(limit);
     const response = {
@@ -2267,6 +2271,7 @@ exports.getEmployeeOrder = async (req, reply) => {
     .populate("supplier_id")
     .populate("address_book")
     .populate({ path: "items.product_id", populate: { path: "product_id" } })
+    .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
     .skip(page * limit)
     .limit(limit)
     .sort({ createAt: -1 });
@@ -2648,6 +2653,7 @@ exports.getOrdersSearchFilter = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .skip(page * limit)
       .limit(limit)
       .select("-couponCode");
@@ -2835,6 +2841,7 @@ exports.getUserOrders = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -2884,6 +2891,7 @@ exports.getUserOrdersExcel = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .sort({ _id: -1 })
     
     reply.code(200).send(
@@ -2930,6 +2938,7 @@ exports.getProivdeOrders = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -2979,6 +2988,7 @@ exports.getProivdeOrdersExcel = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .sort({ _id: -1 })
 
       
@@ -3024,6 +3034,7 @@ exports.getSupervisorOrders = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -3072,6 +3083,7 @@ exports.getSupervisorOrdersExcel = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .sort({ _id: -1 })
 
     reply.code(200).send(
@@ -3115,6 +3127,7 @@ exports.getEmployeesOrder = async (req, reply) => {
     .populate("supplier_id")
     .populate("address_book")
     .populate({ path: "items.product_id", populate: { path: "product_id" } })
+    .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .sort({ _id: -1 })
       .skip(page * limit)
       .limit(limit);
@@ -3164,6 +3177,7 @@ exports.getEmployeesOrderExcel = async (req, reply) => {
     .populate("supplier_id")
     .populate("address_book")
     .populate({ path: "items.product_id", populate: { path: "product_id" } })
+    .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .sort({ _id: -1 })
 
     reply.code(200).send(
@@ -3193,6 +3207,7 @@ exports.getSingleOrders = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .select();
 
     const response = {
@@ -3249,6 +3264,7 @@ exports.getOrders = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .skip(page * limit)
       .limit(limit)
       .select();
@@ -3317,6 +3333,7 @@ exports.getOrdersExcel = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .select();
 
     const response = {
@@ -3369,6 +3386,7 @@ exports.getOrdersEarnings = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .select();
 
     if(req.body.supplier_id && req.body.supplier_id != ""){
@@ -3704,6 +3722,7 @@ exports.getOrdersMap = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
     // .limit(2000)
     // if (err) return handleError(err);
     const response = {
@@ -3764,6 +3783,7 @@ exports.getAdminOrders = async (req, reply) => {
       .populate("supplier_id")
       .populate("address_book")
       .populate({ path: "items.product_id", populate: { path: "product_id" } })
+      .populate({ path: "items.variation_id", populate: { path: "variation_id" } })
       .skip(page * limit)
       .limit(limit)
       .select();
