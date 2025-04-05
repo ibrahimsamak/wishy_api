@@ -341,7 +341,7 @@ exports.addOrder = async (req, reply) => {
             let object = {
               cartId: data._id,
               product_id: data.product_id,
-              variation_id: data.variation_id,
+              variation: data.variation,
               qty: data.qty,
               Total: data.Total,
               TotalDiscount: data.TotalDiscount,
@@ -354,16 +354,16 @@ exports.addOrder = async (req, reply) => {
             //   total += Number(Product_Price_Object.sale_price) * data.qty;
             //   // totalDiscount += Number( Product_Price_Object.discountPrice * data.qty);
             // } 
-            if(Product_Price_Object.type && Product_Price_Object.type == 'variable'){
-              var variable_product = await variation.findById(data.variation_id);
-              if(variable_product){
-                total += Number(variable_product.regular_price) * data.qty;;
-              }
-            }else{
+            // if(Product_Price_Object.type && Product_Price_Object.type == 'variable'){
+            //   var variable_product = await variation.findById(data.variation_id);
+            //   if(variable_product){
+            //     total += Number(variable_product.regular_price) * data.qty;;
+            //   }
+            // }else{
               if (Product_Price_Object.sale_price && Product_Price_Object.sale_price != 0) {
                 total += Number(Product_Price_Object.sale_price) * data.qty;
               } 
-            }
+            // }
 
             // if(String(req.body.isExpress) == "true"){
             //   deliverycost += Number(Product_Price_Object.expressCost) * Number(data.qty);
@@ -4001,18 +4001,18 @@ exports.checkout = async (req, reply) => {
       var enName = Product_Price_Object.enName;
       var _total_price = 0;
       var _tax_amount = 0;
-      if(Product_Price_Object.type && Product_Price_Object.type == 'variable'){
-        var variable_product = await variation.findById(i.variation_id);
-        if(variable_product){
-          _total_price = Number(variable_product.regular_price) * Number(i.qty)
-          _tax_amount = Number(variable_product.regular_price) * Number(tax.value)
-        }
-      }else{
+      // if(Product_Price_Object.type && Product_Price_Object.type == 'variable'){
+      //   var variable_product = await variation.findById(i.variation_id);
+      //   if(variable_product){
+      //     _total_price = Number(variable_product.regular_price) * Number(i.qty)
+      //     _tax_amount = Number(variable_product.regular_price) * Number(tax.value)
+      //   }
+      // }else{
         if (Product_Price_Object.sale_price && Product_Price_Object.sale_price != 0) {
           _total_price = Number(Product_Price_Object.sale_price) * Number(i.qty)
           _tax_amount = Number(Product_Price_Object.sale_price) * Number(tax.value)
         } 
-      }
+      // }
 
       var obj =   {
         "name": enName,

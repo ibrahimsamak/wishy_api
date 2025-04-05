@@ -29,7 +29,8 @@ const Orderschema = mongoose.Schema(
       type: [
         {
           product_id: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
-          variation_id: { type: mongoose.Schema.Types.ObjectId, ref: "variation" },
+          // variation_id: { type: mongoose.Schema.Types.ObjectId, ref: "variation" },
+          variation: { type: String },
           qty: { type: Number },
           Total: { type: Number },
           TotalDiscount: { type: Number },
