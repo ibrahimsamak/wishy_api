@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const { number, date, boolean } = require("@hapi/joi");
-const { getCurrentDateTime } = require("../models/Constant");
+const { getCurrentDateTime, variation } = require("../models/Constant");
 
 const Productschema = mongoose.Schema(
   {
@@ -80,10 +80,14 @@ const Productschema = mongoose.Schema(
       type: {
         // id: { type: mongoose.Schema.Types.ObjectId },
         visible:{type: Boolean},
-        variation:{type: Boolean},
+        variation_name: { type: String },
+        variation_sku: { type: String },
         options: {
-          type: [
-            { type: String }
+        type: [
+              {
+                variation_sku:  { type: String },
+                variation_name: { type: String },
+              },
           ],
         }
       }

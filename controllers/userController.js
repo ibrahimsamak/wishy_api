@@ -2475,7 +2475,8 @@ exports.addWish = async (req, reply) => {
       var finish = req.body.type == 'public' ? today.add(Number(EXP.value), 'days') : today
       let user = new Wish({
         product_id: req.body.product_id,
-        variation_id: req.body.variation_id,
+        variation_name: req.body.variation_name,
+        variation_sku: req.body.variation_sku,
         group_id: req.body.group_id,
         isShare: req.body.isShare,
         type: req.body.type,
@@ -2521,7 +2522,8 @@ exports.updateWish = async (req, reply) => {
       req.params.id,
       {
         product_id: req.body.product_id,
-        variation_id: req.body.variation_id,
+        variation_name: req.body.variation_name,
+        variation_sku: req.body.variation_sku,
         group_id: req.body.group_id,
         isShare: req.body.isShare,
         type: req.body.type,
@@ -2586,7 +2588,6 @@ exports.getSingleWish = async (req, reply) => {
     const StaticPages = await Wish.findById(req.params.id)
     .populate({path: "user_id"})
     .populate({path: "product_id"})
-    .populate({path: "variation_id"})
     .populate({path: "group_id"});
 
     console.log(StaticPages)
@@ -2634,7 +2635,6 @@ exports.getWishByUserId = async (req, reply) => {
     const items = await Wish.find(query)
     .populate({path: "user_id"})
     .populate({path: "product_id"})
-    .populate({path: "variation_id"})
     .populate({path: "group_id"})
     .skip(page * limit)
     .limit(limit)

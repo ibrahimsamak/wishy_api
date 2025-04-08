@@ -223,7 +223,8 @@ exports.getCartUserId = async (req, reply) => {
         productObject.qty = data.qty;
         productObject.Total = data.Total;
         productObject.TotalDiscount = data.TotalDiscount;
-        productObject.variation = data.variation;
+        productObject.variation_name = data.variation_name;
+        productObject.variation_sku = data.variation_sku;
 
         // if(_product.type && _product.type == 'variable'){
         //   var variable_product = await variation.findById(data.variation_id);
@@ -374,7 +375,8 @@ exports.addProduct = async (req, reply) => {
           let _Cart = new Cart({
             user_id: req.user._id,
             product_id: req.body.product_id,
-            variation: req.body.variation,
+            variation_name: req.body.variation_name,
+            variation_sku: req.body.variation_sku,
             // supplier_id: provider.by,
             qty: req.body.qty,
             Total: total,
