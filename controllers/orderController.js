@@ -1337,7 +1337,9 @@ exports.getOrderDetails = async (req, reply) => {
         newObj.qty = data.qty;
         newObj.Total = data.Total;
         newObj.TotalDiscount = data.TotalDiscount;
-
+        newObj.variation_name = data.variation_name;
+        newObj.variation_sku = data.variation_sku;
+        
         providerArr.push(newObj);
       }
     }
@@ -4073,8 +4075,8 @@ exports.checkout = async (req, reply) => {
       "merchant_url": {
         "cancel": "https://www.google.com",
         "failure": "https://www.google.com",
-        "success": "https://www.wishy.com",
-        "notification": "https://www.wishy.com"
+        "success": "https://www.wishy.sa",
+        "notification": "https://www.wishy.sa"
       },
       "payment_type": "PAY_BY_INSTALMENTS",
       "instalments": 3,
@@ -4108,7 +4110,7 @@ exports.checkout = async (req, reply) => {
     let _config = {
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhY2NvdW50SWQiOiIwNDI2ZWMyMC0xOWMzLTQxNzEtOTA0Zi1mYWIyZjdlY2UzM2MiLCJ0eXBlIjoibWVyY2hhbnQiLCJzYWx0IjoiZmIzMzIyM2Y3MzFmNTQ4MGI0YzhlYTM1NDg5MTFjNTUiLCJyb2xlcyI6WyJST0xFX01FUkNIQU5UIl0sImlhdCI6MTcxMjUxNTM0OCwiaXNzIjoiVGFtYXJhIFBQIn0.doK9s4_Cp7UApXOb31Y2DBcWKLXbU4X0ju-IF7Tlh3wx2VQwm5wctUAU2-75Kdvp7XRKXew2Vx79CEE-JZZqd5qQ3D3zeFnShA-16tLrsjolpVbfI0dY6lsE8vbL7-Ge93vsIYQ9T8G4V8SzH_h7J_C532pJ-C8MW7gzTH9GRlaTA7FHWMWoR332hmTuA8L_qPuHUUY7KHtOUgGv6rhXJPGHz8Tx-rMEoxyTOmZuEM905BbR_wmpToyvAZGoJ1mxosCwBdwb1Giw5YhmXPpTUAGs13OwmqqAo-Tlm70nSNp6CwrMqNf_RRszgoNwIXQfSOT0rPQUvpiZSwmcchCKQg",
+        Authorization: "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhY2NvdW50SWQiOiI1OTg5MjcyNC04MzA2LTQ1YzQtOTc0My1kMjhhYTZiODBhYmIiLCJ0eXBlIjoibWVyY2hhbnQiLCJzYWx0IjoiY2RkYjJiYWEtZGM2Ni00ZDQ0LTg1ZTYtNjg4YjdlZTViZjY3Iiwicm9sZXMiOlsiUk9MRV9NRVJDSEFOVCJdLCJpc010bHMiOmZhbHNlLCJpYXQiOjE3NDQ3MTkxNjgsImlzcyI6IlRhbWFyYSBQUCJ9.k4n4SMnhfvIMSR7a5afozWVG-gIjnZy-8AGwxS7DOCqV0bH0LvBOwJs6JYJPVh14i15FE2fE3npmunFalqJ69kLKe_Zpg0fBa3HNSYg4mZIx-WX2jrTu3alDLPAwdZAzXFpA6hLjVr-szExIIQVJXNIBmBzW2DZ5j9QoF3ttVgAYSk9dqNLMF-_FJTx7hV8V-THdOP7Hug4xFZAXgfhv7_wh5zymnOHmhWhjJo-wsJUvl6OsCsKS_E2vqQRp0Zq5h4yzW6kjlFSDzF88Fm-l8QPiw0niANIRSc05TQzXPGS8IeSUao9XsW9Rmjr-uu8tF9ZUoTm5z4ehKsfzjM8lig",
       },
     };
 
