@@ -495,7 +495,7 @@ exports.getEventAdmin = async (req, reply) => {
   try {
     var arr = [];
     const language = req.headers["accept-language"];
-    const _country = await event.find();
+    const _country = await event.find({isDeleted: false});
 
     reply
       .code(200)
@@ -2421,7 +2421,7 @@ exports.deleteEvent = async (req, reply) => {
     const previousCountry = await event.findById(req.params.id);
     const _country = await event.findByIdAndUpdate(
       req.params.id,
-      { isDeleted: !previousCountry.isDeleted },
+      { isDeleted: true },
       { new: true, runValidators: true },
       function (err, model) {
         var _return = handleError(err);
