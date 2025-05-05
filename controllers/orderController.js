@@ -600,7 +600,7 @@ exports.addWishOrder = async (req, reply) => {
       //   } 
       // }
 
-      let objProd ={
+      let objProd = {
         product_id: wish.product_id,
         variation_name: wish.variation_name,
         variation_sku: wish.variation_sku,
@@ -609,11 +609,11 @@ exports.addWishOrder = async (req, reply) => {
         TotalDiscount: 0,
         createAt: getCurrentDateTime(),
       }
+
       items.push(objProd);
       gTax = Number(wish.total) * Number(tax.value);
       net_total = Number(wish.total);
       total = Number(wish.total);
-
       var orderNo = `${makeOrderNumber(6)}`;
       let Orders = new Order({
         Order_no: orderNo,
@@ -1190,8 +1190,8 @@ exports.getUserOrder = async (req, reply) => {
     .sort({ createAt: -1 });
 
     var arr = [];
-    var products = []
     item.forEach((element) => {
+      var products = []
       element.items.forEach(elm => {
         var el = elm.product_id.toObject();
         delete el.arName;
