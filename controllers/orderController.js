@@ -4073,10 +4073,10 @@ exports.checkout = async (req, reply) => {
       "country_code": "SA",
       "description": "description",
       "merchant_url": {
-        "cancel": "https://www.google.com",
-        "failure": "https://www.google.com",
-        "success": "https://www.wishy.sa",
-        "notification": "https://www.wishy.sa"
+        "cancel": "https://wishy.sa/tamara/cancel",
+        "failure": "https://wishy.sa/tamara/failure",
+        "success": "https://wishy.sa/tamara/success",
+        "notification": "https://wishy.sa/tamara/cancel"
       },
       "payment_type": "PAY_BY_INSTALMENTS",
       "instalments": 3,
