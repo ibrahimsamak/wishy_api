@@ -298,7 +298,7 @@ exports.addUsers = async (req, reply) => {
           },
           { new: true }
         );
-        let msg = "مرحبا بكم في تطبيق منصة wishy-ويشي رمز التفعيل هو: " + verify_code;
+        let msg = "مرحبا بكم في تطبيق  wishy-ويشي رمز التفعيل هو: " + verify_code;
         console.log(req.body.phone_number)
         sendSMS(req.body.phone_number, "", "", msg);
 
@@ -354,7 +354,7 @@ exports.addUsers = async (req, reply) => {
         address: req.body.address,
       });
       let rs = await user.save();
-      let msg = "مرحبا بكم في تطبيق منصة wishy-ويشي رمز التفعيل هو: " + verify_code;
+      let msg = "مرحبا بكم في تطبيق  wishy-ويشي رمز التفعيل هو: " + verify_code;
       console.log(req.body.phone_number)
       sendSMS(req.body.phone_number, "", "", msg);
       
@@ -2190,7 +2190,7 @@ exports.addCompany = async (req, reply) => {
         createAt: getCurrentDateTime(),
       });
       let rs = await user.save();
-      let msg = "مرحبا بكم في تطبيق منصة wishy-ويشي سيتم التواصل معكم في أقرب وقت ممكن: ";
+      let msg = "مرحبا بكم في تطبيق  wishy-ويشي سيتم التواصل معكم في أقرب وقت ممكن: ";
       sendSMS(req.body.phone_number, "", "", msg);
       
       reply

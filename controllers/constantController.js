@@ -190,7 +190,7 @@ exports.addReplyComplains = async (req, reply) => {
       full_name: complaintsData.full_name,
       msg: req.body.message,
     };
-    let subject = "رد من ادارة منصة wishy-ويشي";
+    let subject = "رد من ادارة wishy-ويشي";
     mail_general(req, req.body.email, subject, req.body.message, data);
     reply
       .code(200)

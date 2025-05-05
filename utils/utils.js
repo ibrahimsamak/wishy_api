@@ -97,7 +97,7 @@ exports.mail_reset_password = function (req, to, sub, text, data) {
         htmls = htmls.replace(/&#34;/g, '"');
 
         var mailOptions = {
-          from: '"منصة wishy-ويشي" <' + email + ">",
+          from: '" wishy-ويشي" <' + email + ">",
           to: to,
           subject: sub,
           text: text,
@@ -153,7 +153,7 @@ exports.mail_welcome = function (req, to, sub, text, data) {
         htmls = htmls.replace(/&#34;/g, '"');
 
         var mailOptions = {
-          from: '"منصة wishy-ويشي" <' + email + ">",
+          from: '" wishy-ويشي" <' + email + ">",
           to: to,
           subject: sub,
           text: text,
@@ -208,7 +208,7 @@ exports.mail_general = function (req, to, sub, text, data) {
         htmls = htmls.replace(/&#34;/g, '"');
 
         var mailOptions = {
-          from: '"منصة wishy-ويشي" <' + email + ">",
+          from: '" wishy-ويشي" <' + email + ">",
           to: to,
           subject: sub,
           text: text,
