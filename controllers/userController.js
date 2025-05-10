@@ -69,8 +69,8 @@ const { coupon_usage } = require("../models/Coupon");
 const { Product } = require("../models/Product");
 const mongoose = require("mongoose");
 
-exports.Reminders = async function PendingCronOrders() {
-  cron.schedule(`0 9 * * *`, async () => {
+exports.Reminders = async function Reminders() {
+  cron.schedule(`* * * * *`, async () => {
     var cond = moment().tz("Asia/Riyadh").startOf('day').format(moment.HTML5_FMT.DATE);
     console.log(cond);
     let orders = await Reminder.find({ date: { $gte: cond } }).populate('user_id');
@@ -78,7 +78,7 @@ exports.Reminders = async function PendingCronOrders() {
       //.format(moment.HTML5_FMT.DATE);
       //var today = moment().tz("Asia/Riyadh").startOf('day')
       var reminder = moment(i.date).startOf('day');
-      var before = (-1*Number(i.before))
+      var before = (-1 * Number(i.before))
       var reminder_date = reminder.add(before, "days")
       console.log(reminder_date)
       console.log(moment().startOf('day'))

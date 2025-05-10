@@ -250,6 +250,7 @@ exports.sendSMS = async function(number, from, to, code){
   axios
   .post(url,body, _config)
   .then((response) => {
+    console.log(response)
   })
   .catch((error) => {
     console.log(error)
